@@ -17,6 +17,7 @@
 - Tailwind CSS  
 - JavaScript  
 
+
 ### 🗄️ Base de Datos
 - PostgreSQL  
 
