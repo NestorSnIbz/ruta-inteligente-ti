@@ -6,7 +6,6 @@
 
 ## 🧰 Tecnologías
 
-
 ### 🔙 Backend
 - PHP 8.1  
 - Patrón MVC (Modelo - Vista - Controlador)
@@ -17,7 +16,6 @@
 - Tailwind CSS  
 - JavaScript  
 
-
 ### 🗄️ Base de Datos
 - PostgreSQL  
 
@@ -27,6 +25,44 @@ Se utiliza Supabase para:
 - Exposición automática de APIs  
 - Autenticación y gestión de usuarios  
 - Almacenamiento de archivos  
+
+---
+
+## 🏗️ Arquitectura del Sistema
+
+El sistema está basado en el patrón **MVC**, complementado con un enfoque de **Backend as a Service (BaaS)** mediante Supabase.
+
+Este enfoque permite:
+- Separación clara de responsabilidades  
+- Mayor escalabilidad  
+- Reducción de complejidad en el backend  
+
+---
+
+## 🧩 Arquitectura en Capas
+
+### 🎯 Capa de Presentación
+Encargada de la interfaz de usuario y la interacción con el usuario.  
+**Tecnologías:** HTML, CSS, Tailwind CSS, JavaScript  
+
+### ⚙️ Capa de Aplicación
+Gestiona la lógica de negocio, validaciones y flujo de datos.  
+Actúa como intermediaria entre la presentación y los datos.  
+
+### 🔌 Capa de Servicios
+Encapsula la comunicación con servicios externos.  
+Se encarga de la integración con Supabase.  
+
+### 💾 Capa de Datos
+Responsable de la persistencia de la información.  
+Gestiona el acceso a la base de datos PostgreSQL.  
+
+---
+
+## 📌 Notas
+- Se sigue una arquitectura modular y escalable.  
+- Supabase reduce la necesidad de implementar servicios backend complejos desde cero.  
+- El uso de MVC facilita el mantenimiento y la organización del código.  
 
 ---
 
@@ -59,21 +95,21 @@ Se utiliza Supabase para:
 ### ⚙️ Requerimientos No Funcionales
 
 - **RNF01 – Seguridad**  
-  El sistema debe proteger la información mediante autenticación de usuarios, almacenamiento seguro de contraseñas (hash) y uso de conexiones cifradas (HTTPS).
+  El sistema debe proteger la información mediante autenticación de usuarios, almacenamiento seguro de contraseñas y uso de conexiones cifradas (HTTPS).
 
 - **RNF02 – Rendimiento**  
   El sistema debe responder en un tiempo máximo de 2 segundos en el 95% de las solicitudes.
 
 - **RNF03 – Adaptabilidad**  
-  El sistema debe permitir la incorporación de nuevas funcionalidades sin afectar las existentes, mediante una arquitectura modular basada en capas y patrón MVC.
+  El sistema debe permitir la incorporación de nuevas funcionalidades sin afectar las existentes mediante una arquitectura modular basada en MVC.
 
 - **RNF04 – Disponibilidad**  
-  El sistema debe garantizar una disponibilidad mínima del 99% mensual, excluyendo periodos de mantenimiento programado.
+  El sistema debe garantizar una disponibilidad mínima del 99% mensual.
 
 - **RNF05 – Usabilidad**  
-  Al menos el 80% de los usuarios debe poder utilizar las funcionalidades principales sin necesidad de asistencia técnica.
+  Al menos el 80% de los usuarios debe poder utilizar las funcionalidades principales sin asistencia.
 
 - **RNF06 – Compatibilidad**  
-  El sistema debe funcionar correctamente en los navegadores Google Chrome, Microsoft Edge y Mozilla Firefox en sus versiones recientes.
+  El sistema debe funcionar correctamente en los navegadores Chrome, Edge y Firefox en sus versiones recientes.
 
 ---
