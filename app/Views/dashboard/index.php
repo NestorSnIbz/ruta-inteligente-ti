@@ -29,11 +29,11 @@
             <span class="h-2 w-2 rounded-full bg-accent-500"></span>
             Dashboard
           </a>
-          <a href="#" class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white">
+          <a href="proyectos.php" class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white">
             <span class="h-2 w-2 rounded-full bg-white/30"></span>
             Proyectos
           </a>
-          <a href="#" class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white">
+          <a href="configuracion.php" class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white">
             <span class="h-2 w-2 rounded-full bg-white/30"></span>
             Configuración
           </a>
