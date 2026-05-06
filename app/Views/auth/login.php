@@ -26,7 +26,7 @@
         <div class="w-full max-w-md">
           <div class="mb-8">
             <h1 class="text-2xl font-semibold tracking-tight text-brand-900">Ruta Inteligente TI</h1>
-            <p class="mt-1 text-sm text-neutral-600">Accede con tu cuenta o crea una nueva.</p>
+            <p class="mt-1 text-sm text-neutral-600">Accede con tu cuenta.</p>
           </div>
 
           <div class="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
@@ -54,8 +54,20 @@
             </div>
 
             <div class="mt-6">
+              <?php if (!empty($error)) : ?>
+                <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                  <?php echo htmlspecialchars((string) $error, ENT_QUOTES, 'UTF-8'); ?>
+                </div>
+              <?php endif; ?>
+
+              <?php if (!empty($success)) : ?>
+                <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                  <?php echo htmlspecialchars((string) $success, ENT_QUOTES, 'UTF-8'); ?>
+                </div>
+              <?php endif; ?>
+
               <div id="panel-login" role="tabpanel" aria-labelledby="tab-login">
-                <form class="space-y-4" action="dashboard.php" method="post">
+                <form class="space-y-4" action="login.php" method="post">
                   <div>
                     <label for="login-email" class="block text-sm font-medium text-neutral-800">Correo</label>
                     <input
@@ -82,18 +94,6 @@
                     />
                   </div>
 
-                  <div class="flex items-center justify-between gap-3">
-                    <label class="flex items-center gap-2 text-sm text-neutral-700">
-                      <input
-                        type="checkbox"
-                        name="remember"
-                        class="h-4 w-4 rounded border-neutral-300 text-brand-700 focus:ring-brand-600/20"
-                      />
-                      Recordarme
-                    </label>
-                    <a href="#" class="text-sm font-medium text-brand-700 hover:underline">¿Olvidaste tu contraseña?</a>
-                  </div>
-
                   <button
                     type="submit"
                     class="inline-flex w-full items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600/25"
@@ -101,31 +101,12 @@
                     Entrar
                   </button>
                 </form>
-
-                <div class="my-6 flex items-center gap-3">
-                  <div class="h-px flex-1 bg-neutral-200"></div>
-                  <span class="text-xs font-medium text-neutral-500">o continúa con</span>
-                  <div class="h-px flex-1 bg-neutral-200"></div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    class="inline-flex items-center justify-center rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-sm font-medium text-neutral-800 transition hover:bg-brand-50"
-                  >
-                    Google
-                  </button>
-                  <button
-                    type="button"
-                    class="inline-flex items-center justify-center rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-sm font-medium text-neutral-800 transition hover:bg-brand-50"
-                  >
-                    GitHub
-                  </button>
-                </div>
               </div>
 
               <div id="panel-register" class="hidden" role="tabpanel" aria-labelledby="tab-register">
-                <form class="space-y-4" action="dashboard.php" method="post">
+                <form class="space-y-4" action="login.php" method="post">
+                  <input type="hidden" name="action" value="register" />
+
                   <div>
                     <label for="register-name" class="block text-sm font-medium text-neutral-800">Nombre</label>
                     <input
@@ -178,16 +159,6 @@
                     />
                   </div>
 
-                  <label class="flex items-start gap-2 text-sm text-neutral-700">
-                    <input
-                      type="checkbox"
-                      name="terms"
-                      class="mt-1 h-4 w-4 rounded border-neutral-300 text-brand-700 focus:ring-brand-600/20"
-                      required
-                    />
-                    <span>Acepto los términos y condiciones.</span>
-                  </label>
-
                   <button
                     type="submit"
                     class="inline-flex w-full items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600/25"
@@ -236,6 +207,8 @@
 
       tabLogin.addEventListener("click", () => setActiveTab("login"));
       tabRegister.addEventListener("click", () => setActiveTab("register"));
+
+      setActiveTab("<?php echo htmlspecialchars((string) ($activeTab ?? 'login'), ENT_QUOTES, 'UTF-8'); ?>");
     </script>
   </body>
 </html>
