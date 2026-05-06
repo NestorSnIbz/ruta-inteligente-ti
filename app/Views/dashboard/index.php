@@ -7,6 +7,18 @@
     <link href="dist/output.css" rel="stylesheet" />
   </head>
   <body class="min-h-screen bg-neutral-50 text-neutral-900">
+    <?php
+      $nombre = is_array($authUser ?? null) ? (string) ($authUser['nombre'] ?? '') : '';
+      $correo = is_array($authUser ?? null) ? (string) ($authUser['email'] ?? '') : '';
+      $initials = '';
+      if ($nombre !== '') {
+        $parts = preg_split('/\s+/', trim($nombre)) ?: [];
+        $initials = strtoupper(mb_substr($parts[0] ?? '', 0, 1, 'UTF-8') . mb_substr($parts[1] ?? '', 0, 1, 'UTF-8'));
+      }
+      if ($initials === '' && $correo !== '') {
+        $initials = strtoupper(mb_substr($correo, 0, 2, 'UTF-8'));
+      }
+    ?>
     <div class="min-h-screen grid grid-cols-1 md:grid-cols-[16rem_1fr]">
       <aside class="bg-brand-900 text-white">
         <div class="px-6 py-6">
@@ -78,8 +90,8 @@
                   aria-expanded="false"
                   aria-controls="user-menu"
                 >
-                  <span class="h-8 w-8 rounded-full bg-brand-600 text-white grid place-items-center text-xs font-semibold">JM</span>
-                  <span class="hidden sm:block">Junior Mamani</span>
+                  <span class="h-8 w-8 rounded-full bg-brand-600 text-white grid place-items-center text-xs font-semibold"><?php echo htmlspecialchars($initials, ENT_QUOTES, 'UTF-8'); ?></span>
+                  <span class="hidden sm:block"><?php echo htmlspecialchars($nombre, ENT_QUOTES, 'UTF-8'); ?></span>
                   <svg viewBox="0 0 24 24" class="h-4 w-4 text-neutral-500" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
@@ -91,6 +103,11 @@
                   role="menu"
                   aria-labelledby="user-menu-button"
                 >
+                  <div class="px-4 py-3 text-sm">
+                    <div class="font-medium text-neutral-900"><?php echo htmlspecialchars($nombre, ENT_QUOTES, 'UTF-8'); ?></div>
+                    <div class="mt-0.5 text-xs text-neutral-500"><?php echo htmlspecialchars($correo, ENT_QUOTES, 'UTF-8'); ?></div>
+                  </div>
+                  <div class="h-px bg-neutral-200"></div>
                   <a href="#" class="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-brand-50" role="menuitem">Mi perfil</a>
                   <a href="#" class="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-brand-50" role="menuitem">Configuración</a>
                   <div class="h-px bg-neutral-200"></div>
@@ -107,7 +124,9 @@
           <div class="flex items-start justify-between gap-4">
             <div>
               <h1 class="text-2xl font-semibold tracking-tight">Dashboard</h1>
-              <p class="mt-1 text-sm text-neutral-600">Resumen general de tus proyectos.</p>
+              <p class="mt-1 text-sm text-neutral-600">
+                Bienvenido, <?php echo htmlspecialchars($nombre, ENT_QUOTES, 'UTF-8'); ?> (<?php echo htmlspecialchars($correo, ENT_QUOTES, 'UTF-8'); ?>).
+              </p>
             </div>
             <a
               href="#"
