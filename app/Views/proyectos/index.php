@@ -28,10 +28,12 @@
                 <span class="h-2 w-2 bg-white/30 rounded-full"></span>
                 Dashboard
             </a>
+
             <a href="proyectos.php" class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm bg-white/10">
                 <span class="h-2 w-2 bg-accent-500 rounded-full"></span>
                 Proyectos
             </a>
+
             <a href="configuracion.php" class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/80 hover:bg-white/10">
                 <span class="h-2 w-2 bg-white/30 rounded-full"></span>
                 Configuración
@@ -45,7 +47,9 @@
         <header class="bg-white border-b border-neutral-200">
             <div class="px-6 py-4 flex items-center justify-between">
                 <h1 class="text-xl font-semibold">Proyectos</h1>
-                <a href="#" class="bg-brand-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-brand-700">
+
+                <a href="nuevo-proyecto.php"
+                   class="bg-brand-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-brand-700">
                     + Nuevo proyecto
                 </a>
             </div>
@@ -53,6 +57,7 @@
 
         <main class="flex-1 px-6 py-8">
 
+            <!-- BUSCADOR Y FILTROS -->
             <div class="mb-8 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
 
                 <div class="w-full md:max-w-md">
@@ -78,9 +83,12 @@
                 </div>
             </div>
 
+            <!-- LISTA -->
             <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm">
+
                 <div class="divide-y divide-neutral-200">
 
+                    <!-- ITEM -->
                     <div class="px-6 py-4 flex justify-between items-center hover:bg-neutral-50 transition">
                         <div>
                             <p class="font-medium">Plan Estratégico 2026</p>
@@ -88,12 +96,20 @@
                         </div>
 
                         <div class="flex items-center gap-3">
-                            <span class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">Activo</span>
+                            <span class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">
+                                Activo
+                            </span>
 
-                            <button class="text-neutral-500 hover:text-black">⋮</button>
+                            <a
+                                href="detalle-proyecto.php"
+                                class="text-sm text-brand-700 font-medium hover:underline"
+                            >
+                                Ver detalle
+                            </a>
                         </div>
                     </div>
 
+                    <!-- ITEM -->
                     <div class="px-6 py-4 flex justify-between items-center hover:bg-neutral-50 transition">
                         <div>
                             <p class="font-medium">Análisis FODA Q2</p>
@@ -101,11 +117,20 @@
                         </div>
 
                         <div class="flex items-center gap-3">
-                            <span class="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">Borrador</span>
-                            <button class="text-neutral-500 hover:text-black">⋮</button>
+                            <span class="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">
+                                Borrador
+                            </span>
+
+                            <a
+                                href="detalle-proyecto.php"
+                                class="text-sm text-brand-700 font-medium hover:underline"
+                            >
+                                Ver detalle
+                            </a>
                         </div>
                     </div>
 
+                    <!-- ITEM -->
                     <div class="px-6 py-4 flex justify-between items-center hover:bg-neutral-50 transition">
                         <div>
                             <p class="font-medium">Objetivos Estratégicos</p>
@@ -113,11 +138,20 @@
                         </div>
 
                         <div class="flex items-center gap-3">
-                            <span class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">Compartido</span>
-                            <button class="text-neutral-500 hover:text-black">⋮</button>
+                            <span class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+                                Compartido
+                            </span>
+
+                            <a
+                                href="detalle-proyecto.php"
+                                class="text-sm text-brand-700 font-medium hover:underline"
+                            >
+                                Ver detalle
+                            </a>
                         </div>
                     </div>
 
+                    <!-- ITEM -->
                     <div class="px-6 py-4 flex justify-between items-center hover:bg-neutral-50 transition">
                         <div>
                             <p class="font-medium">Análisis PEST 2026</p>
@@ -125,11 +159,20 @@
                         </div>
 
                         <div class="flex items-center gap-3">
-                            <span class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">Activo</span>
-                            <button class="text-neutral-500 hover:text-black">⋮</button>
+                            <span class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">
+                                Activo
+                            </span>
+
+                            <a
+                                href="detalle-proyecto.php"
+                                class="text-sm text-brand-700 font-medium hover:underline"
+                            >
+                                Ver detalle
+                            </a>
                         </div>
                     </div>
 
+                    <!-- ITEM -->
                     <div class="px-6 py-4 flex justify-between items-center hover:bg-neutral-50 transition">
                         <div>
                             <p class="font-medium">5 Fuerzas de Porter</p>
@@ -137,11 +180,20 @@
                         </div>
 
                         <div class="flex items-center gap-3">
-                            <span class="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">Borrador</span>
-                            <button class="text-neutral-500 hover:text-black">⋮</button>
+                            <span class="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">
+                                Borrador
+                            </span>
+
+                            <a
+                                href="detalle-proyecto.php"
+                                class="text-sm text-brand-700 font-medium hover:underline"
+                            >
+                                Ver detalle
+                            </a>
                         </div>
                     </div>
 
+                    <!-- ITEM -->
                     <div class="px-6 py-4 flex justify-between items-center hover:bg-neutral-50 transition">
                         <div>
                             <p class="font-medium">Plan de Acción CAME</p>
@@ -149,8 +201,16 @@
                         </div>
 
                         <div class="flex items-center gap-3">
-                            <span class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">Compartido</span>
-                            <button class="text-neutral-500 hover:text-black">⋮</button>
+                            <span class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+                                Compartido
+                            </span>
+
+                            <a
+                                href="detalle-proyecto.php"
+                                class="text-sm text-brand-700 font-medium hover:underline"
+                            >
+                                Ver detalle
+                            </a>
                         </div>
                     </div>
 
