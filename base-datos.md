@@ -1,129 +1,75 @@
-## 📊 Diagrama Entidad-Relación
+# Diagrama ER - Base de Datos
 
 ```mermaid
 erDiagram
 
-PERSONA {
-  int id_persona PK
-  string nombre
-  string email
-}
+    PERSONA {
+        INT id_persona PK
+        VARCHAR nombre
+        VARCHAR email
+    }
 
-PROYECTO {
-  int id_proyecto PK
-  string nombre
-  int creador_id
-}
+    PROYECTO {
+        INT id_proyecto PK
+        VARCHAR nombre
+        INT creador_id FK
+    }
 
-PROYECTO_MIEMBRO {
-  int id PK
-  int id_proyecto
-  int id_persona
-  string rol
-}
+    PROYECTO_MIEMBRO {
+        INT id PK
+        INT id_proyecto FK
+        INT id_persona FK
+        VARCHAR rol
+    }
 
-MISION {
-  int id_mision PK
-  int id_proyecto
-  string descripcion
-}
+    VISION {
+        INT id_vision PK
+        INT id_proyecto FK
+        TEXT descripcion
+    }
 
-VISION {
-  int id_vision PK
-  int id_proyecto
-  string descripcion
-}
+    MISION {
+        INT id_mision PK
+        INT id_proyecto FK
+        TEXT descripcion
+    }
 
-VALOR {
-  int id_valor PK
-  int id_proyecto
-  string descripcion
-}
+    VALOR {
+        INT id_valor PK
+        INT id_proyecto FK
+        TEXT descripcion
+    }
 
-OBJETIVO_ESTRATEGICO {
-  int id_objetivo_est PK
-  int id_mision
-  string descripcion
-}
+    UEN {
+        INT id_uen PK
+        INT id_proyecto FK
+        VARCHAR nombre
+    }
 
-OBJETIVO_ESPECIFICO {
-  int id_objetivo_esp PK
-  int id_objetivo_est
-  string descripcion
-}
+    OBJETIVO_ESTRATEGICO {
+        INT id_objetivo_est PK
+        INT id_proyecto FK
+        INT id_uen FK
+        TEXT descripcion
+    }
 
-FODA {
-  int id_foda PK
-  int id_proyecto
-}
+    OBJETIVO_ESPECIFICO {
+        INT id_objetivo_esp PK
+        INT id_objetivo_est FK
+        TEXT descripcion
+    }
 
-FORTALEZA {
-  int id_fortaleza PK
-  int id_foda
-  string descripcion
-}
+    PERSONA ||--o{ PROYECTO : crea
+    PERSONA ||--o{ PROYECTO_MIEMBRO : participa
+    PROYECTO ||--o{ PROYECTO_MIEMBRO : tiene
 
-DEBILIDAD {
-  int id_debilidad PK
-  int id_foda
-  string descripcion
-}
+    PROYECTO ||--|| VISION : posee
+    PROYECTO ||--|| MISION : posee
+    PROYECTO ||--o{ VALOR : contiene
+    PROYECTO ||--|| UEN : tiene
 
-OPORTUNIDAD {
-  int id_oportunidad PK
-  int id_foda
-  string descripcion
-}
+    PROYECTO ||--o{ OBJETIVO_ESTRATEGICO : define
+    UEN ||--o{ OBJETIVO_ESTRATEGICO : agrupa
 
-AMENAZA {
-  int id_amenaza PK
-  int id_foda
-  string descripcion
-}
-
-AUTODIAGNOSTICO {
-  int id_autodiagnostico PK
-  int id_proyecto
-}
-
-PREGUNTA {
-  int id_pregunta PK
-  string texto
-}
-
-RESPUESTA_AUTODIAGNOSTICO {
-  int id PK
-  int id_autodiagnostico
-  int id_pregunta
-  int valor "0-5"
-}
-
-REFLEXION_AUTODIAGNOSTICO {
-  int id_reflexion PK
-  int id_autodiagnostico
-  string contenido
-}
-
-%% RELACIONES
-
-PERSONA ||--o{ PROYECTO : crea
-PERSONA ||--o{ PROYECTO_MIEMBRO : participa
-PROYECTO ||--o{ PROYECTO_MIEMBRO : tiene
-
-PROYECTO ||--|| MISION : tiene
-PROYECTO ||--|| VISION : tiene
-PROYECTO ||--o{ VALOR : tiene
-
-MISION ||--o{ OBJETIVO_ESTRATEGICO : genera
-OBJETIVO_ESTRATEGICO ||--o{ OBJETIVO_ESPECIFICO : tiene
-
-PROYECTO ||--|| FODA : tiene
-FODA ||--o{ FORTALEZA : contiene
-FODA ||--o{ DEBILIDAD : contiene
-FODA ||--o{ OPORTUNIDAD : contiene
-FODA ||--o{ AMENAZA : contiene
-
-PROYECTO ||--|| AUTODIAGNOSTICO : tiene
-AUTODIAGNOSTICO ||--o{ RESPUESTA_AUTODIAGNOSTICO : responde
-PREGUNTA ||--o{ RESPUESTA_AUTODIAGNOSTICO : define
-AUTODIAGNOSTICO ||--o{ REFLEXION_AUTODIAGNOSTICO : genera
+    OBJETIVO_ESTRATEGICO ||--o{ OBJETIVO_ESPECIFICO : contiene
+```
