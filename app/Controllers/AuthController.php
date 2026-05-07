@@ -6,8 +6,6 @@ final class AuthController
     {
         Session::start();
         $error = Session::getFlash('error');
-        $success = Session::getFlash('success');
-        $activeTab = Session::getFlash('active_tab') ?: 'login';
         require dirname(__DIR__) . '/Views/auth/login.php';
     }
 

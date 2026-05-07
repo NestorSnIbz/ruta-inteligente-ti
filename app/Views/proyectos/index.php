@@ -8,6 +8,9 @@
 </head>
 
 <body class="min-h-screen bg-neutral-50 text-neutral-900">
+<?php
+  $proyectos = is_array($proyectos ?? null) ? $proyectos : [];
+?>
 <div class="min-h-screen grid grid-cols-1 md:grid-cols-[16rem_1fr]">
 
     <aside class="bg-brand-900 text-white">
@@ -56,6 +59,16 @@
         </header>
 
         <main class="flex-1 px-6 py-8">
+            <?php if (!empty($error)) : ?>
+                <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-800">
+                    <?php echo htmlspecialchars((string) $error, ENT_QUOTES, 'UTF-8'); ?>
+                </div>
+            <?php endif; ?>
+            <?php if (!empty($success)) : ?>
+                <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-4 text-sm text-emerald-900">
+                    <?php echo htmlspecialchars((string) $success, ENT_QUOTES, 'UTF-8'); ?>
+                </div>
+            <?php endif; ?>
 
             <!-- BUSCADOR Y FILTROS -->
             <div class="mb-8 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
@@ -87,132 +100,31 @@
             <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm">
 
                 <div class="divide-y divide-neutral-200">
-
-                    <!-- ITEM -->
-                    <div class="px-6 py-4 flex justify-between items-center hover:bg-neutral-50 transition">
-                        <div>
-                            <p class="font-medium">Plan Estratégico 2026</p>
-                            <p class="text-xs text-neutral-500">Actualizado hoy</p>
+                    <?php if (empty($proyectos)) : ?>
+                        <div class="px-6 py-8 text-sm text-neutral-600">
+                            Aún no tienes proyectos registrados. Crea uno con “+ Nuevo proyecto”.
                         </div>
+                    <?php else : ?>
+                        <?php foreach ($proyectos as $proyecto) : ?>
+                            <div class="px-6 py-4 flex justify-between items-center hover:bg-neutral-50 transition">
+                                <div>
+                                    <p class="font-medium">
+                                        <?php echo htmlspecialchars((string) ($proyecto['nombre'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+                                    </p>
+                                    <p class="text-xs text-neutral-500">Proyecto estratégico</p>
+                                </div>
 
-                        <div class="flex items-center gap-3">
-                            <span class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">
-                                Activo
-                            </span>
-
-                            <a
-                                href="detalle-proyecto.php"
-                                class="text-sm text-brand-700 font-medium hover:underline"
-                            >
-                                Ver detalle
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- ITEM -->
-                    <div class="px-6 py-4 flex justify-between items-center hover:bg-neutral-50 transition">
-                        <div>
-                            <p class="font-medium">Análisis FODA Q2</p>
-                            <p class="text-xs text-neutral-500">Hace 2 días</p>
-                        </div>
-
-                        <div class="flex items-center gap-3">
-                            <span class="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">
-                                Borrador
-                            </span>
-
-                            <a
-                                href="detalle-proyecto.php"
-                                class="text-sm text-brand-700 font-medium hover:underline"
-                            >
-                                Ver detalle
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- ITEM -->
-                    <div class="px-6 py-4 flex justify-between items-center hover:bg-neutral-50 transition">
-                        <div>
-                            <p class="font-medium">Objetivos Estratégicos</p>
-                            <p class="text-xs text-neutral-500">Hace 1 semana</p>
-                        </div>
-
-                        <div class="flex items-center gap-3">
-                            <span class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
-                                Compartido
-                            </span>
-
-                            <a
-                                href="detalle-proyecto.php"
-                                class="text-sm text-brand-700 font-medium hover:underline"
-                            >
-                                Ver detalle
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- ITEM -->
-                    <div class="px-6 py-4 flex justify-between items-center hover:bg-neutral-50 transition">
-                        <div>
-                            <p class="font-medium">Análisis PEST 2026</p>
-                            <p class="text-xs text-neutral-500">Hace 3 días</p>
-                        </div>
-
-                        <div class="flex items-center gap-3">
-                            <span class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">
-                                Activo
-                            </span>
-
-                            <a
-                                href="detalle-proyecto.php"
-                                class="text-sm text-brand-700 font-medium hover:underline"
-                            >
-                                Ver detalle
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- ITEM -->
-                    <div class="px-6 py-4 flex justify-between items-center hover:bg-neutral-50 transition">
-                        <div>
-                            <p class="font-medium">5 Fuerzas de Porter</p>
-                            <p class="text-xs text-neutral-500">Hace 5 días</p>
-                        </div>
-
-                        <div class="flex items-center gap-3">
-                            <span class="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">
-                                Borrador
-                            </span>
-
-                            <a
-                                href="detalle-proyecto.php"
-                                class="text-sm text-brand-700 font-medium hover:underline"
-                            >
-                                Ver detalle
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- ITEM -->
-                    <div class="px-6 py-4 flex justify-between items-center hover:bg-neutral-50 transition">
-                        <div>
-                            <p class="font-medium">Plan de Acción CAME</p>
-                            <p class="text-xs text-neutral-500">Hace 1 semana</p>
-                        </div>
-
-                        <div class="flex items-center gap-3">
-                            <span class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
-                                Compartido
-                            </span>
-
-                            <a
-                                href="detalle-proyecto.php"
-                                class="text-sm text-brand-700 font-medium hover:underline"
-                            >
-                                Ver detalle
-                            </a>
-                        </div>
-                    </div>
+                                <div class="flex items-center gap-3">
+                                    <a
+                                        href="detalle-proyecto.php?id=<?php echo urlencode((string) ($proyecto['id_proyecto'] ?? '')); ?>"
+                                        class="text-sm text-brand-700 font-medium hover:underline"
+                                    >
+                                        Ver detalle
+                                    </a>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
 
                 </div>
             </div>

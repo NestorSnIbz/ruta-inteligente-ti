@@ -8,6 +8,15 @@
 </head>
 
 <body class="min-h-screen bg-neutral-50 text-neutral-900">
+<?php
+  $proyectoNombre = is_array($proyecto ?? null) ? (string) ($proyecto['nombre'] ?? '') : '';
+  $idProyecto = is_array($proyecto ?? null) ? (int) ($proyecto['id_proyecto'] ?? 0) : 0;
+  $misionTexto = is_array($mision ?? null) ? (string) ($mision['descripcion'] ?? '') : '';
+  $visionTexto = is_array($vision ?? null) ? (string) ($vision['descripcion'] ?? '') : '';
+  $valores = is_array($valores ?? null) ? $valores : [];
+  $edit = (string) ($edit ?? '');
+  $valorToEdit = is_array($valorToEdit ?? null) ? $valorToEdit : null;
+?>
 
 <div class="min-h-screen grid grid-cols-1 md:grid-cols-[16rem_1fr]">
 
@@ -57,109 +66,193 @@
 
         <div>
           <h1 class="text-2xl font-semibold tracking-tight">
-            Plan Estratégico 2026
+            <?php echo htmlspecialchars($proyectoNombre, ENT_QUOTES, 'UTF-8'); ?>
           </h1>
 
           <p class="text-sm text-neutral-600 mt-1">
-            Información general del proyecto estratégico.
+            Panel estratégico: Misión, Visión y Valores.
           </p>
         </div>
-
-        <span class="inline-flex items-center rounded-full bg-brand-50 px-4 py-1.5 text-sm font-medium text-brand-700">
-          Activo
-        </span>
+        <a href="proyectos.php" class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100">
+          Volver
+        </a>
 
       </div>
     </header>
 
     <!-- CONTENT -->
     <main class="flex-1 p-6">
+      <?php if (!empty($error)) : ?>
+        <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-800">
+          <?php echo htmlspecialchars((string) $error, ENT_QUOTES, 'UTF-8'); ?>
+        </div>
+      <?php endif; ?>
+      <?php if (!empty($success)) : ?>
+        <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-4 text-sm text-emerald-900">
+          <?php echo htmlspecialchars((string) $success, ENT_QUOTES, 'UTF-8'); ?>
+        </div>
+      <?php endif; ?>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        <!-- MISION -->
-        <div class="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
-          <div class="flex items-center justify-between">
+      <div class="space-y-6">
+        <section class="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
+          <div class="flex items-center justify-between gap-3">
             <h2 class="text-lg font-semibold">Misión</h2>
-
-            <button class="text-sm text-brand-700 hover:underline">
-              Editar
-            </button>
+            <?php if ($edit !== 'mision') : ?>
+              <a href="detalle-proyecto.php?id=<?php echo urlencode((string) $idProyecto); ?>&edit=mision" class="text-sm text-brand-700 font-medium hover:underline">
+                Editar
+              </a>
+            <?php endif; ?>
           </div>
 
-          <p class="mt-4 text-sm text-neutral-600 leading-relaxed">
-            Brindar soluciones tecnológicas innovadoras que optimicen los procesos empresariales.
-          </p>
-        </div>
+          <?php if ($edit === 'mision') : ?>
+            <form class="mt-4 space-y-3" method="post" action="detalle-proyecto.php">
+              <input type="hidden" name="action" value="save_mision" />
+              <input type="hidden" name="id_proyecto" value="<?php echo htmlspecialchars((string) $idProyecto, ENT_QUOTES, 'UTF-8'); ?>" />
+              <textarea
+                name="descripcion"
+                rows="5"
+                class="w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none resize-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
+                placeholder="Escribe la misión del proyecto..."
+                required
+              ><?php echo htmlspecialchars($misionTexto, ENT_QUOTES, 'UTF-8'); ?></textarea>
+              <div class="flex justify-end gap-3">
+                <a href="detalle-proyecto.php?id=<?php echo urlencode((string) $idProyecto); ?>" class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100">
+                  Cancelar
+                </a>
+                <button type="submit" class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+                  Guardar
+                </button>
+              </div>
+            </form>
+          <?php else : ?>
+            <?php if ($misionTexto === '') : ?>
+              <p class="mt-4 text-sm text-neutral-600">Aún no se registró la misión. Presiona “Editar” para agregarla.</p>
+            <?php else : ?>
+              <p class="mt-4 text-sm text-neutral-600 leading-relaxed">
+                <?php echo nl2br(htmlspecialchars($misionTexto, ENT_QUOTES, 'UTF-8')); ?>
+              </p>
+            <?php endif; ?>
+          <?php endif; ?>
+        </section>
 
-        <!-- VISION -->
-        <div class="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
-          <div class="flex items-center justify-between">
+        <section class="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
+          <div class="flex items-center justify-between gap-3">
             <h2 class="text-lg font-semibold">Visión</h2>
-
-            <button class="text-sm text-brand-700 hover:underline">
-              Editar
-            </button>
+            <?php if ($edit !== 'vision') : ?>
+              <a href="detalle-proyecto.php?id=<?php echo urlencode((string) $idProyecto); ?>&edit=vision" class="text-sm text-brand-700 font-medium hover:underline">
+                Editar
+              </a>
+            <?php endif; ?>
           </div>
 
-          <p class="mt-4 text-sm text-neutral-600 leading-relaxed">
-            Ser una empresa líder en transformación digital a nivel nacional.
-          </p>
-        </div>
+          <?php if ($edit === 'vision') : ?>
+            <form class="mt-4 space-y-3" method="post" action="detalle-proyecto.php">
+              <input type="hidden" name="action" value="save_vision" />
+              <input type="hidden" name="id_proyecto" value="<?php echo htmlspecialchars((string) $idProyecto, ENT_QUOTES, 'UTF-8'); ?>" />
+              <textarea
+                name="descripcion"
+                rows="5"
+                class="w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none resize-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
+                placeholder="Escribe la visión del proyecto..."
+                required
+              ><?php echo htmlspecialchars($visionTexto, ENT_QUOTES, 'UTF-8'); ?></textarea>
+              <div class="flex justify-end gap-3">
+                <a href="detalle-proyecto.php?id=<?php echo urlencode((string) $idProyecto); ?>" class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100">
+                  Cancelar
+                </a>
+                <button type="submit" class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+                  Guardar
+                </button>
+              </div>
+            </form>
+          <?php else : ?>
+            <?php if ($visionTexto === '') : ?>
+              <p class="mt-4 text-sm text-neutral-600">Aún no se registró la visión. Presiona “Editar” para agregarla.</p>
+            <?php else : ?>
+              <p class="mt-4 text-sm text-neutral-600 leading-relaxed">
+                <?php echo nl2br(htmlspecialchars($visionTexto, ENT_QUOTES, 'UTF-8')); ?>
+              </p>
+            <?php endif; ?>
+          <?php endif; ?>
+        </section>
 
-        <!-- VALORES -->
-        <div class="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
-          <div class="flex items-center justify-between">
+        <section class="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
+          <div class="flex items-center justify-between gap-3">
             <h2 class="text-lg font-semibold">Valores</h2>
-
-            <button class="text-sm text-brand-700 hover:underline">
-              Editar
-            </button>
+            <?php if ($edit !== 'valores') : ?>
+              <a href="detalle-proyecto.php?id=<?php echo urlencode((string) $idProyecto); ?>&edit=valores" class="text-sm text-brand-700 font-medium hover:underline">
+                Editar
+              </a>
+            <?php endif; ?>
           </div>
 
-          <ul class="mt-4 space-y-2 text-sm text-neutral-600">
-            <li>• Innovación</li>
-            <li>• Transparencia</li>
-            <li>• Compromiso</li>
-            <li>• Calidad</li>
-          </ul>
-        </div>
+          <?php if ($edit === 'valores') : ?>
+            <form class="mt-4 space-y-3" method="post" action="detalle-proyecto.php">
+              <input type="hidden" name="action" value="add_valor" />
+              <input type="hidden" name="id_proyecto" value="<?php echo htmlspecialchars((string) $idProyecto, ENT_QUOTES, 'UTF-8'); ?>" />
+              <input
+                name="descripcion"
+                type="text"
+                class="w-full rounded-xl border border-neutral-300 px-4 py-2.5 text-sm outline-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
+                placeholder="Agrega un valor (ej: Innovación)"
+                required
+              />
+              <div class="flex justify-end gap-3">
+                <a href="detalle-proyecto.php?id=<?php echo urlencode((string) $idProyecto); ?>" class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100">
+                  Cancelar
+                </a>
+                <button type="submit" class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+                  Agregar
+                </button>
+              </div>
+            </form>
+          <?php endif; ?>
 
-        <!-- OBJETIVOS -->
-        <div class="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
-          <div class="flex items-center justify-between">
-            <h2 class="text-lg font-semibold">Objetivos Estratégicos</h2>
+          <?php if ($edit === 'valor' && $valorToEdit) : ?>
+            <form class="mt-4 space-y-3" method="post" action="detalle-proyecto.php">
+              <input type="hidden" name="action" value="update_valor" />
+              <input type="hidden" name="id_proyecto" value="<?php echo htmlspecialchars((string) $idProyecto, ENT_QUOTES, 'UTF-8'); ?>" />
+              <input type="hidden" name="id_valor" value="<?php echo htmlspecialchars((string) ($valorToEdit['id_valor'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" />
+              <input
+                name="descripcion"
+                type="text"
+                value="<?php echo htmlspecialchars((string) ($valorToEdit['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                class="w-full rounded-xl border border-neutral-300 px-4 py-2.5 text-sm outline-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
+                required
+              />
+              <div class="flex justify-end gap-3">
+                <a href="detalle-proyecto.php?id=<?php echo urlencode((string) $idProyecto); ?>" class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100">
+                  Cancelar
+                </a>
+                <button type="submit" class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+                  Guardar
+                </button>
+              </div>
+            </form>
+          <?php endif; ?>
 
-            <button class="text-sm text-brand-700 hover:underline">
-              Editar
-            </button>
-          </div>
-
-          <ul class="mt-4 space-y-2 text-sm text-neutral-600">
-            <li>• Incrementar productividad empresarial.</li>
-            <li>• Expandir presencia digital.</li>
-            <li>• Optimizar recursos tecnológicos.</li>
-          </ul>
-        </div>
-
-        <!-- ANALISIS -->
-        <div class="lg:col-span-2 bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
-          <div class="flex items-center justify-between">
-            <h2 class="text-lg font-semibold">
-              Análisis Interno
-            </h2>
-
-            <button class="text-sm text-brand-700 hover:underline">
-              Editar
-            </button>
-          </div>
-
-          <p class="mt-4 text-sm text-neutral-600 leading-relaxed">
-            La empresa cuenta con fortalezas tecnológicas y capacidad de innovación,
-            aunque presenta limitaciones en automatización de procesos internos.
-          </p>
-        </div>
-
+          <?php if (empty($valores)) : ?>
+            <p class="mt-4 text-sm text-neutral-600">Aún no se registraron valores. Usa “Editar” para agregarlos.</p>
+          <?php else : ?>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+              <?php foreach ($valores as $valor) : ?>
+                <div class="rounded-xl border border-neutral-200 bg-white px-4 py-3">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="text-sm text-neutral-800">
+                      <?php echo htmlspecialchars((string) ($valor['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+                    </div>
+                    <a
+                      href="detalle-proyecto.php?id=<?php echo urlencode((string) $idProyecto); ?>&edit=valor&valor=<?php echo urlencode((string) ($valor['id_valor'] ?? '')); ?>"
+                      class="text-sm text-brand-700 font-medium hover:underline"
+                    >
+                      Editar
+                    </a>
+                  </div>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          <?php endif; ?>
+        </section>
       </div>
 
     </main>

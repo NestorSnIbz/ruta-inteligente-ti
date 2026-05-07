@@ -53,39 +53,6 @@ final class SupabaseClient
         ];
     }
 
-    public function signUpWithPassword(string $email, string $password): array
-    {
-        $response = $this->request(
-            'POST',
-            '/auth/v1/signup',
-            [],
-            [
-                'apikey' => $this->anonKey,
-                'Authorization' => 'Bearer ' . $this->anonKey,
-            ],
-            [
-                'email' => $email,
-                'password' => $password,
-            ]
-        );
-
-        if ($response['status'] >= 400) {
-            return [
-                'ok' => false,
-                'status' => $response['status'],
-                'error' => $response['data']['msg'] ?? $response['data']['error_description'] ?? 'No se pudo registrar el usuario.',
-                'data' => null,
-            ];
-        }
-
-        return [
-            'ok' => true,
-            'status' => $response['status'],
-            'error' => null,
-            'data' => $response['data'],
-        ];
-    }
-
     public function updatePassword(string $accessToken, string $newPassword): array
     {
         $response = $this->request(

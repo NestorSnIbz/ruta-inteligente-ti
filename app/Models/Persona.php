@@ -42,58 +42,6 @@ final class Persona
         ];
     }
 
-    public static function create(SupabaseClient $supabase, string $nombre, string $email): array
-    {
-        $serverKey = $supabase->getServiceRoleKey();
-        $apiKey = $serverKey ?: $supabase->getAnonKey();
-        $authBearer = $serverKey ?: $supabase->getAnonKey();
-
-        $response = $supabase->request(
-            'POST',
-            '/rest/v1/persona',
-            [],
-            [
-                'apikey' => $apiKey,
-                'Authorization' => 'Bearer ' . $authBearer,
-                'Prefer' => 'return=representation',
-            ],
-            [
-                'nombre' => $nombre,
-                'email' => $email,
-            ]
-        );
-
-        if ($response['status'] >= 400) {
-            return [
-                'ok' => false,
-                'error' => $response['data']['message'] ?? $response['data']['msg'] ?? 'No se pudo guardar la persona.',
-                'persona' => null,
-            ];
-        }
-
-        $row = (is_array($response['data']) && isset($response['data'][0]) && is_array($response['data'][0]))
-            ? $response['data'][0]
-            : null;
-
-        if ($row === null) {
-            return [
-                'ok' => true,
-                'error' => null,
-                'persona' => null,
-            ];
-        }
-
-        return [
-            'ok' => true,
-            'error' => null,
-            'persona' => [
-                'id_persona' => $row['id_persona'] ?? null,
-                'nombre' => $row['nombre'] ?? null,
-                'email' => $row['email'] ?? null,
-            ],
-        ];
-    }
-
     public static function updateNombreById(SupabaseClient $supabase, int $idPersona, string $nombre): array
     {
         $serverKey = $supabase->getServiceRoleKey();
