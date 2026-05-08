@@ -2,36 +2,76 @@
 
 final class Vision
 {
-    public static function findByProyecto(int $idProyecto): ?array
+    public static function findByProyecto(SupabaseClient $supabase, int $idProyecto): ?array
     {
-        $pdo = Database::pdo();
+        $response = $supabase->request(
+            'GET',
+            '/rest/v1/vision',
+            [
+                'select' => 'id_vision,id_proyecto,descripcion',
+                'id_proyecto' => 'eq.' . $idProyecto,
+                'limit' => 1,
+            ],
+            self::restHeaders($supabase)
+        );
 
-        $stmt = $pdo->prepare('SELECT id_vision, id_proyecto, descripcion FROM vision WHERE id_proyecto = :id_proyecto LIMIT 1');
-        $stmt->execute([':id_proyecto' => $idProyecto]);
-        $row = $stmt->fetch();
+        if ($response['status'] >= 400) {
+            throw new RuntimeException((string) ($response['data']['message'] ?? $response['data']['msg'] ?? 'No se pudo cargar la visión.'));
+        }
 
-        return is_array($row) ? $row : null;
+        if (!is_array($response['data']) || empty($response['data']) || !is_array($response['data'][0] ?? null)) {
+            return null;
+        }
+
+        return $response['data'][0];
     }
 
-    public static function save(int $idProyecto, string $descripcion): void
+    public static function save(SupabaseClient $supabase, int $idProyecto, string $descripcion): void
     {
-        $pdo = Database::pdo();
+        $existing = self::findByProyecto($supabase, $idProyecto);
+        $headers = self::restHeaders($supabase);
+        $headers['Prefer'] = 'return=representation';
 
-        $existing = self::findByProyecto($idProyecto);
         if ($existing) {
-            $stmt = $pdo->prepare('UPDATE vision SET descripcion = :descripcion WHERE id_proyecto = :id_proyecto');
-            $stmt->execute([
-                ':descripcion' => $descripcion,
-                ':id_proyecto' => $idProyecto,
-            ]);
+            $response = $supabase->request(
+                'PATCH',
+                '/rest/v1/vision',
+                ['id_proyecto' => 'eq.' . $idProyecto],
+                $headers,
+                ['descripcion' => $descripcion]
+            );
+
+            if ($response['status'] >= 400) {
+                throw new RuntimeException((string) ($response['data']['message'] ?? $response['data']['msg'] ?? 'No se pudo actualizar la visión.'));
+            }
             return;
         }
 
-        $stmt = $pdo->prepare('INSERT INTO vision (id_proyecto, descripcion) VALUES (:id_proyecto, :descripcion)');
-        $stmt->execute([
-            ':id_proyecto' => $idProyecto,
-            ':descripcion' => $descripcion,
-        ]);
+        $response = $supabase->request(
+            'POST',
+            '/rest/v1/vision',
+            [],
+            $headers,
+            [
+                'id_proyecto' => $idProyecto,
+                'descripcion' => $descripcion,
+            ]
+        );
+
+        if ($response['status'] >= 400) {
+            throw new RuntimeException((string) ($response['data']['message'] ?? $response['data']['msg'] ?? 'No se pudo guardar la visión.'));
+        }
+    }
+
+    private static function restHeaders(SupabaseClient $supabase): array
+    {
+        $serverKey = $supabase->getServiceRoleKey();
+        $apiKey = $serverKey ?: $supabase->getAnonKey();
+        $authBearer = $serverKey ?: $supabase->getAnonKey();
+
+        return [
+            'apikey' => $apiKey,
+            'Authorization' => 'Bearer ' . $authBearer,
+        ];
     }
 }
-

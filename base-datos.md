@@ -40,16 +40,9 @@ erDiagram
         TEXT descripcion
     }
 
-    UEN {
-        INT id_uen PK
-        INT id_proyecto FK
-        VARCHAR nombre
-    }
-
     OBJETIVO_ESTRATEGICO {
         INT id_objetivo_est PK
         INT id_proyecto FK
-        INT id_uen FK
         TEXT descripcion
     }
 
@@ -66,10 +59,8 @@ erDiagram
     PROYECTO ||--|| VISION : posee
     PROYECTO ||--|| MISION : posee
     PROYECTO ||--o{ VALOR : contiene
-    PROYECTO ||--|| UEN : tiene
 
     PROYECTO ||--o{ OBJETIVO_ESTRATEGICO : define
-    UEN ||--o{ OBJETIVO_ESTRATEGICO : agrupa
 
     OBJETIVO_ESTRATEGICO ||--o{ OBJETIVO_ESPECIFICO : contiene
 ```

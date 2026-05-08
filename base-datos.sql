@@ -8,7 +8,7 @@ CREATE TABLE proyecto (
     id_proyecto SERIAL PRIMARY KEY,
     nombre VARCHAR(150) NOT NULL,
     creador_id INT NOT NULL,
-    
+
     CONSTRAINT fk_proyecto_creador
         FOREIGN KEY (creador_id)
         REFERENCES persona(id_persona)
@@ -64,31 +64,14 @@ CREATE TABLE valor (
         ON DELETE CASCADE
 );
 
-CREATE TABLE uen (
-    id_uen SERIAL PRIMARY KEY,
-    id_proyecto INT UNIQUE NOT NULL,
-    nombre VARCHAR(150) NOT NULL,
-
-    CONSTRAINT fk_uen_proyecto
-        FOREIGN KEY (id_proyecto)
-        REFERENCES proyecto(id_proyecto)
-        ON DELETE CASCADE
-);
-
 CREATE TABLE objetivo_estrategico (
     id_objetivo_est SERIAL PRIMARY KEY,
     id_proyecto INT NOT NULL,
-    id_uen INT NOT NULL,
     descripcion TEXT NOT NULL,
 
     CONSTRAINT fk_obj_est_proyecto
         FOREIGN KEY (id_proyecto)
         REFERENCES proyecto(id_proyecto)
-        ON DELETE CASCADE,
-
-    CONSTRAINT fk_obj_est_uen
-        FOREIGN KEY (id_uen)
-        REFERENCES uen(id_uen)
         ON DELETE CASCADE
 );
 

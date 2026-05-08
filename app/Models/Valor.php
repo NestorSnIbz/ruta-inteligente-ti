@@ -2,52 +2,154 @@
 
 final class Valor
 {
-    public static function listByProyecto(int $idProyecto): array
+    public static function listByProyecto(SupabaseClient $supabase, int $idProyecto): array
     {
-        $pdo = Database::pdo();
+        $response = $supabase->request(
+            'GET',
+            '/rest/v1/valor',
+            [
+                'select' => 'id_valor,id_proyecto,descripcion',
+                'id_proyecto' => 'eq.' . $idProyecto,
+                'order' => 'id_valor.asc',
+            ],
+            self::restHeaders($supabase)
+        );
 
-        $stmt = $pdo->prepare('SELECT id_valor, id_proyecto, descripcion FROM valor WHERE id_proyecto = :id_proyecto ORDER BY id_valor ASC');
-        $stmt->execute([':id_proyecto' => $idProyecto]);
-        return $stmt->fetchAll();
+        if ($response['status'] >= 400) {
+            throw new RuntimeException((string) ($response['data']['message'] ?? $response['data']['msg'] ?? 'No se pudo listar valores.'));
+        }
+
+        return is_array($response['data']) ? $response['data'] : [];
     }
 
-    public static function findById(int $idValor, int $idProyecto): ?array
+    public static function findById(SupabaseClient $supabase, int $idValor, int $idProyecto): ?array
     {
-        $pdo = Database::pdo();
+        $response = $supabase->request(
+            'GET',
+            '/rest/v1/valor',
+            [
+                'select' => 'id_valor,id_proyecto,descripcion',
+                'id_valor' => 'eq.' . $idValor,
+                'id_proyecto' => 'eq.' . $idProyecto,
+                'limit' => 1,
+            ],
+            self::restHeaders($supabase)
+        );
 
-        $stmt = $pdo->prepare('SELECT id_valor, id_proyecto, descripcion FROM valor WHERE id_valor = :id_valor AND id_proyecto = :id_proyecto LIMIT 1');
-        $stmt->execute([
-            ':id_valor' => $idValor,
-            ':id_proyecto' => $idProyecto,
-        ]);
+        if ($response['status'] >= 400) {
+            throw new RuntimeException((string) ($response['data']['message'] ?? $response['data']['msg'] ?? 'No se pudo cargar el valor.'));
+        }
 
-        $row = $stmt->fetch();
-        return is_array($row) ? $row : null;
+        if (!is_array($response['data']) || empty($response['data']) || !is_array($response['data'][0] ?? null)) {
+            return null;
+        }
+
+        return $response['data'][0];
     }
 
-    public static function create(int $idProyecto, string $descripcion): void
+    public static function create(SupabaseClient $supabase, int $idProyecto, string $descripcion): void
     {
-        $pdo = Database::pdo();
+        $headers = self::restHeaders($supabase);
+        $headers['Prefer'] = 'return=representation';
 
-        $stmt = $pdo->prepare('INSERT INTO valor (id_proyecto, descripcion) VALUES (:id_proyecto, :descripcion)');
-        $stmt->execute([
-            ':id_proyecto' => $idProyecto,
-            ':descripcion' => $descripcion,
-        ]);
+        $response = $supabase->request(
+            'POST',
+            '/rest/v1/valor',
+            [],
+            $headers,
+            [
+                'id_proyecto' => $idProyecto,
+                'descripcion' => $descripcion,
+            ]
+        );
+
+        if ($response['status'] >= 400) {
+            throw new RuntimeException((string) ($response['data']['message'] ?? $response['data']['msg'] ?? 'No se pudo guardar el valor.'));
+        }
     }
 
-    public static function update(int $idValor, int $idProyecto, string $descripcion): bool
+    public static function update(SupabaseClient $supabase, int $idValor, int $idProyecto, string $descripcion): bool
     {
-        $pdo = Database::pdo();
+        $headers = self::restHeaders($supabase);
+        $headers['Prefer'] = 'return=representation';
 
-        $stmt = $pdo->prepare('UPDATE valor SET descripcion = :descripcion WHERE id_valor = :id_valor AND id_proyecto = :id_proyecto');
-        $stmt->execute([
-            ':descripcion' => $descripcion,
-            ':id_valor' => $idValor,
-            ':id_proyecto' => $idProyecto,
-        ]);
+        $response = $supabase->request(
+            'PATCH',
+            '/rest/v1/valor',
+            [
+                'id_valor' => 'eq.' . $idValor,
+                'id_proyecto' => 'eq.' . $idProyecto,
+            ],
+            $headers,
+            [
+                'descripcion' => $descripcion,
+            ]
+        );
 
-        return $stmt->rowCount() > 0;
+        if ($response['status'] >= 400) {
+            throw new RuntimeException((string) ($response['data']['message'] ?? $response['data']['msg'] ?? 'No se pudo actualizar el valor.'));
+        }
+
+        return is_array($response['data']) && !empty($response['data']);
+    }
+
+    public static function replaceAll(SupabaseClient $supabase, int $idProyecto, array $descripciones): void
+    {
+        $headers = self::restHeaders($supabase);
+        $headers['Prefer'] = 'return=minimal';
+
+        $delete = $supabase->request(
+            'DELETE',
+            '/rest/v1/valor',
+            ['id_proyecto' => 'eq.' . $idProyecto],
+            $headers
+        );
+
+        if ($delete['status'] >= 400) {
+            throw new RuntimeException((string) ($delete['data']['message'] ?? $delete['data']['msg'] ?? 'No se pudieron eliminar los valores anteriores.'));
+        }
+
+        $payload = [];
+        foreach ($descripciones as $descripcion) {
+            $descripcion = trim((string) $descripcion);
+            if ($descripcion === '') {
+                continue;
+            }
+            $payload[] = [
+                'id_proyecto' => $idProyecto,
+                'descripcion' => $descripcion,
+            ];
+        }
+
+        if (empty($payload)) {
+            return;
+        }
+
+        $insertHeaders = self::restHeaders($supabase);
+        $insertHeaders['Prefer'] = 'return=minimal';
+
+        $insert = $supabase->request(
+            'POST',
+            '/rest/v1/valor',
+            [],
+            $insertHeaders,
+            $payload
+        );
+
+        if ($insert['status'] >= 400) {
+            throw new RuntimeException((string) ($insert['data']['message'] ?? $insert['data']['msg'] ?? 'No se pudieron guardar los valores.'));
+        }
+    }
+
+    private static function restHeaders(SupabaseClient $supabase): array
+    {
+        $serverKey = $supabase->getServiceRoleKey();
+        $apiKey = $serverKey ?: $supabase->getAnonKey();
+        $authBearer = $serverKey ?: $supabase->getAnonKey();
+
+        return [
+            'apikey' => $apiKey,
+            'Authorization' => 'Bearer ' . $authBearer,
+        ];
     }
 }
-

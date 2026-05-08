@@ -116,7 +116,7 @@
 
                                 <div class="flex items-center gap-3">
                                     <a
-                                        href="detalle-proyecto.php?id=<?php echo urlencode((string) ($proyecto['id_proyecto'] ?? '')); ?>"
+                                        href="detalle-proyecto.php?t=<?php echo urlencode((string) ($proyecto['token'] ?? '')); ?>"
                                         class="text-sm text-brand-700 font-medium hover:underline"
                                     >
                                         Ver detalle
