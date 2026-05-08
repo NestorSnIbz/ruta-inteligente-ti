@@ -15,7 +15,7 @@ final class ProyectoController
             $proyectos = Proyecto::listByCreador((int) $authUser['id_persona']);
         } catch (Throwable $e) {
             $proyectos = [];
-            $error = $error ?: 'No se pudo cargar la lista de proyectos. Revisa DATABASE_URL.';
+            $error = $error ?: $this->friendlyDbError($e, 'No se pudo cargar la lista de proyectos.');
         }
 
         require dirname(__DIR__) . '/Views/proyectos/index.php';
@@ -47,7 +47,7 @@ final class ProyectoController
         try {
             $idProyecto = Proyecto::create((int) $authUser['id_persona'], $nombre);
         } catch (Throwable $e) {
-            Session::flash('error', 'No se pudo crear el proyecto. Revisa DATABASE_URL y la estructura de la base de datos.');
+            Session::flash('error', $this->friendlyDbError($e, 'No se pudo crear el proyecto.'));
             $this->redirect('/nuevo-proyecto.php');
         }
 
@@ -81,7 +81,7 @@ final class ProyectoController
             $vision = Vision::findByProyecto($idProyecto);
             $valores = Valor::listByProyecto($idProyecto);
         } catch (Throwable $e) {
-            Session::flash('error', 'No se pudo cargar el proyecto. Revisa DATABASE_URL.');
+            Session::flash('error', $this->friendlyDbError($e, 'No se pudo cargar el proyecto.'));
             $this->redirect('/proyectos.php');
         }
 
@@ -212,5 +212,40 @@ final class ProyectoController
         $location = $basePath === '' ? $path : ($basePath . $path);
         header('Location: ' . $location);
         exit;
+    }
+
+    private function friendlyDbError(Throwable $e, string $prefix): string
+    {
+        $message = $e->getMessage();
+        $lower = strtolower($message);
+
+        $hint = ' Revisa DATABASE_URL y que las tablas existan en Supabase.';
+
+        if (str_contains($lower, 'relation') && str_contains($lower, 'does not exist')) {
+            $hint = ' La base de datos no tiene las tablas (ejecuta base-datos.sql en el SQL Editor de Supabase).';
+        } elseif (str_contains($lower, 'could not translate host name') || str_contains($lower, 'name or service not known')) {
+            $hint = ' El host de DATABASE_URL parece incorrecto.';
+        } elseif (str_contains($lower, 'password authentication failed')) {
+            $hint = ' Usuario o contraseña de DATABASE_URL incorrectos.';
+        } elseif (str_contains($lower, 'no such file or directory') || str_contains($lower, 'connection refused')) {
+            $hint = ' No se pudo conectar a la base de datos.';
+        }
+
+        if ($this->isDebug()) {
+            return $prefix . $hint . ' Detalle: ' . $message;
+        }
+
+        return $prefix . $hint;
+    }
+
+    private function isDebug(): bool
+    {
+        $value = getenv('APP_DEBUG');
+        if ($value === false) {
+            return false;
+        }
+
+        $value = strtolower(trim((string) $value));
+        return in_array($value, ['1', 'true', 'yes', 'on'], true);
     }
 }
