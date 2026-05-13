@@ -21,6 +21,15 @@
   $objetivosError = (string) ($objetivosError ?? '');
   $oeEditToken = (string) ($oeEditToken ?? '');
   $oespEditToken = (string) ($oespEditToken ?? '');
+  $cadenaPreguntas = is_array($cadenaPreguntas ?? null) ? $cadenaPreguntas : [];
+  $cadenaRespuestas = is_array($cadenaRespuestas ?? null) ? $cadenaRespuestas : [];
+  $cadenaCalc = is_array($cadenaCalc ?? null) ? $cadenaCalc : [
+    'sum' => 0,
+    'valid' => 0,
+    'count' => 0,
+    'missing' => 0,
+    'potential' => null,
+  ];
 ?>
 
 <div class="min-h-screen grid grid-cols-1 md:grid-cols-[16rem_1fr]">
@@ -672,7 +681,183 @@
           <div class="flex items-center justify-between gap-3">
             <h2 class="text-lg font-semibold">Cadena de valor</h2>
           </div>
-          <p class="mt-4 text-sm text-neutral-600">Sección lista para incorporar la cadena de valor del proyecto.</p>
+          <div class="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+            <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div class="text-sm font-semibold text-neutral-900">Autodiagnóstico de la Cadena de Valor Interna</div>
+                <div class="mt-0.5 text-xs text-neutral-600">Selecciona una valoración (0–4) por fila. El resultado se calcula automáticamente.</div>
+              </div>
+              <div class="text-xs text-neutral-500">Opciones: 0 · 1 · 2 · 3 · 4</div>
+            </div>
+          </div>
+
+          <div class="mt-4 overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
+            <form id="cvi-form" class="min-w-[1060px]">
+              <table class="w-full border-separate border-spacing-0 text-sm">
+                <thead class="bg-neutral-100">
+                  <tr>
+                    <th colspan="2" class="border-b border-neutral-200 px-4 py-3 text-left font-semibold text-neutral-900">
+                      AUTODIAGNÓSTICO DE LA CADENA DE VALOR INTERNA
+                    </th>
+                    <th colspan="5" class="border-b border-l border-neutral-200 px-4 py-3 text-center font-semibold text-neutral-900">
+                      VALORACIÓN
+                    </th>
+                  </tr>
+                  <tr>
+                    <th class="w-14 border-b border-neutral-200 px-4 py-2 text-center text-xs font-semibold text-neutral-700">#</th>
+                    <th class="border-b border-l border-neutral-200 px-4 py-2 text-left text-xs font-semibold text-neutral-700">Pregunta</th>
+                    <th class="w-24 border-b border-l border-neutral-200 px-3 py-2 text-center text-xs font-semibold text-neutral-700">0</th>
+                    <th class="w-24 border-b border-l border-neutral-200 px-3 py-2 text-center text-xs font-semibold text-neutral-700">1</th>
+                    <th class="w-24 border-b border-l border-neutral-200 px-3 py-2 text-center text-xs font-semibold text-neutral-700">2</th>
+                    <th class="w-24 border-b border-l border-neutral-200 px-3 py-2 text-center text-xs font-semibold text-neutral-700">3</th>
+                    <th class="w-24 border-b border-l border-neutral-200 px-3 py-2 text-center text-xs font-semibold text-neutral-700">4</th>
+                  </tr>
+                </thead>
+                <tbody id="cvi-body" class="divide-y divide-neutral-200">
+                  <?php
+                    $fallback = [
+                      1 => 'La empresa tiene una política sistematizada de cero defectos en la producción de productos/servicios.',
+                      2 => 'La empresa emplea los medios productivos tecnológicamente más avanzados de su sector.',
+                      3 => 'La empresa dispone de un sistema de información y control de gestión eficiente y eficaz.',
+                      4 => 'Los medios técnicos y tecnológicos de la empresa están preparados para competir en un futuro a corto, medio y largo plazo.',
+                      5 => 'La empresa es un referente en su sector en I+D+i.',
+                      6 => 'La excelencia de los procedimientos de la empresa (ISO, etc.) son una principal fuente de ventaja competitiva.',
+                      7 => 'La empresa dispone de página web, y esta se emplea no sólo como escaparate virtual de productos/servicios, sino también para establecer relaciones con clientes y proveedores.',
+                      8 => 'Los productos/servicios que desarrolla nuestra empresa llevan incorporada una tecnología difícil de imitar.',
+                      9 => 'La empresa es referente en su sector en la optimización, en términos de coste, de su cadena de producción, siendo ésta una de sus principales ventajas competitivas.',
+                      10 => 'La informatización de la empresa es una fuente de ventaja competitiva clara respecto a sus competidores.',
+                      11 => 'Los canales de distribución de la empresa son una importante fuente de ventajas competitivas.',
+                      12 => 'Los productos/servicios de la empresa son altamente y diferencialmente valorados por el cliente respecto a nuestros competidores.',
+                      13 => 'La empresa dispone y ejecuta un sistemático plan de marketing y ventas.',
+                      14 => 'La empresa tiene optimizada su gestión financiera.',
+                      15 => 'La empresa busca continuamente mejorar la relación con sus clientes cortando los plazos de ejecución, personalizando la oferta o mejorando las condiciones de entrega, siempre partiendo de un plan previo.',
+                      16 => 'La empresa es referente en su sector en el lanzamiento de innovadores productos y servicios de éxito demostrado en el mercado.',
+                      17 => 'Los Recursos Humanos son especialmente responsables del éxito de la empresa, considerándolos incluso como el principal activo estratégico.',
+                      18 => 'Se tiene una plantilla altamente motivada, que conoce con claridad las metas, objetivos y estrategias de la organización.',
+                      19 => 'La empresa siempre trabaja conforme a una estrategia y objetivos claros.',
+                      20 => 'La gestión del circulante está optimizada.',
+                      21 => 'Se tiene definido claramente el posicionamiento estratégico de todos los productos de la empresa.',
+                      22 => 'Se dispone de una política de marca basada en la reputación que la empresa genera, en la gestión de relación con el cliente y en el posicionamiento estratégico previamente definido.',
+                      23 => 'La cartera de clientes de nuestra empresa está altamente fidelizada, ya que tenemos como principal propósito deleitarlos día a día.',
+                      24 => 'Nuestra política y equipo de ventas y marketing es una importante ventaja competitiva de nuestra empresa respecto al sector.',
+                      25 => 'El servicio al cliente que prestamos es una de nuestras principales ventajas competitivas respecto a nuestros competidores.',
+                    ];
+                    if (empty($cadenaPreguntas)) {
+                      $cadenaPreguntas = [];
+                      foreach ($fallback as $n => $t) {
+                        $cadenaPreguntas[] = ['id_pregunta' => (int) $n, 'numero' => (int) $n, 'texto' => (string) $t];
+                      }
+                    }
+                  ?>
+                  <?php foreach ($cadenaPreguntas as $q) : ?>
+                    <?php
+                      $qId = is_array($q) ? (int) ($q['id_pregunta'] ?? 0) : 0;
+                      $qNumber = is_array($q) ? (int) ($q['numero'] ?? 0) : 0;
+                      $qText = is_array($q) ? (string) ($q['texto'] ?? '') : '';
+                      $selected = array_key_exists($qId, $cadenaRespuestas) ? (int) $cadenaRespuestas[$qId] : null;
+                      if ($qId <= 0 || $qNumber <= 0 || $qText === '') {
+                        continue;
+                      }
+                    ?>
+                    <tr class="cvi-row" data-cvi-row="<?php echo (int) $qId; ?>" data-cvi-number="<?php echo (int) $qNumber; ?>">
+                      <td class="border-b border-neutral-200 px-4 py-3 text-center text-xs font-semibold text-neutral-700">
+                        <?php echo (int) $qNumber; ?>
+                      </td>
+                      <td class="border-b border-l border-neutral-200 px-4 py-3 text-sm text-neutral-800">
+                        <div class="flex items-start justify-between gap-3">
+                          <div class="leading-relaxed">
+                            <?php echo htmlspecialchars($qText, ENT_QUOTES, 'UTF-8'); ?>
+                          </div>
+                          <span data-cvi-ref class="hidden rounded-lg bg-red-50 px-2 py-1 text-xs font-semibold text-red-700">#¡REF!</span>
+                        </div>
+                      </td>
+                      <?php for ($v = 0; $v <= 4; $v++) : ?>
+                        <td class="border-b border-l border-neutral-200 px-3 py-2 text-center">
+                          <label class="cvi-cell flex h-12 w-full cursor-pointer items-center justify-center select-none">
+                            <input
+                              type="radio"
+                              name="cvi_q<?php echo (int) $qId; ?>"
+                              value="<?php echo (int) $v; ?>"
+                              class="sr-only"
+                              <?php echo ($selected !== null && (int) $selected === (int) $v) ? 'checked' : ''; ?>
+                            />
+                            <span class="cvi-cell-label inline-flex h-9 w-full max-w-[4.25rem] items-center justify-center rounded-xl border border-neutral-300 bg-white px-3 text-sm font-semibold text-neutral-700 transition">
+                              <?php echo (int) $v; ?>
+                            </span>
+                          </label>
+                        </td>
+                      <?php endfor; ?>
+                    </tr>
+                  <?php endforeach; ?>
+                </tbody>
+              </table>
+            </form>
+          </div>
+
+          <?php
+            $calcSum = (int) ($cadenaCalc['sum'] ?? 0);
+            $calcValid = (int) ($cadenaCalc['valid'] ?? 0);
+            $calcCount = (int) ($cadenaCalc['count'] ?? 0);
+            $calcPotential = $cadenaCalc['potential'] ?? null;
+            $calcPotentialText = '—';
+            $calcPotentialSub = '';
+            if ($calcPotential !== null && is_numeric($calcPotential)) {
+              $calcPotentialText = number_format((float) $calcPotential, 2, '.', '');
+              $calcPotentialSub = ((string) round(((float) $calcPotential) * 100)) . '%';
+            }
+          ?>
+          <div class="mt-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div class="text-sm font-semibold text-neutral-900">Resultado final</div>
+                <div class="mt-0.5 text-xs text-neutral-500">Fórmula: 1 - (Σ respuestas / 100)</div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button
+                  id="cvi-save"
+                  type="button"
+                  class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600/25"
+                >
+                  Guardar Evaluación
+                </button>
+              </div>
+            </div>
+            <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                <div class="text-xs font-medium text-neutral-600">Suma</div>
+                <div id="cvi-sum" class="mt-1 text-2xl font-semibold text-neutral-900"><?php echo (int) $calcSum; ?></div>
+              </div>
+              <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                <div class="text-xs font-medium text-neutral-600">Filas válidas</div>
+                <div id="cvi-valid" class="mt-1 text-2xl font-semibold text-neutral-900"><?php echo (int) $calcValid; ?>/<?php echo (int) $calcCount; ?></div>
+              </div>
+              <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                <div class="text-xs font-medium text-neutral-600">Potencial de mejora</div>
+                <div id="cvi-result" class="mt-1 text-2xl font-semibold text-brand-900"><?php echo htmlspecialchars($calcPotentialText, ENT_QUOTES, 'UTF-8'); ?></div>
+                <div id="cvi-result-sub" class="mt-1 text-xs text-neutral-500"><?php echo htmlspecialchars($calcPotentialSub, ENT_QUOTES, 'UTF-8'); ?></div>
+              </div>
+            </div>
+            <div class="mt-4 text-xs text-neutral-600">
+              POTENCIAL DE MEJORA DE LA CADENA DE VALOR INTERNA
+            </div>
+          </div>
+
+          <div id="cvi-toast" class="pointer-events-none fixed bottom-6 right-6 z-50 hidden w-full max-w-sm">
+            <div id="cvi-toast-card" class="pointer-events-auto rounded-2xl border border-neutral-200 bg-white p-4 shadow-lg">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <div id="cvi-toast-title" class="text-sm font-semibold text-neutral-900"></div>
+                  <div id="cvi-toast-msg" class="mt-1 text-sm text-neutral-700"></div>
+                </div>
+                <button id="cvi-toast-close" type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50">
+                  <span class="sr-only">Cerrar</span>
+                  <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section id="panel-bgg" class="project-panel hidden bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
@@ -1018,6 +1203,212 @@
   if (list) {
     list.querySelectorAll(".quitar-valor").forEach((btn) => {
       btn.addEventListener("click", () => btn.closest("div")?.remove());
+    });
+  }
+
+  const cviForm = document.getElementById("cvi-form");
+  const cviSumEl = document.getElementById("cvi-sum");
+  const cviValidEl = document.getElementById("cvi-valid");
+  const cviResultEl = document.getElementById("cvi-result");
+  const cviResultSubEl = document.getElementById("cvi-result-sub");
+  const cviSaveButton = document.getElementById("cvi-save");
+  const cviRows = Array.from(document.querySelectorAll("[data-cvi-row]"));
+  const cviToast = document.getElementById("cvi-toast");
+  const cviToastCard = document.getElementById("cvi-toast-card");
+  const cviToastTitle = document.getElementById("cvi-toast-title");
+  const cviToastMsg = document.getElementById("cvi-toast-msg");
+  const cviToastClose = document.getElementById("cvi-toast-close");
+  let cviToastTimer = null;
+  let cviValidationActive = false;
+  let cviDirty = false;
+  let cviSaving = false;
+  const cviAnswers = {};
+
+  function cviCloseToast() {
+    if (!cviToast) return;
+    cviToast.classList.add("hidden");
+    if (cviToastTimer) {
+      clearTimeout(cviToastTimer);
+      cviToastTimer = null;
+    }
+  }
+
+  function cviShowToast(type, title, message) {
+    if (!cviToast || !cviToastCard || !cviToastTitle || !cviToastMsg) return;
+    cviToastTitle.textContent = title || "";
+    cviToastMsg.textContent = message || "";
+    cviToastCard.className =
+      type === "success"
+        ? "pointer-events-auto rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-lg"
+        : "pointer-events-auto rounded-2xl border border-red-200 bg-red-50 p-4 shadow-lg";
+    cviToast.classList.remove("hidden");
+    if (cviToastTimer) clearTimeout(cviToastTimer);
+    cviToastTimer = setTimeout(() => cviCloseToast(), 3500);
+  }
+
+  if (cviToastClose) {
+    cviToastClose.addEventListener("click", () => cviCloseToast());
+  }
+
+  function cviUpdateRowStyles(row) {
+    const cells = Array.from(row.querySelectorAll(".cvi-cell"));
+    for (const cell of cells) {
+      const input = cell.querySelector("input[type='radio']");
+      const label = cell.querySelector(".cvi-cell-label");
+      const checked = input && input.checked;
+      cell.className = checked
+        ? "cvi-cell flex h-12 w-full cursor-pointer items-center justify-center select-none bg-brand-50"
+        : "cvi-cell flex h-12 w-full cursor-pointer items-center justify-center select-none hover:bg-neutral-50";
+      if (label) {
+        label.className = checked
+          ? "cvi-cell-label inline-flex h-9 w-full max-w-[4.25rem] items-center justify-center rounded-xl border border-brand-600 bg-brand-600 px-3 text-sm font-semibold text-white shadow-sm transition"
+          : "cvi-cell-label inline-flex h-9 w-full max-w-[4.25rem] items-center justify-center rounded-xl border border-neutral-300 bg-white px-3 text-sm font-semibold text-neutral-700 transition hover:border-brand-300";
+      }
+    }
+  }
+
+  function cviApplyCalc(calc) {
+    const sum = Number(calc && calc.sum !== undefined ? calc.sum : 0);
+    const valid = Number(calc && calc.valid !== undefined ? calc.valid : 0);
+    const count = Number(calc && calc.count !== undefined ? calc.count : cviRows.length);
+    const missing = Number(calc && calc.missing !== undefined ? calc.missing : Math.max(0, count - valid));
+    const potential = calc ? calc.potential : null;
+
+    if (cviSumEl) cviSumEl.textContent = String(sum);
+    if (cviValidEl) cviValidEl.textContent = `${valid}/${count}`;
+
+    if (missing > 0 || potential === null || potential === undefined) {
+      if (!cviValidationActive) {
+        if (cviResultEl) cviResultEl.textContent = "—";
+        if (cviResultSubEl) cviResultSubEl.textContent = "";
+        return;
+      }
+      if (cviResultEl) cviResultEl.textContent = "#¡REF!";
+      if (cviResultSubEl) cviResultSubEl.textContent = "";
+      return;
+    }
+
+    const p = Number(potential);
+    if (Number.isNaN(p)) {
+      if (cviResultEl) cviResultEl.textContent = "#¡REF!";
+      if (cviResultSubEl) cviResultSubEl.textContent = "";
+      return;
+    }
+
+    if (cviResultEl) cviResultEl.textContent = p.toFixed(2);
+    if (cviResultSubEl) cviResultSubEl.textContent = `${Math.round(p * 100)}%`;
+  }
+
+  function cviRecalculateFromDom() {
+    let sum = 0;
+    let valid = 0;
+    let hasInvalid = false;
+
+    for (const row of cviRows) {
+      const checked = row.querySelectorAll("input[type='radio']:checked");
+      const ref = row.querySelector("[data-cvi-ref]");
+      cviUpdateRowStyles(row);
+
+      if (checked.length === 1) {
+        valid += 1;
+        sum += Number(checked[0].value || 0);
+        if (ref) ref.classList.add("hidden");
+        row.className = "cvi-row";
+        cviAnswers[Number(row.dataset.cviRow || 0)] = Number(checked[0].value || 0);
+      } else {
+        hasInvalid = true;
+        if (cviValidationActive && ref) ref.classList.remove("hidden");
+        if (ref && !cviValidationActive) ref.classList.add("hidden");
+        row.className = cviValidationActive ? "cvi-row bg-red-50/40" : "cvi-row";
+        delete cviAnswers[Number(row.dataset.cviRow || 0)];
+      }
+    }
+
+    cviApplyCalc({
+      sum,
+      valid,
+      count: cviRows.length,
+      missing: hasInvalid ? Math.max(0, cviRows.length - valid) : 0,
+      potential: hasInvalid ? null : (1 - (sum / 100)),
+    });
+  }
+
+  async function cviSaveAll() {
+    if (cviSaving) return;
+    cviValidationActive = true;
+    cviRecalculateFromDom();
+
+    if (Object.keys(cviAnswers).length !== cviRows.length) {
+      cviShowToast("error", "Faltan respuestas", "Completa todas las preguntas antes de guardar.");
+      return;
+    }
+
+    cviSaving = true;
+    if (cviSaveButton) {
+      cviSaveButton.disabled = true;
+      cviSaveButton.className = "inline-flex items-center justify-center rounded-xl bg-brand-600/60 px-4 py-2 text-sm font-semibold text-white shadow-sm";
+      cviSaveButton.textContent = "Guardando…";
+    }
+
+    try {
+      const formData = new FormData();
+      formData.set("action", "save_cadena_valor_batch");
+      formData.set("t", projectToken || "");
+      formData.set("answers", JSON.stringify(cviAnswers));
+
+      const res = await fetch("detalle-proyecto.php", {
+        method: "POST",
+        body: formData,
+        headers: { Accept: "application/json" },
+      });
+
+      const json = await res.json();
+      if (!json || typeof json !== "object" || !json.ok) {
+        cviShowToast("error", "No se pudo guardar", String((json && json.error) || "Error al guardar la evaluación."));
+        return;
+      }
+
+      if (json.calc) {
+        cviApplyCalc(json.calc);
+      }
+      cviDirty = false;
+      cviShowToast("success", "Guardado", "Evaluación guardada correctamente.");
+    } catch (e) {
+      cviShowToast("error", "No se pudo guardar", "Error al guardar la evaluación.");
+    } finally {
+      cviSaving = false;
+      if (cviSaveButton) {
+        cviSaveButton.disabled = false;
+        cviSaveButton.className = "inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600/25";
+        cviSaveButton.textContent = "Guardar Evaluación";
+      }
+    }
+  }
+
+  if (cviForm) {
+    cviForm.addEventListener("change", (e) => {
+      const target = e.target;
+      if (!(target instanceof HTMLInputElement)) return;
+      if (target.type !== "radio") return;
+
+      const row = target.closest("[data-cvi-row]");
+      if (!row) return;
+
+      cviDirty = true;
+      cviRecalculateFromDom();
+      if (!cviValidationActive) {
+        const ref = row.querySelector("[data-cvi-ref]");
+        if (ref) ref.classList.add("hidden");
+        row.className = "cvi-row";
+      }
+    });
+
+    cviRecalculateFromDom();
+  }
+
+  if (cviSaveButton) {
+    cviSaveButton.addEventListener("click", () => {
+      cviSaveAll();
     });
   }
 </script>
