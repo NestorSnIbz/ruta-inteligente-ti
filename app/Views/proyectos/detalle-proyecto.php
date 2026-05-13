@@ -253,111 +253,85 @@
 
         <section id="panel-mision" class="project-panel hidden bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
           <div class="flex items-center justify-between gap-3">
-            <h2 class="text-lg font-semibold">Misión</h2>
-            <a
-              data-js-edit-block="mision"
-              href="detalle-proyecto.php?t=<?php echo urlencode((string) $projectToken); ?>&edit=mision"
-              class="<?php echo $edit === 'mision' ? 'hidden' : 'inline-flex'; ?> items-center justify-center rounded-xl border border-neutral-200 bg-white p-2 text-brand-700 hover:bg-brand-50"
-              aria-label="Editar misión"
-              title="Editar"
-            >
-                <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 4h-4a2 2 0 00-2 2v4m14-4l-9 9-4 1 1-4 9-9 3 3z" />
-                </svg>
-            </a>
+            <div>
+              <h2 class="text-lg font-semibold">Misión</h2>
+              <p class="mt-1 text-sm text-neutral-600">
+                Define la razón de ser del proyecto.
+              </p>
+            </div>
           </div>
 
-          <div data-block="mision">
-            <div data-block-view class="<?php echo $edit === 'mision' ? 'hidden' : 'block'; ?>">
-              <?php if ($misionTexto === '') : ?>
-                <p class="mt-4 text-sm text-neutral-600">Aún no se registró la misión. Presiona el lápiz para agregarla.</p>
-              <?php else : ?>
-                <p class="mt-4 text-sm text-neutral-600 leading-relaxed">
-                  <?php echo nl2br(htmlspecialchars($misionTexto, ENT_QUOTES, 'UTF-8')); ?>
-                </p>
-              <?php endif; ?>
-            </div>
+          <div class="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+            <form class="space-y-4" method="post" action="detalle-proyecto.php">
+              <input type="hidden" name="action" value="save_mision" />
+              <input type="hidden" name="t" value="<?php echo htmlspecialchars((string) $projectToken, ENT_QUOTES, 'UTF-8'); ?>" />
 
-            <div data-block-form class="<?php echo $edit === 'mision' ? 'block' : 'hidden'; ?>">
-              <form class="mt-4 space-y-3" method="post" action="detalle-proyecto.php">
-                <input type="hidden" name="action" value="save_mision" />
-                <input type="hidden" name="t" value="<?php echo htmlspecialchars((string) $projectToken, ENT_QUOTES, 'UTF-8'); ?>" />
-                <textarea
-                  name="descripcion"
-                  rows="7"
-                  class="w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none resize-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
-                  placeholder="Escribe la misión del proyecto..."
-                  required
-                ><?php echo htmlspecialchars($misionTexto, ENT_QUOTES, 'UTF-8'); ?></textarea>
-                <div class="flex justify-end gap-3">
-                  <a
-                    data-js-cancel-block="mision"
-                    href="detalle-proyecto.php?t=<?php echo urlencode((string) $projectToken); ?>&section=mision"
-                    class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100"
-                  >
-                    Cancelar
-                  </a>
-                  <button type="submit" class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
-                    Guardar
-                  </button>
-                </div>
-              </form>
-            </div>
+              <textarea
+                name="descripcion"
+                rows="10"
+                class="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-4 text-sm leading-relaxed outline-none resize-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
+                placeholder="Escribe la misión del proyecto..."
+                required
+              ><?php echo htmlspecialchars($misionTexto, ENT_QUOTES, 'UTF-8'); ?></textarea>
+
+              <div class="flex justify-end gap-3">
+                <button
+                  type="reset"
+                  class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100"
+                >
+                  Limpiar
+                </button>
+
+                <button
+                  type="submit"
+                  class="rounded-xl bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+                >
+                  Guardar cambios
+                </button>
+              </div>
+            </form>
           </div>
         </section>
 
         <section id="panel-vision" class="project-panel hidden bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
           <div class="flex items-center justify-between gap-3">
-            <h2 class="text-lg font-semibold">Visión</h2>
-            <a
-              data-js-edit-block="vision"
-              href="detalle-proyecto.php?t=<?php echo urlencode((string) $projectToken); ?>&edit=vision"
-              class="<?php echo $edit === 'vision' ? 'hidden' : 'inline-flex'; ?> items-center justify-center rounded-xl border border-neutral-200 bg-white p-2 text-brand-700 hover:bg-brand-50"
-              aria-label="Editar visión"
-              title="Editar"
-            >
-                <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 4h-4a2 2 0 00-2 2v4m14-4l-9 9-4 1 1-4 9-9 3 3z" />
-                </svg>
-            </a>
+            <div>
+              <h2 class="text-lg font-semibold">Visión</h2>
+              <p class="mt-1 text-sm text-neutral-600">
+                Define hacia dónde se dirige el proyecto.
+              </p>
+            </div>
           </div>
 
-          <div data-block="vision">
-            <div data-block-view class="<?php echo $edit === 'vision' ? 'hidden' : 'block'; ?>">
-              <?php if ($visionTexto === '') : ?>
-                <p class="mt-4 text-sm text-neutral-600">Aún no se registró la visión. Presiona el lápiz para agregarla.</p>
-              <?php else : ?>
-                <p class="mt-4 text-sm text-neutral-600 leading-relaxed">
-                  <?php echo nl2br(htmlspecialchars($visionTexto, ENT_QUOTES, 'UTF-8')); ?>
-                </p>
-              <?php endif; ?>
-            </div>
+          <div class="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+            <form class="space-y-4" method="post" action="detalle-proyecto.php">
+              <input type="hidden" name="action" value="save_vision" />
+              <input type="hidden" name="t" value="<?php echo htmlspecialchars((string) $projectToken, ENT_QUOTES, 'UTF-8'); ?>" />
 
-            <div data-block-form class="<?php echo $edit === 'vision' ? 'block' : 'hidden'; ?>">
-              <form class="mt-4 space-y-3" method="post" action="detalle-proyecto.php">
-                <input type="hidden" name="action" value="save_vision" />
-                <input type="hidden" name="t" value="<?php echo htmlspecialchars((string) $projectToken, ENT_QUOTES, 'UTF-8'); ?>" />
-                <textarea
-                  name="descripcion"
-                  rows="7"
-                  class="w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none resize-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
-                  placeholder="Escribe la visión del proyecto..."
-                  required
-                ><?php echo htmlspecialchars($visionTexto, ENT_QUOTES, 'UTF-8'); ?></textarea>
-                <div class="flex justify-end gap-3">
-                  <a
-                    data-js-cancel-block="vision"
-                    href="detalle-proyecto.php?t=<?php echo urlencode((string) $projectToken); ?>&section=vision"
-                    class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100"
-                  >
-                    Cancelar
-                  </a>
-                  <button type="submit" class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
-                    Guardar
-                  </button>
-                </div>
-              </form>
-            </div>
+              <textarea
+                name="descripcion"
+                rows="10"
+                class="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-4 text-sm leading-relaxed outline-none resize-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
+                placeholder="Escribe la visión del proyecto..."
+                required
+              ><?php echo htmlspecialchars($visionTexto, ENT_QUOTES, 'UTF-8'); ?></textarea>
+
+              <div class="flex justify-end gap-3">
+                <button
+                  type="reset"
+                  class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100"
+                >
+                  Limpiar
+                </button>
+
+                <button
+                  type="submit"
+                  class="rounded-xl bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+                >
+                  Guardar cambios
+                </button>
+              </div>
+            </form>
           </div>
         </section>
 
@@ -783,7 +757,7 @@
 
   setActiveProjectPanel(initialPanel, { updateUrl: false });
 
-  function openBlockEdit(block) {
+  /*function openBlockEdit(block) {
     const container = document.querySelector(`[data-block="${block}"]`);
     if (!container) return;
     const view = container.querySelector("[data-block-view]");
@@ -809,7 +783,7 @@
 
     const editButton = document.querySelector(`[data-js-edit-block="${block}"]`);
     if (editButton) editButton.classList.remove("hidden");
-  }
+  }*/ 
 
   function openValoresEdit() {
     const editor = document.getElementById("valores-editor");
@@ -853,7 +827,7 @@
     if (view) view.classList.remove("hidden");
   }
 
-  document.querySelectorAll("[data-js-edit-block]").forEach((el) => {
+  /*document.querySelectorAll("[data-js-edit-block]").forEach((el) => {
     el.addEventListener("click", (e) => {
       e.preventDefault();
       const block = el.getAttribute("data-js-edit-block");
@@ -870,7 +844,7 @@
       if (!block) return;
       closeBlockEdit(block);
     });
-  });
+  });*/
 
   const valoresEditButton = document.querySelector("[data-js-edit-valores]");
   if (valoresEditButton) {
@@ -949,9 +923,9 @@
     });
   });
 
-  if (editParam === "mision" || editParam === "vision") {
+  /*if (editParam === "mision" || editParam === "vision") {
     openBlockEdit(editParam);
-  }
+  }*/
   if (editParam === "valores") {
     openValoresEdit();
   }
