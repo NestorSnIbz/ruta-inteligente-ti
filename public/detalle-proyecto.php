@@ -9,6 +9,7 @@ require __DIR__ . '/../app/Models/Vision.php';
 require __DIR__ . '/../app/Models/Valor.php';
 require __DIR__ . '/../app/Models/ObjetivoEstrategico.php';
 require __DIR__ . '/../app/Models/ObjetivoEspecifico.php';
+require __DIR__ . '/../app/Models/CadenaValor.php';
 require __DIR__ . '/../app/Controllers/AuthController.php';
 require __DIR__ . '/../app/Controllers/ProyectoController.php';
 
@@ -48,6 +49,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($action === 'delete_obj_esp') {
         $controller->deleteObjetivoEspecifico();
+    }
+    if ($action === 'save_cadena_valor') {
+        $controller->saveCadenaValor();
+    }
+    if ($action === 'save_cadena_valor_batch') {
+        $controller->saveCadenaValorBatch();
     }
 
     header('Location: proyectos.php');

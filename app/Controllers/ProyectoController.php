@@ -117,6 +117,23 @@ final class ProyectoController
             $objetivosError = $this->isDebug() ? ('No se pudieron cargar los objetivos. Detalle: ' . $e->getMessage()) : 'No se pudieron cargar los objetivos.';
         }
 
+        $cadenaPreguntas = [];
+        $cadenaRespuestas = [];
+        $cadenaCalc = [
+            'sum' => 0,
+            'valid' => 0,
+            'count' => 0,
+            'missing' => 0,
+            'potential' => null,
+        ];
+        try {
+            CadenaValor::ensureSeeded($supabase);
+            $cadenaPreguntas = CadenaValor::listPreguntas($supabase);
+            $cadenaRespuestas = CadenaValor::listRespuestasByProyecto($supabase, $idProyecto);
+            $cadenaCalc = CadenaValor::compute($cadenaPreguntas, $cadenaRespuestas);
+        } catch (Throwable $e) {
+        }
+
         if ($token === '') {
             $token = $this->issueProjectToken($idProyecto);
             $query = [];
@@ -142,6 +159,180 @@ final class ProyectoController
         $oespEditToken = trim((string) ($_GET['oesp_edit'] ?? ''));
 
         require dirname(__DIR__) . '/Views/proyectos/detalle-proyecto.php';
+    }
+
+    public function saveCadenaValor(): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $idPregunta = (int) ($_POST['id_pregunta'] ?? 0);
+        $valor = (int) ($_POST['valor'] ?? -1);
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($idProyecto <= 0) {
+            echo json_encode(['ok' => false, 'error' => 'Proyecto inválido.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        if ($idPregunta <= 0 || $valor < 0 || $valor > 4) {
+            echo json_encode(['ok' => false, 'error' => 'Datos inválidos.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        try {
+            $supabase = new SupabaseClient();
+            $proyecto = Proyecto::findOwnedById($supabase, $idProyecto, (int) $authUser['id_persona']);
+            if ($proyecto === null) {
+                echo json_encode(['ok' => false, 'error' => 'No tienes acceso a este proyecto.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            CadenaValor::ensureSeeded($supabase);
+            if (!CadenaValor::existsPregunta($supabase, $idPregunta)) {
+                echo json_encode(['ok' => false, 'error' => 'Pregunta inválida.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $ok = CadenaValor::upsertRespuesta($supabase, $idProyecto, $idPregunta, $valor);
+            if (!$ok) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudo guardar la respuesta.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $preguntas = CadenaValor::listPreguntas($supabase);
+            $respuestas = CadenaValor::listRespuestasByProyecto($supabase, $idProyecto);
+            $calc = CadenaValor::compute($preguntas, $respuestas);
+
+            if ($calc['potential'] !== null) {
+                CadenaValor::upsertResultado($supabase, $idProyecto, (int) $calc['sum'], (float) $calc['potential']);
+            }
+
+            echo json_encode(
+                [
+                    'ok' => true,
+                    'calc' => $calc,
+                    'updated_at' => gmdate('c'),
+                ],
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            );
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['ok' => false, 'error' => 'Error al guardar.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+    }
+
+    public function saveCadenaValorBatch(): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $answersRaw = (string) ($_POST['answers'] ?? '');
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($idProyecto <= 0) {
+            echo json_encode(['ok' => false, 'error' => 'Proyecto inválido.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $decoded = json_decode($answersRaw, true);
+        if (!is_array($decoded)) {
+            echo json_encode(['ok' => false, 'error' => 'Respuestas inválidas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $answers = [];
+        foreach ($decoded as $qid => $value) {
+            $qid = (int) $qid;
+            $value = (int) $value;
+            if ($qid <= 0 || $value < 0 || $value > 4) {
+                echo json_encode(['ok' => false, 'error' => 'Respuestas inválidas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+            $answers[$qid] = $value;
+        }
+
+        try {
+            $supabase = new SupabaseClient();
+            $proyecto = Proyecto::findOwnedById($supabase, $idProyecto, (int) $authUser['id_persona']);
+            if ($proyecto === null) {
+                echo json_encode(['ok' => false, 'error' => 'No tienes acceso a este proyecto.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            CadenaValor::ensureSeeded($supabase);
+            $preguntas = CadenaValor::listPreguntas($supabase);
+            if (empty($preguntas)) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudieron cargar las preguntas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $ids = [];
+            foreach ($preguntas as $p) {
+                if (!is_array($p)) {
+                    continue;
+                }
+                $id = (int) ($p['id_pregunta'] ?? 0);
+                if ($id > 0) {
+                    $ids[$id] = true;
+                }
+            }
+
+            $count = count($ids);
+            if ($count <= 0) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudieron cargar las preguntas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            if (count($answers) !== $count) {
+                echo json_encode(['ok' => false, 'error' => 'Debes responder todas las preguntas antes de guardar.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $sum = 0;
+            foreach ($ids as $qid => $_) {
+                if (!array_key_exists($qid, $answers)) {
+                    echo json_encode(['ok' => false, 'error' => 'Debes responder todas las preguntas antes de guardar.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    exit;
+                }
+                $sum += (int) $answers[$qid];
+            }
+
+            $ok = CadenaValor::upsertRespuestasBatch($supabase, $idProyecto, $answers);
+            if (!$ok) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudo guardar la evaluación.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $potential = 1 - ($sum / 100);
+            CadenaValor::upsertResultado($supabase, $idProyecto, (int) $sum, (float) $potential);
+
+            echo json_encode(
+                [
+                    'ok' => true,
+                    'calc' => [
+                        'sum' => (int) $sum,
+                        'valid' => (int) $count,
+                        'count' => (int) $count,
+                        'missing' => 0,
+                        'potential' => (float) $potential,
+                    ],
+                    'updated_at' => gmdate('c'),
+                ],
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            );
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['ok' => false, 'error' => 'Error al guardar la evaluación.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
     }
 
     public function saveMision(): void

@@ -85,3 +85,72 @@ CREATE TABLE objetivo_especifico (
         REFERENCES objetivo_estrategico(id_objetivo_est)
         ON DELETE CASCADE
 );
+
+CREATE TABLE cadena_valor_pregunta (
+    id_pregunta SERIAL PRIMARY KEY,
+    numero INT UNIQUE NOT NULL,
+    texto TEXT NOT NULL
+);
+
+CREATE TABLE cadena_valor_respuesta (
+    id_respuesta SERIAL PRIMARY KEY,
+    id_proyecto INT NOT NULL,
+    id_pregunta INT NOT NULL,
+    valor INT NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT chk_cvi_valor
+        CHECK (valor >= 0 AND valor <= 4),
+
+    CONSTRAINT uq_cvi_proyecto_pregunta
+        UNIQUE (id_proyecto, id_pregunta),
+
+    CONSTRAINT fk_cvi_resp_proyecto
+        FOREIGN KEY (id_proyecto)
+        REFERENCES proyecto(id_proyecto)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_cvi_resp_pregunta
+        FOREIGN KEY (id_pregunta)
+        REFERENCES cadena_valor_pregunta(id_pregunta)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE cadena_valor_resultado (
+    id_proyecto INT PRIMARY KEY,
+    suma INT NOT NULL,
+    potencial NUMERIC(6,4) NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT fk_cvi_res_proyecto
+        FOREIGN KEY (id_proyecto)
+        REFERENCES proyecto(id_proyecto)
+        ON DELETE CASCADE
+);
+
+INSERT INTO cadena_valor_pregunta (numero, texto) VALUES
+(1, 'La empresa tiene una política sistematizada de cero defectos en la producción de productos/servicios.'),
+(2, 'La empresa emplea los medios productivos tecnológicamente más avanzados de su sector.'),
+(3, 'La empresa dispone de un sistema de información y control de gestión eficiente y eficaz.'),
+(4, 'Los medios técnicos y tecnológicos de la empresa están preparados para competir en un futuro a corto, medio y largo plazo.'),
+(5, 'La empresa es un referente en su sector en I+D+i.'),
+(6, 'La excelencia de los procedimientos de la empresa (ISO, etc.) son una principal fuente de ventaja competitiva.'),
+(7, 'La empresa dispone de página web, y esta se emplea no sólo como escaparate virtual de productos/servicios, sino también para establecer relaciones con clientes y proveedores.'),
+(8, 'Los productos/servicios que desarrolla nuestra empresa llevan incorporada una tecnología difícil de imitar.'),
+(9, 'La empresa es referente en su sector en la optimización, en términos de coste, de su cadena de producción, siendo ésta una de sus principales ventajas competitivas.'),
+(10, 'La informatización de la empresa es una fuente de ventaja competitiva clara respecto a sus competidores.'),
+(11, 'Los canales de distribución de la empresa son una importante fuente de ventajas competitivas.'),
+(12, 'Los productos/servicios de la empresa son altamente y diferencialmente valorados por el cliente respecto a nuestros competidores.'),
+(13, 'La empresa dispone y ejecuta un sistemático plan de marketing y ventas.'),
+(14, 'La empresa tiene optimizada su gestión financiera.'),
+(15, 'La empresa busca continuamente mejorar la relación con sus clientes cortando los plazos de ejecución, personalizando la oferta o mejorando las condiciones de entrega, siempre partiendo de un plan previo.'),
+(16, 'La empresa es referente en su sector en el lanzamiento de innovadores productos y servicios de éxito demostrado en el mercado.'),
+(17, 'Los Recursos Humanos son especialmente responsables del éxito de la empresa, considerándolos incluso como el principal activo estratégico.'),
+(18, 'Se tiene una plantilla altamente motivada, que conoce con claridad las metas, objetivos y estrategias de la organización.'),
+(19, 'La empresa siempre trabaja conforme a una estrategia y objetivos claros.'),
+(20, 'La gestión del circulante está optimizada.'),
+(21, 'Se tiene definido claramente el posicionamiento estratégico de todos los productos de la empresa.'),
+(22, 'Se dispone de una política de marca basada en la reputación que la empresa genera, en la gestión de relación con el cliente y en el posicionamiento estratégico previamente definido.'),
+(23, 'La cartera de clientes de nuestra empresa está altamente fidelizada, ya que tenemos como principal propósito deleitarlos día a día.'),
+(24, 'Nuestra política y equipo de ventas y marketing es una importante ventaja competitiva de nuestra empresa respecto al sector.'),
+(25, 'El servicio al cliente que prestamos es una de nuestras principales ventajas competitivas respecto a nuestros competidores.');
