@@ -54,6 +54,57 @@ final class Proyecto
         return is_array($response['data']) ? $response['data'] : [];
     }
 
+    public static function listByIds(SupabaseClient $supabase, array $ids): array
+    {
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+        $ids = array_filter($ids, fn ($v) => $v > 0);
+        if (empty($ids)) {
+            return [];
+        }
+
+        $response = $supabase->request(
+            'GET',
+            '/rest/v1/proyecto',
+            [
+                'select' => 'id_proyecto,nombre,creador_id',
+                'id_proyecto' => 'in.(' . implode(',', $ids) . ')',
+                'order' => 'id_proyecto.desc',
+                'limit' => 200,
+            ],
+            self::restHeaders($supabase)
+        );
+
+        if ($response['status'] >= 400) {
+            throw new RuntimeException((string) ($response['data']['message'] ?? $response['data']['msg'] ?? 'No se pudo listar proyectos.'));
+        }
+
+        return is_array($response['data']) ? $response['data'] : [];
+    }
+
+    public static function findById(SupabaseClient $supabase, int $idProyecto): ?array
+    {
+        $response = $supabase->request(
+            'GET',
+            '/rest/v1/proyecto',
+            [
+                'select' => 'id_proyecto,nombre,creador_id',
+                'id_proyecto' => 'eq.' . $idProyecto,
+                'limit' => 1,
+            ],
+            self::restHeaders($supabase)
+        );
+
+        if ($response['status'] >= 400) {
+            throw new RuntimeException((string) ($response['data']['message'] ?? $response['data']['msg'] ?? 'No se pudo cargar el proyecto.'));
+        }
+
+        if (!is_array($response['data']) || empty($response['data']) || !is_array($response['data'][0] ?? null)) {
+            return null;
+        }
+
+        return $response['data'][0];
+    }
+
     public static function findOwnedById(SupabaseClient $supabase, int $idProyecto, int $creadorId): ?array
     {
         $response = $supabase->request(

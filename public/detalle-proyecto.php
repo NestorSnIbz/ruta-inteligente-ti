@@ -4,12 +4,14 @@ require __DIR__ . '/../app/Core/Session.php';
 require __DIR__ . '/../app/Services/SupabaseClient.php';
 require __DIR__ . '/../app/Models/Persona.php';
 require __DIR__ . '/../app/Models/Proyecto.php';
+require __DIR__ . '/../app/Models/ProyectoMiembro.php';
 require __DIR__ . '/../app/Models/Mision.php';
 require __DIR__ . '/../app/Models/Vision.php';
 require __DIR__ . '/../app/Models/Valor.php';
 require __DIR__ . '/../app/Models/ObjetivoEstrategico.php';
 require __DIR__ . '/../app/Models/ObjetivoEspecifico.php';
 require __DIR__ . '/../app/Models/CadenaValor.php';
+require __DIR__ . '/../app/Models/Foda.php';
 require __DIR__ . '/../app/Controllers/AuthController.php';
 require __DIR__ . '/../app/Controllers/ProyectoController.php';
 
@@ -55,6 +57,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($action === 'save_cadena_valor_batch') {
         $controller->saveCadenaValorBatch();
+    }
+    if ($action === 'save_foda_cadena') {
+        $controller->saveFodaCadena();
+    }
+    if ($action === 'invite_member') {
+        $controller->inviteMiembro();
+    }
+    if ($action === 'remove_member') {
+        $controller->eliminarMiembro();
     }
 
     header('Location: proyectos.php');

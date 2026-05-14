@@ -13,7 +13,31 @@ final class ProyectoController
 
         try {
             $supabase = new SupabaseClient();
-            $proyectos = Proyecto::listByCreador($supabase, (int) $authUser['id_persona']);
+            $idPersona = (int) ($authUser['id_persona'] ?? 0);
+            $ids = [];
+            $miembroRows = ProyectoMiembro::listProyectoIdsByPersona($supabase, $idPersona);
+            foreach ($miembroRows as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $pid = (int) ($row['id_proyecto'] ?? 0);
+                if ($pid > 0) {
+                    $ids[$pid] = true;
+                }
+            }
+
+            $creadorRows = Proyecto::listByCreador($supabase, $idPersona);
+            foreach ($creadorRows as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $pid = (int) ($row['id_proyecto'] ?? 0);
+                if ($pid > 0) {
+                    $ids[$pid] = true;
+                }
+            }
+
+            $proyectos = Proyecto::listByIds($supabase, array_keys($ids));
             $proyectos = $this->attachProjectTokens($proyectos);
         } catch (Throwable $e) {
             $proyectos = [];
@@ -49,6 +73,13 @@ final class ProyectoController
         try {
             $supabase = new SupabaseClient();
             $idProyecto = Proyecto::create($supabase, (int) $authUser['id_persona'], $nombre);
+            try {
+                ProyectoMiembro::createCreador($supabase, (int) $idProyecto, (int) $authUser['id_persona']);
+            } catch (Throwable $e) {
+                if ($this->isDebug()) {
+                    error_log('[proyecto_store] No se pudo registrar creador en proyecto_miembro. id_proyecto=' . (int) $idProyecto . ' id_persona=' . (int) $authUser['id_persona'] . ' error=' . $e->getMessage());
+                }
+            }
         } catch (Throwable $e) {
             Session::flash('error', $this->friendlySupabaseError($e, 'No se pudo crear el proyecto.'));
             $this->redirect('/nuevo-proyecto.php');
@@ -86,8 +117,8 @@ final class ProyectoController
 
         try {
             $supabase = new SupabaseClient();
-            // Se valida propiedad del proyecto (creador_id) para evitar acceso a datos de terceros.
-            $proyecto = Proyecto::findOwnedById($supabase, $idProyecto, (int) $authUser['id_persona']);
+            $idPersona = (int) ($authUser['id_persona'] ?? 0);
+            $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, $idPersona);
             if ($proyecto === null) {
                 Session::flash('error', 'No tienes acceso a este proyecto.');
                 $this->redirect('/proyectos.php');
@@ -96,6 +127,89 @@ final class ProyectoController
             $mision = Mision::findByProyecto($supabase, $idProyecto);
             $vision = Vision::findByProyecto($supabase, $idProyecto);
             $valores = Valor::listByProyecto($supabase, $idProyecto);
+
+            $isCreador = $this->isCreadorProyecto($proyecto, $idPersona);
+            $miembros = [];
+            try {
+                $miembrosRows = ProyectoMiembro::listByProyectoWithPersona($supabase, $idProyecto);
+                if (empty($miembrosRows)) {
+                    $miembrosRows = ProyectoMiembro::listByProyecto($supabase, $idProyecto);
+                }
+                $ids = [];
+                foreach ($miembrosRows as $row) {
+                    if (!is_array($row)) {
+                        continue;
+                    }
+                    $pid = (int) ($row['id_persona'] ?? 0);
+                    if ($pid > 0) {
+                        $ids[$pid] = true;
+                    }
+                }
+                $creadorId = (int) ($proyecto['creador_id'] ?? 0);
+                if ($creadorId > 0) {
+                    $ids[$creadorId] = true;
+                }
+
+                $personas = [];
+                foreach ($miembrosRows as $row) {
+                    if (!is_array($row)) {
+                        continue;
+                    }
+                    $p = $row['persona'] ?? null;
+                    if (!is_array($p)) {
+                        continue;
+                    }
+                    $pid = (int) ($row['id_persona'] ?? 0);
+                    if ($pid > 0) {
+                        $personas[] = ['id_persona' => $pid, 'nombre' => $p['nombre'] ?? null, 'email' => $p['email'] ?? null];
+                    }
+                }
+                if (empty($personas)) {
+                    $personas = Persona::listByIds($supabase, array_keys($ids));
+                }
+                $byId = [];
+                foreach ($personas as $p) {
+                    if (!is_array($p)) {
+                        continue;
+                    }
+                    $pid = (int) ($p['id_persona'] ?? 0);
+                    if ($pid > 0) {
+                        $byId[$pid] = $p;
+                    }
+                }
+
+                if ($creadorId > 0 && isset($byId[$creadorId])) {
+                    $creator = $byId[$creadorId];
+                    $miembros[] = [
+                        'id_persona' => $creadorId,
+                        'nombre' => (string) ($creator['nombre'] ?? ''),
+                        'email' => (string) ($creator['email'] ?? ''),
+                        'rol' => 'CREADOR',
+                    ];
+                }
+
+                foreach ($miembrosRows as $row) {
+                    if (!is_array($row)) {
+                        continue;
+                    }
+                    $pid = (int) ($row['id_persona'] ?? 0);
+                    if ($pid <= 0) {
+                        continue;
+                    }
+                    if ($pid === $creadorId) {
+                        continue;
+                    }
+                    $persona = $byId[$pid] ?? null;
+                    $miembros[] = [
+                        'id_persona' => $pid,
+                        'nombre' => (string) (is_array($persona) ? ($persona['nombre'] ?? '') : ''),
+                        'email' => (string) (is_array($persona) ? ($persona['email'] ?? '') : ''),
+                        'rol' => (string) (($row['rol'] ?? '') ?: 'INVITADO'),
+                    ];
+                }
+            } catch (Throwable $e) {
+                $miembros = [];
+            }
         } catch (Throwable $e) {
             Session::flash('error', $this->friendlySupabaseError($e, 'No se pudo cargar el proyecto.'));
             $this->redirect('/proyectos.php');
@@ -134,6 +248,28 @@ final class ProyectoController
         } catch (Throwable $e) {
         }
 
+        $fodaFortalezas = [];
+        $fodaDebilidades = [];
+        try {
+            $rows = Foda::listByProyectoFuente($supabase, $idProyecto, 'CADENA_VALOR_INTERNA');
+            foreach ($rows as $r) {
+                if (!is_array($r)) {
+                    continue;
+                }
+                $tipo = (string) ($r['tipo'] ?? '');
+                $desc = trim((string) ($r['descripcion'] ?? ''));
+                if ($desc === '') {
+                    continue;
+                }
+                if ($tipo === 'FORTALEZA') {
+                    $fodaFortalezas[] = $desc;
+                } elseif ($tipo === 'DEBILIDAD') {
+                    $fodaDebilidades[] = $desc;
+                }
+            }
+        } catch (Throwable $e) {
+        }
+
         if ($token === '') {
             $token = $this->issueProjectToken($idProyecto);
             $query = [];
@@ -161,6 +297,277 @@ final class ProyectoController
         require dirname(__DIR__) . '/Views/proyectos/detalle-proyecto.php';
     }
 
+    public function saveFodaCadena(): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $payloadRaw = (string) ($_POST['payload'] ?? '');
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($idProyecto <= 0) {
+            echo json_encode(['ok' => false, 'error' => 'Proyecto inválido.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $decoded = json_decode($payloadRaw, true);
+        if (!is_array($decoded)) {
+            echo json_encode(['ok' => false, 'error' => 'Datos inválidos.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $fortalezas = $decoded['fortalezas'] ?? [];
+        $debilidades = $decoded['debilidades'] ?? [];
+        if (!is_array($fortalezas) || !is_array($debilidades)) {
+            echo json_encode(['ok' => false, 'error' => 'Datos inválidos.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $max = 50;
+        $items = [];
+        $now = gmdate('Y-m-d H:i:s');
+
+        $i = 0;
+        foreach ($fortalezas as $txt) {
+            $txt = trim((string) $txt);
+            if ($txt === '') {
+                continue;
+            }
+            $i++;
+            if ($i > $max) {
+                break;
+            }
+            $items[] = [
+                'tipo' => 'FORTALEZA',
+                'posicion' => $i,
+                'descripcion' => $txt,
+                'updated_at' => $now,
+            ];
+        }
+
+        $j = 0;
+        foreach ($debilidades as $txt) {
+            $txt = trim((string) $txt);
+            if ($txt === '') {
+                continue;
+            }
+            $j++;
+            if ($j > $max) {
+                break;
+            }
+            $items[] = [
+                'tipo' => 'DEBILIDAD',
+                'posicion' => $j,
+                'descripcion' => $txt,
+                'updated_at' => $now,
+            ];
+        }
+
+        try {
+            $supabase = new SupabaseClient();
+            $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
+            if ($proyecto === null) {
+                echo json_encode(['ok' => false, 'error' => 'No tienes acceso a este proyecto.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $ok = Foda::replaceByProyectoFuente($supabase, $idProyecto, 'CADENA_VALOR_INTERNA', $items);
+            if (!$ok) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudo guardar el FODA.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            echo json_encode(['ok' => true, 'updated_at' => gmdate('c')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['ok' => false, 'error' => 'No se pudo guardar el FODA.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+    }
+
+    public function inviteMiembro(): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $email = trim((string) ($_POST['email'] ?? ''));
+
+        $wantsJson = str_contains((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json') || (strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest');
+
+        if ($idProyecto <= 0 || $email === '') {
+            $this->debugInviteLog('invalid_input', ['id_proyecto' => $idProyecto, 'id_persona' => (int) $authUser['id_persona'], 'email' => $email]);
+            if ($wantsJson) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['ok' => false, 'code' => 'INVALID_INPUT', 'error' => 'Datos inválidos.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+            Session::flash('error', 'Datos inválidos.');
+            $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=overview&members=1');
+        }
+
+        try {
+            $supabase = new SupabaseClient();
+            $proyecto = Proyecto::findOwnedById($supabase, $idProyecto, (int) $authUser['id_persona']);
+            if ($proyecto === null) {
+                $this->debugInviteLog('not_creator', ['id_proyecto' => $idProyecto, 'id_persona' => (int) $authUser['id_persona'], 'email' => $email]);
+                if ($wantsJson) {
+                    header('Content-Type: application/json; charset=utf-8');
+                    echo json_encode(['ok' => false, 'code' => 'NOT_CREATOR', 'error' => 'Solo el creador puede invitar.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    exit;
+                }
+                Session::flash('error', 'Solo el creador puede invitar miembros.');
+                $this->redirect('/proyectos.php');
+            }
+
+            $persona = Persona::findByEmail($supabase, $email);
+            if ($persona === null || (int) ($persona['id_persona'] ?? 0) <= 0) {
+                $this->debugInviteLog('user_not_registered', ['id_proyecto' => $idProyecto, 'id_persona' => (int) $authUser['id_persona'], 'email' => $email]);
+                if ($wantsJson) {
+                    header('Content-Type: application/json; charset=utf-8');
+                    echo json_encode(['ok' => false, 'code' => 'USER_NOT_REGISTERED', 'error' => 'El usuario no está registrado.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    exit;
+                }
+                Session::flash('error', 'USER_NOT_REGISTERED');
+                $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=overview&members=1');
+            }
+
+            $idPersonaInvitada = (int) ($persona['id_persona'] ?? 0);
+            $creadorId = (int) ($proyecto['creador_id'] ?? 0);
+            if ($idPersonaInvitada === $creadorId) {
+                $this->debugInviteLog('already_member_creator', ['id_proyecto' => $idProyecto, 'id_persona' => (int) $authUser['id_persona'], 'invited_id' => $idPersonaInvitada, 'email' => $email]);
+                if ($wantsJson) {
+                    header('Content-Type: application/json; charset=utf-8');
+                    echo json_encode(['ok' => false, 'code' => 'USER_ALREADY_MEMBER', 'error' => 'El usuario ya es miembro.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    exit;
+                }
+                Session::flash('error', 'USER_ALREADY_MEMBER');
+                $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=overview&members=1');
+            }
+
+            if (ProyectoMiembro::exists($supabase, $idProyecto, $idPersonaInvitada)) {
+                $this->debugInviteLog('already_member', ['id_proyecto' => $idProyecto, 'id_persona' => (int) $authUser['id_persona'], 'invited_id' => $idPersonaInvitada, 'email' => $email]);
+                if ($wantsJson) {
+                    header('Content-Type: application/json; charset=utf-8');
+                    echo json_encode(['ok' => false, 'code' => 'USER_ALREADY_MEMBER', 'error' => 'El usuario ya es miembro.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    exit;
+                }
+                Session::flash('error', 'USER_ALREADY_MEMBER');
+                $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=overview&members=1');
+            }
+
+            $ok = ProyectoMiembro::createInvitado($supabase, $idProyecto, $idPersonaInvitada);
+            if (!$ok) {
+                $this->debugInviteLog('conflict', ['id_proyecto' => $idProyecto, 'id_persona' => (int) $authUser['id_persona'], 'invited_id' => $idPersonaInvitada, 'email' => $email]);
+                if ($wantsJson) {
+                    header('Content-Type: application/json; charset=utf-8');
+                    echo json_encode(['ok' => false, 'code' => 'USER_ALREADY_MEMBER', 'error' => 'El usuario ya es miembro.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    exit;
+                }
+                Session::flash('error', 'USER_ALREADY_MEMBER');
+                $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=overview&members=1');
+            }
+
+            if ($wantsJson) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['ok' => true], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            Session::flash('success', 'Invitación enviada.');
+            $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=overview&members=1');
+        } catch (Throwable $e) {
+            $this->debugInviteLog('error', ['id_proyecto' => $idProyecto, 'id_persona' => (int) $authUser['id_persona'], 'email' => $email, 'error' => $e->getMessage()]);
+            if ($wantsJson) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['ok' => false, 'code' => 'ERROR', 'error' => 'No se pudo invitar al usuario.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+            Session::flash('error', 'No se pudo invitar al usuario.');
+            $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=overview&members=1');
+        }
+    }
+
+    public function eliminarMiembro(): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $idPersona = (int) ($_POST['id_persona'] ?? 0);
+
+        $wantsJson = str_contains((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json') || (strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest');
+
+        if ($idProyecto <= 0 || $idPersona <= 0) {
+            if ($wantsJson) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['ok' => false, 'code' => 'INVALID_INPUT', 'error' => 'Datos inválidos.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+            Session::flash('error', 'Datos inválidos.');
+            $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=overview&members=1');
+        }
+
+        try {
+            $supabase = new SupabaseClient();
+            $proyecto = Proyecto::findOwnedById($supabase, $idProyecto, (int) $authUser['id_persona']);
+            if ($proyecto === null) {
+                if ($wantsJson) {
+                    header('Content-Type: application/json; charset=utf-8');
+                    echo json_encode(['ok' => false, 'code' => 'NOT_CREATOR', 'error' => 'Solo el creador puede eliminar.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    exit;
+                }
+                Session::flash('error', 'Solo el creador puede eliminar miembros.');
+                $this->redirect('/proyectos.php');
+            }
+
+            $creadorId = (int) ($proyecto['creador_id'] ?? 0);
+            if ($idPersona === $creadorId) {
+                if ($wantsJson) {
+                    header('Content-Type: application/json; charset=utf-8');
+                    echo json_encode(['ok' => false, 'code' => 'CANNOT_REMOVE_CREATOR', 'error' => 'No se puede eliminar al creador.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    exit;
+                }
+                Session::flash('error', 'No se puede eliminar al creador.');
+                $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=overview&members=1');
+            }
+
+            if (!ProyectoMiembro::exists($supabase, $idProyecto, $idPersona)) {
+                if ($wantsJson) {
+                    header('Content-Type: application/json; charset=utf-8');
+                    echo json_encode(['ok' => false, 'code' => 'NOT_MEMBER', 'error' => 'El usuario no es miembro del proyecto.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    exit;
+                }
+                Session::flash('error', 'El usuario no es miembro del proyecto.');
+                $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=overview&members=1');
+            }
+
+            ProyectoMiembro::delete($supabase, $idProyecto, $idPersona);
+
+            if ($wantsJson) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['ok' => true], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            Session::flash('success', 'Miembro eliminado.');
+            $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=overview&members=1');
+        } catch (Throwable $e) {
+            if ($wantsJson) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['ok' => false, 'code' => 'ERROR', 'error' => 'No se pudo eliminar el miembro.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+            Session::flash('error', 'No se pudo eliminar el miembro.');
+            $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=overview&members=1');
+        }
+    }
+
     public function saveCadenaValor(): void
     {
         $authController = new AuthController();
@@ -185,7 +592,7 @@ final class ProyectoController
 
         try {
             $supabase = new SupabaseClient();
-            $proyecto = Proyecto::findOwnedById($supabase, $idProyecto, (int) $authUser['id_persona']);
+            $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
             if ($proyecto === null) {
                 echo json_encode(['ok' => false, 'error' => 'No tienes acceso a este proyecto.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 exit;
@@ -261,7 +668,7 @@ final class ProyectoController
 
         try {
             $supabase = new SupabaseClient();
-            $proyecto = Proyecto::findOwnedById($supabase, $idProyecto, (int) $authUser['id_persona']);
+            $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
             if ($proyecto === null) {
                 echo json_encode(['ok' => false, 'error' => 'No tienes acceso a este proyecto.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 exit;
@@ -365,7 +772,7 @@ final class ProyectoController
         }
 
         $supabase = new SupabaseClient();
-        $proyecto = Proyecto::findOwnedById($supabase, $idProyecto, (int) $authUser['id_persona']);
+        $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
         if ($proyecto === null) {
             Session::flash('error', 'No tienes acceso a este proyecto.');
             $this->redirect('/proyectos.php');
@@ -410,7 +817,7 @@ final class ProyectoController
 
         try {
             $supabase = new SupabaseClient();
-            $proyecto = Proyecto::findOwnedById($supabase, $idProyecto, (int) $authUser['id_persona']);
+            $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
             if ($proyecto === null) {
                 Session::flash('error', 'No tienes acceso a este proyecto.');
                 $this->redirect('/proyectos.php');
@@ -447,7 +854,7 @@ final class ProyectoController
         }
 
         $supabase = new SupabaseClient();
-        $proyecto = Proyecto::findOwnedById($supabase, $idProyecto, (int) $authUser['id_persona']);
+        $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
         if ($proyecto === null) {
             Session::flash('error', 'No tienes acceso a este proyecto.');
             $this->redirect('/proyectos.php');
@@ -483,7 +890,7 @@ final class ProyectoController
         }
 
         $supabase = new SupabaseClient();
-        $proyecto = Proyecto::findOwnedById($supabase, $idProyecto, (int) $authUser['id_persona']);
+        $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
         if ($proyecto === null) {
             Session::flash('error', 'No tienes acceso a este proyecto.');
             $this->redirect('/proyectos.php');
@@ -517,7 +924,7 @@ final class ProyectoController
         }
 
         $supabase = new SupabaseClient();
-        $proyecto = Proyecto::findOwnedById($supabase, $idProyecto, (int) $authUser['id_persona']);
+        $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
         if ($proyecto === null) {
             Session::flash('error', 'No tienes acceso a este proyecto.');
             $this->redirect('/proyectos.php');
@@ -558,7 +965,7 @@ final class ProyectoController
         }
 
         $supabase = new SupabaseClient();
-        $proyecto = Proyecto::findOwnedById($supabase, $idProyecto, (int) $authUser['id_persona']);
+        $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
         if ($proyecto === null) {
             Session::flash('error', 'No tienes acceso a este proyecto.');
             $this->redirect('/proyectos.php');
@@ -606,7 +1013,7 @@ final class ProyectoController
         }
 
         $supabase = new SupabaseClient();
-        $proyecto = Proyecto::findOwnedById($supabase, $idProyecto, (int) $authUser['id_persona']);
+        $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
         if ($proyecto === null) {
             Session::flash('error', 'No tienes acceso a este proyecto.');
             $this->redirect('/proyectos.php');
@@ -647,7 +1054,7 @@ final class ProyectoController
         }
 
         $supabase = new SupabaseClient();
-        $proyecto = Proyecto::findOwnedById($supabase, $idProyecto, (int) $authUser['id_persona']);
+        $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
         if ($proyecto === null) {
             Session::flash('error', 'No tienes acceso a este proyecto.');
             $this->redirect('/proyectos.php');
@@ -696,7 +1103,7 @@ final class ProyectoController
         }
 
         $supabase = new SupabaseClient();
-        $proyecto = Proyecto::findOwnedById($supabase, $idProyecto, (int) $authUser['id_persona']);
+        $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
         if ($proyecto === null) {
             Session::flash('error', 'No tienes acceso a este proyecto.');
             $this->redirect('/proyectos.php');
@@ -746,7 +1153,7 @@ final class ProyectoController
         }
 
         $supabase = new SupabaseClient();
-        $proyecto = Proyecto::findOwnedById($supabase, $idProyecto, (int) $authUser['id_persona']);
+        $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
         if ($proyecto === null) {
             Session::flash('error', 'No tienes acceso a este proyecto.');
             $this->redirect('/proyectos.php');
@@ -762,12 +1169,65 @@ final class ProyectoController
         $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=' . urlencode($editQuery));
     }
 
+    private function findAccessibleProyecto(SupabaseClient $supabase, int $idProyecto, int $idPersona): ?array
+    {
+        if ($idProyecto <= 0 || $idPersona <= 0) {
+            return null;
+        }
+
+        $proyecto = Proyecto::findById($supabase, $idProyecto);
+        if ($proyecto === null) {
+            return null;
+        }
+
+        if ($this->isCreadorProyecto($proyecto, $idPersona)) {
+            return $proyecto;
+        }
+
+        if (ProyectoMiembro::exists($supabase, $idProyecto, $idPersona)) {
+            return $proyecto;
+        }
+
+        return null;
+    }
+
+    private function isCreadorProyecto(array $proyecto, int $idPersona): bool
+    {
+        return (int) ($proyecto['creador_id'] ?? 0) === (int) $idPersona;
+    }
+
     private function redirect(string $path): void
     {
         $basePath = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/'), '\\/');
         $location = $basePath === '' ? $path : ($basePath . $path);
         header('Location: ' . $location);
         exit;
+    }
+
+    private function debugInviteLog(string $event, array $context): void
+    {
+        if (!$this->isDebug()) {
+            return;
+        }
+        $email = (string) ($context['email'] ?? '');
+        if ($email !== '') {
+            $context['email'] = $this->maskEmail($email);
+        }
+        $payload = json_encode($context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        error_log('[invite_member] ' . $event . ' ' . ($payload ?: ''));
+    }
+
+    private function maskEmail(string $email): string
+    {
+        $email = trim($email);
+        $parts = explode('@', $email, 2);
+        if (count($parts) !== 2) {
+            return $email === '' ? '' : '***';
+        }
+        $local = $parts[0];
+        $domain = $parts[1];
+        $head = mb_substr($local, 0, 1, 'UTF-8');
+        return $head . '***@' . $domain;
     }
 
     private function friendlySupabaseError(Throwable $e, string $prefix): string

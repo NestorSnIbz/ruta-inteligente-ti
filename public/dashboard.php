@@ -82,7 +82,35 @@ try {
     $headers = dashboardRestHeaders($supabase);
 
     $idPersona = (int) ($authUser['id_persona'] ?? 0);
-    $proyectoRes = $supabase->request(
+    $projectsById = [];
+
+    $miembroRes = $supabase->request(
+        'GET',
+        '/rest/v1/proyecto_miembro',
+        [
+            'select' => 'id_proyecto,proyecto(id_proyecto,nombre,creador_id)',
+            'id_persona' => 'eq.' . $idPersona,
+            'order' => 'id.desc',
+        ],
+        $headers
+    );
+    if ($miembroRes['status'] < 400 && is_array($miembroRes['data'])) {
+        foreach ($miembroRes['data'] as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $p = $row['proyecto'] ?? null;
+            if (!is_array($p)) {
+                continue;
+            }
+            $pid = (int) ($p['id_proyecto'] ?? 0);
+            if ($pid > 0) {
+                $projectsById[$pid] = $p;
+            }
+        }
+    }
+
+    $creadorRes = $supabase->request(
         'GET',
         '/rest/v1/proyecto',
         [
@@ -92,12 +120,22 @@ try {
         ],
         $headers
     );
-
-    if ($proyectoRes['status'] >= 400) {
-        throw new RuntimeException((string) ($proyectoRes['data']['message'] ?? $proyectoRes['data']['msg'] ?? 'No se pudo cargar el dashboard.'));
+    if ($creadorRes['status'] >= 400) {
+        throw new RuntimeException((string) ($creadorRes['data']['message'] ?? $creadorRes['data']['msg'] ?? 'No se pudo cargar el dashboard.'));
+    }
+    if (is_array($creadorRes['data'])) {
+        foreach ($creadorRes['data'] as $p) {
+            if (!is_array($p)) {
+                continue;
+            }
+            $pid = (int) ($p['id_proyecto'] ?? 0);
+            if ($pid > 0) {
+                $projectsById[$pid] = $p;
+            }
+        }
     }
 
-    $projects = is_array($proyectoRes['data']) ? $proyectoRes['data'] : [];
+    $projects = array_values($projectsById);
     $projectIds = [];
     foreach ($projects as $p) {
         if (!is_array($p)) {
