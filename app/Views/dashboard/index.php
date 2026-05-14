@@ -142,11 +142,11 @@
       const tableCountEl = document.getElementById("dashboard-table-count");
       const searchEl = document.getElementById("dashboard-search");
       function pushRecentProject(project) {
-        const t = project && project.token ? String(project.token) : "";
+        const id = project && (project.id_proyecto !== undefined || project.id !== undefined) ? Number(project.id_proyecto ?? project.id) : 0;
         const name = project && project.nombre ? String(project.nombre) : "";
-        if (!t || !name) return;
+        if (!id || !name) return;
         if (window.RISidebar && typeof window.RISidebar.pushRecentProject === "function") {
-          window.RISidebar.pushRecentProject(t, name);
+          window.RISidebar.pushRecentProject(id, name);
         }
       }
 

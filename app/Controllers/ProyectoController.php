@@ -11,6 +11,15 @@ final class ProyectoController
         $error = Session::getFlash('error');
         $success = Session::getFlash('success');
 
+        $format = strtolower((string) ($_GET['format'] ?? ''));
+        $wantsJson = $format === 'json' || str_contains((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json');
+        $recentOnly = ((string) ($_GET['recent'] ?? '')) === '1';
+
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $perPage = 10;
+        $totalProyectos = 0;
+        $totalPages = 1;
+
         try {
             $supabase = new SupabaseClient();
             $idPersona = (int) ($authUser['id_persona'] ?? 0);
@@ -37,11 +46,41 @@ final class ProyectoController
                 }
             }
 
-            $proyectos = Proyecto::listByIds($supabase, array_keys($ids));
+            $idList = array_keys($ids);
+            $totalProyectos = count($idList);
+            $totalPages = max(1, (int) ceil($totalProyectos / $perPage));
+            $page = min($page, $totalPages);
+            $offset = ($page - 1) * $perPage;
+
+            if ($wantsJson && $recentOnly) {
+                $rows = Proyecto::listByIdsPaged($supabase, $idList, 3, 0, 'id_proyecto.desc');
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(
+                    [
+                        'ok' => true,
+                        'projects' => array_map(
+                            fn ($p) => [
+                                'id_proyecto' => (int) ($p['id_proyecto'] ?? 0),
+                                'nombre' => (string) ($p['nombre'] ?? ''),
+                            ],
+                            array_values(array_filter($rows, fn ($p) => is_array($p) && (int) ($p['id_proyecto'] ?? 0) > 0))
+                        ),
+                    ],
+                    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                );
+                exit;
+            }
+
+            $proyectos = Proyecto::listByIdsPaged($supabase, $idList, $perPage, $offset, 'id_proyecto.desc');
             $proyectos = $this->attachProjectTokens($proyectos);
         } catch (Throwable $e) {
             $proyectos = [];
             $error = $error ?: $this->friendlySupabaseError($e, 'No se pudo cargar la lista de proyectos.');
+            if ($wantsJson && $recentOnly) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['ok' => false, 'error' => 'No se pudieron cargar los proyectos.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
         }
 
         require dirname(__DIR__) . '/Views/proyectos/index.php';
@@ -99,11 +138,33 @@ final class ProyectoController
         $success = Session::getFlash('success');
 
         $token = trim((string) ($_GET['t'] ?? ''));
+        $partial = trim((string) ($_GET['partial'] ?? ''));
+        $section = trim((string) ($_GET['section'] ?? 'overview'));
+        $allowedSections = ['overview', 'mision', 'vision', 'valores', 'objetivos', 'cadena', 'bgg'];
+        $requestedSection = $partial !== '' ? $partial : ($section !== '' ? $section : 'overview');
+        if (!in_array($requestedSection, $allowedSections, true)) {
+            $requestedSection = 'overview';
+        }
+        $renderOnlySection = $partial !== '' ? $requestedSection : '';
+        $initialPanel = $requestedSection;
         $idProyecto = 0;
+
+        if ($renderOnlySection !== '' && $token === '') {
+            http_response_code(400);
+            header('Content-Type: text/plain; charset=utf-8');
+            echo 'Proyecto inválido.';
+            exit;
+        }
 
         if ($token !== '') {
             $idProyecto = $this->projectIdFromToken($token);
             if ($idProyecto <= 0) {
+                if ($renderOnlySection !== '') {
+                    http_response_code(401);
+                    header('Content-Type: text/plain; charset=utf-8');
+                    echo 'Enlace inválido o expirado.';
+                    exit;
+                }
                 Session::flash('error', 'Enlace inválido o expirado. Regresa a la lista de proyectos.');
                 $this->redirect('/proyectos.php');
             }
@@ -120,92 +181,116 @@ final class ProyectoController
             $idPersona = (int) ($authUser['id_persona'] ?? 0);
             $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, $idPersona);
             if ($proyecto === null) {
+                if ($renderOnlySection !== '') {
+                    http_response_code(403);
+                    header('Content-Type: text/plain; charset=utf-8');
+                    echo 'No tienes acceso a este proyecto.';
+                    exit;
+                }
                 Session::flash('error', 'No tienes acceso a este proyecto.');
                 $this->redirect('/proyectos.php');
             }
 
-            $mision = Mision::findByProyecto($supabase, $idProyecto);
-            $vision = Vision::findByProyecto($supabase, $idProyecto);
-            $valores = Valor::listByProyecto($supabase, $idProyecto);
-
             $isCreador = $this->isCreadorProyecto($proyecto, $idPersona);
+
+            $dataSection = $renderOnlySection !== '' ? $renderOnlySection : 'overview';
+            $mision = null;
+            $vision = null;
+            $valores = [];
+            $misionTexto = '';
+            $visionTexto = '';
+
+            if ($dataSection === 'overview' || $dataSection === 'mision') {
+                $mision = Mision::findByProyecto($supabase, $idProyecto);
+                $misionTexto = is_array($mision) ? (string) ($mision['descripcion'] ?? '') : '';
+            }
+            if ($dataSection === 'overview' || $dataSection === 'vision') {
+                $vision = Vision::findByProyecto($supabase, $idProyecto);
+                $visionTexto = is_array($vision) ? (string) ($vision['descripcion'] ?? '') : '';
+            }
+            if ($dataSection === 'overview' || $dataSection === 'valores') {
+                $valores = Valor::listByProyecto($supabase, $idProyecto);
+            }
+
             $miembros = [];
             try {
-                $miembrosRows = ProyectoMiembro::listByProyectoWithPersona($supabase, $idProyecto);
-                if (empty($miembrosRows)) {
-                    $miembrosRows = ProyectoMiembro::listByProyecto($supabase, $idProyecto);
-                }
-                $ids = [];
-                foreach ($miembrosRows as $row) {
-                    if (!is_array($row)) {
-                        continue;
+                if ($dataSection === 'overview' && !empty($isCreador)) {
+                    $miembrosRows = ProyectoMiembro::listByProyectoWithPersona($supabase, $idProyecto);
+                    if (empty($miembrosRows)) {
+                        $miembrosRows = ProyectoMiembro::listByProyecto($supabase, $idProyecto);
                     }
-                    $pid = (int) ($row['id_persona'] ?? 0);
-                    if ($pid > 0) {
-                        $ids[$pid] = true;
+                    $ids = [];
+                    foreach ($miembrosRows as $row) {
+                        if (!is_array($row)) {
+                            continue;
+                        }
+                        $pid = (int) ($row['id_persona'] ?? 0);
+                        if ($pid > 0) {
+                            $ids[$pid] = true;
+                        }
                     }
-                }
-                $creadorId = (int) ($proyecto['creador_id'] ?? 0);
-                if ($creadorId > 0) {
-                    $ids[$creadorId] = true;
-                }
+                    $creadorId = (int) ($proyecto['creador_id'] ?? 0);
+                    if ($creadorId > 0) {
+                        $ids[$creadorId] = true;
+                    }
 
-                $personas = [];
-                foreach ($miembrosRows as $row) {
-                    if (!is_array($row)) {
-                        continue;
+                    $personas = [];
+                    foreach ($miembrosRows as $row) {
+                        if (!is_array($row)) {
+                            continue;
+                        }
+                        $p = $row['persona'] ?? null;
+                        if (!is_array($p)) {
+                            continue;
+                        }
+                        $pid = (int) ($row['id_persona'] ?? 0);
+                        if ($pid > 0) {
+                            $personas[] = ['id_persona' => $pid, 'nombre' => $p['nombre'] ?? null, 'email' => $p['email'] ?? null];
+                        }
                     }
-                    $p = $row['persona'] ?? null;
-                    if (!is_array($p)) {
-                        continue;
+                    if (empty($personas)) {
+                        $personas = Persona::listByIds($supabase, array_keys($ids));
                     }
-                    $pid = (int) ($row['id_persona'] ?? 0);
-                    if ($pid > 0) {
-                        $personas[] = ['id_persona' => $pid, 'nombre' => $p['nombre'] ?? null, 'email' => $p['email'] ?? null];
+                    $byId = [];
+                    foreach ($personas as $p) {
+                        if (!is_array($p)) {
+                            continue;
+                        }
+                        $pid = (int) ($p['id_persona'] ?? 0);
+                        if ($pid > 0) {
+                            $byId[$pid] = $p;
+                        }
                     }
-                }
-                if (empty($personas)) {
-                    $personas = Persona::listByIds($supabase, array_keys($ids));
-                }
-                $byId = [];
-                foreach ($personas as $p) {
-                    if (!is_array($p)) {
-                        continue;
-                    }
-                    $pid = (int) ($p['id_persona'] ?? 0);
-                    if ($pid > 0) {
-                        $byId[$pid] = $p;
-                    }
-                }
 
-                if ($creadorId > 0 && isset($byId[$creadorId])) {
-                    $creator = $byId[$creadorId];
-                    $miembros[] = [
-                        'id_persona' => $creadorId,
-                        'nombre' => (string) ($creator['nombre'] ?? ''),
-                        'email' => (string) ($creator['email'] ?? ''),
-                        'rol' => 'CREADOR',
-                    ];
-                }
+                    if ($creadorId > 0 && isset($byId[$creadorId])) {
+                        $creator = $byId[$creadorId];
+                        $miembros[] = [
+                            'id_persona' => $creadorId,
+                            'nombre' => (string) ($creator['nombre'] ?? ''),
+                            'email' => (string) ($creator['email'] ?? ''),
+                            'rol' => 'CREADOR',
+                        ];
+                    }
 
-                foreach ($miembrosRows as $row) {
-                    if (!is_array($row)) {
-                        continue;
+                    foreach ($miembrosRows as $row) {
+                        if (!is_array($row)) {
+                            continue;
+                        }
+                        $pid = (int) ($row['id_persona'] ?? 0);
+                        if ($pid <= 0) {
+                            continue;
+                        }
+                        if ($pid === $creadorId) {
+                            continue;
+                        }
+                        $persona = $byId[$pid] ?? null;
+                        $miembros[] = [
+                            'id_persona' => $pid,
+                            'nombre' => (string) (is_array($persona) ? ($persona['nombre'] ?? '') : ''),
+                            'email' => (string) (is_array($persona) ? ($persona['email'] ?? '') : ''),
+                            'rol' => (string) (($row['rol'] ?? '') ?: 'INVITADO'),
+                        ];
                     }
-                    $pid = (int) ($row['id_persona'] ?? 0);
-                    if ($pid <= 0) {
-                        continue;
-                    }
-                    if ($pid === $creadorId) {
-                        continue;
-                    }
-                    $persona = $byId[$pid] ?? null;
-                    $miembros[] = [
-                        'id_persona' => $pid,
-                        'nombre' => (string) (is_array($persona) ? ($persona['nombre'] ?? '') : ''),
-                        'email' => (string) (is_array($persona) ? ($persona['email'] ?? '') : ''),
-                        'rol' => (string) (($row['rol'] ?? '') ?: 'INVITADO'),
-                    ];
                 }
             } catch (Throwable $e) {
                 $miembros = [];
@@ -218,19 +303,6 @@ final class ProyectoController
         $objetivosEstrategicos = [];
         $objetivosEspecificosByEstrategico = [];
         $objetivosError = '';
-
-        try {
-            $objetivosEstrategicos = ObjetivoEstrategico::listByProyecto($supabase, $idProyecto);
-            $objetivosEstrategicos = $this->attachObjetivoEstrategicoTokens($objetivosEstrategicos);
-
-            $objetivosEspecificos = ObjetivoEspecifico::listByProyecto($supabase, $idProyecto);
-            $objetivosEspecificosByEstrategico = $this->groupObjetivosEspecificosByEstrategicoWithTokens($objetivosEspecificos);
-
-            $objetivosEstrategicos = $this->attachEspecificosCountToObjetivosEstrategicos($objetivosEstrategicos, $objetivosEspecificosByEstrategico);
-        } catch (Throwable $e) {
-            $objetivosError = $this->isDebug() ? ('No se pudieron cargar los objetivos. Detalle: ' . $e->getMessage()) : 'No se pudieron cargar los objetivos.';
-        }
-
         $cadenaPreguntas = [];
         $cadenaRespuestas = [];
         $cadenaCalc = [
@@ -240,34 +312,51 @@ final class ProyectoController
             'missing' => 0,
             'potential' => null,
         ];
-        try {
-            CadenaValor::ensureSeeded($supabase);
-            $cadenaPreguntas = CadenaValor::listPreguntas($supabase);
-            $cadenaRespuestas = CadenaValor::listRespuestasByProyecto($supabase, $idProyecto);
-            $cadenaCalc = CadenaValor::compute($cadenaPreguntas, $cadenaRespuestas);
-        } catch (Throwable $e) {
-        }
-
         $fodaFortalezas = [];
         $fodaDebilidades = [];
-        try {
-            $rows = Foda::listByProyectoFuente($supabase, $idProyecto, 'CADENA_VALOR_INTERNA');
-            foreach ($rows as $r) {
-                if (!is_array($r)) {
-                    continue;
-                }
-                $tipo = (string) ($r['tipo'] ?? '');
-                $desc = trim((string) ($r['descripcion'] ?? ''));
-                if ($desc === '') {
-                    continue;
-                }
-                if ($tipo === 'FORTALEZA') {
-                    $fodaFortalezas[] = $desc;
-                } elseif ($tipo === 'DEBILIDAD') {
-                    $fodaDebilidades[] = $desc;
-                }
+
+        if ($renderOnlySection === 'objetivos') {
+            try {
+                $objetivosEstrategicos = ObjetivoEstrategico::listByProyecto($supabase, $idProyecto);
+                $objetivosEstrategicos = $this->attachObjetivoEstrategicoTokens($objetivosEstrategicos);
+
+                $objetivosEspecificos = ObjetivoEspecifico::listByProyecto($supabase, $idProyecto);
+                $objetivosEspecificosByEstrategico = $this->groupObjetivosEspecificosByEstrategicoWithTokens($objetivosEspecificos);
+
+                $objetivosEstrategicos = $this->attachEspecificosCountToObjetivosEstrategicos($objetivosEstrategicos, $objetivosEspecificosByEstrategico);
+            } catch (Throwable $e) {
+                $objetivosError = $this->isDebug() ? ('No se pudieron cargar los objetivos. Detalle: ' . $e->getMessage()) : 'No se pudieron cargar los objetivos.';
             }
-        } catch (Throwable $e) {
+        }
+
+        if ($renderOnlySection === 'cadena') {
+            try {
+                CadenaValor::ensureSeeded($supabase);
+                $cadenaPreguntas = CadenaValor::listPreguntas($supabase);
+                $cadenaRespuestas = CadenaValor::listRespuestasByProyecto($supabase, $idProyecto);
+                $cadenaCalc = CadenaValor::compute($cadenaPreguntas, $cadenaRespuestas);
+            } catch (Throwable $e) {
+            }
+
+            try {
+                $rows = Foda::listByProyectoFuente($supabase, $idProyecto, 'CADENA_VALOR_INTERNA');
+                foreach ($rows as $r) {
+                    if (!is_array($r)) {
+                        continue;
+                    }
+                    $tipo = (string) ($r['tipo'] ?? '');
+                    $desc = trim((string) ($r['descripcion'] ?? ''));
+                    if ($desc === '') {
+                        continue;
+                    }
+                    if ($tipo === 'FORTALEZA') {
+                        $fodaFortalezas[] = $desc;
+                    } elseif ($tipo === 'DEBILIDAD') {
+                        $fodaDebilidades[] = $desc;
+                    }
+                }
+            } catch (Throwable $e) {
+            }
         }
 
         if ($token === '') {
@@ -293,6 +382,13 @@ final class ProyectoController
         $edit = (string) ($_GET['edit'] ?? '');
         $oeEditToken = trim((string) ($_GET['oe_edit'] ?? ''));
         $oespEditToken = trim((string) ($_GET['oesp_edit'] ?? ''));
+
+        if ($renderOnlySection !== '') {
+            header('Content-Type: text/html; charset=utf-8');
+            $panel = $renderOnlySection;
+            require dirname(__DIR__) . '/Views/proyectos/detalle-panel.php';
+            exit;
+        }
 
         require dirname(__DIR__) . '/Views/proyectos/detalle-proyecto.php';
     }

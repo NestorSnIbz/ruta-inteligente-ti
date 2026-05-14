@@ -84,6 +84,7 @@
                                 class="px-6 py-4 flex justify-between items-center hover:bg-neutral-50 transition"
                                 data-project-row="1"
                                 data-project-name="<?php echo htmlspecialchars((string) ($proyecto['nombre'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                data-project-id="<?php echo (int) ($proyecto['id_proyecto'] ?? 0); ?>"
                             >
                                 <div>
                                     <p class="font-medium">
@@ -107,6 +108,55 @@
                 </div>
             </div>
 
+            <?php
+              $page = max(1, (int) ($page ?? 1));
+              $totalPages = max(1, (int) ($totalPages ?? 1));
+              $totalProyectos = max(0, (int) ($totalProyectos ?? 0));
+              $baseParams = $_GET ?? [];
+              unset($baseParams['page']);
+              $buildUrl = function (int $p) use ($baseParams): string {
+                $params = $baseParams;
+                $params['page'] = $p;
+                $qs = http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+                return 'proyectos.php' . ($qs ? ('?' . $qs) : '');
+              };
+              $start = max(1, $page - 2);
+              $end = min($totalPages, $page + 2);
+            ?>
+            <?php if ($totalPages > 1) : ?>
+              <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
+                <div class="text-sm text-neutral-600">
+                  Página <?php echo (int) $page; ?> de <?php echo (int) $totalPages; ?> · <?php echo (int) $totalProyectos; ?> proyectos
+                </div>
+
+                <nav class="inline-flex items-center gap-1" aria-label="Paginación">
+                  <a
+                    href="<?php echo htmlspecialchars($buildUrl(max(1, $page - 1)), ENT_QUOTES, 'UTF-8'); ?>"
+                    class="<?php echo $page <= 1 ? 'pointer-events-none opacity-50' : ''; ?> inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
+                  >
+                    Anterior
+                  </a>
+
+                  <?php for ($p = $start; $p <= $end; $p++) : ?>
+                    <a
+                      href="<?php echo htmlspecialchars($buildUrl($p), ENT_QUOTES, 'UTF-8'); ?>"
+                      class="<?php echo $p === $page ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-neutral-800 border-neutral-200 hover:bg-neutral-50'; ?> inline-flex h-10 w-10 items-center justify-center rounded-xl border text-sm font-semibold"
+                      aria-current="<?php echo $p === $page ? 'page' : 'false'; ?>"
+                    >
+                      <?php echo (int) $p; ?>
+                    </a>
+                  <?php endfor; ?>
+
+                  <a
+                    href="<?php echo htmlspecialchars($buildUrl(min($totalPages, $page + 1)), ENT_QUOTES, 'UTF-8'); ?>"
+                    class="<?php echo $page >= $totalPages ? 'pointer-events-none opacity-50' : ''; ?> inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
+                  >
+                    Siguiente
+                  </a>
+                </nav>
+              </div>
+            <?php endif; ?>
+
         </main>
     </div>
 </div>
@@ -114,13 +164,11 @@
 <script>
     document.querySelectorAll('a[href^="detalle-proyecto.php?t="]').forEach((a) => {
         a.addEventListener("click", () => {
-            const href = a.getAttribute("href") || "";
-            const u = new URL(href, window.location.href);
-            const t = u.searchParams.get("t") || "";
             const row = a.closest("[data-project-row]");
+            const id = row ? Number(row.getAttribute("data-project-id") || 0) : 0;
             const name = row ? (row.getAttribute("data-project-name") || "") : "";
-            if (t && name && window.RISidebar && typeof window.RISidebar.pushRecentProject === "function") {
-                window.RISidebar.pushRecentProject(t, name);
+            if (id && name && window.RISidebar && typeof window.RISidebar.pushRecentProject === "function") {
+                window.RISidebar.pushRecentProject(id, name);
             }
         });
     });
