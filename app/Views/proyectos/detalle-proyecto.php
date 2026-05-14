@@ -30,85 +30,18 @@
     'missing' => 0,
     'potential' => null,
   ];
+  $fodaFortalezas = is_array($fodaFortalezas ?? null) ? $fodaFortalezas : [];
+  $fodaDebilidades = is_array($fodaDebilidades ?? null) ? $fodaDebilidades : [];
 ?>
 
 <div class="min-h-screen grid grid-cols-1 md:grid-cols-[16rem_1fr]">
 
-  <!-- SIDEBAR -->
-  <aside class="bg-brand-900 text-white">
-    <div class="px-6 py-6">
-      <div class="flex items-center gap-3">
-        <div class="h-10 w-10 rounded-xl bg-white/10 grid place-items-center">
-          <span class="text-sm font-semibold">RI</span>
-        </div>
-
-        <div>
-          <div class="text-sm font-semibold">
-            Ruta Inteligente TI
-          </div>
-          <div class="text-xs text-white/70">
-            Panel de control
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <nav class="px-3 pb-6">
-      <a
-         href="dashboard.php"
-         class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white"
-         data-sidebar-item="dashboard"
-      >
-        <svg viewBox="0 0 24 24" class="h-5 w-5 text-white/85" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9v9a2 2 0 01-2 2h-4v-6H9v6H5a2 2 0 01-2-2v-9z" />
-        </svg>
-        Dashboard
-      </a>
-
-      <div class="mt-1">
-        <button
-          id="sidebar-projects-toggle"
-          type="button"
-          class="w-full flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-medium bg-white/10 text-white"
-          aria-expanded="true"
-          aria-controls="sidebar-projects-panel"
-          data-sidebar-item="proyectos"
-        >
-          <span class="flex items-center gap-3">
-            <svg viewBox="0 0 24 24" class="h-5 w-5 text-white/85" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 12h18M3 17h18" />
-            </svg>
-            Proyectos
-          </span>
-          <svg id="sidebar-projects-chevron" viewBox="0 0 24 24" class="h-4 w-4 text-white/70 transition-transform rotate-180" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-        <div id="sidebar-projects-panel" class="overflow-hidden transition-[max-height] duration-300 ease-in-out" style="max-height: 520px;">
-          <div class="mt-1 space-y-1 pl-2">
-            <a href="proyectos.php" class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-white/75 hover:bg-white/10 hover:text-white">
-              <span class="h-1.5 w-1.5 rounded-full bg-white/40"></span>
-              Ver todos
-            </a>
-            <div class="h-px bg-white/10 mx-3"></div>
-            <div id="sidebar-recent-projects" class="space-y-1"></div>
-          </div>
-        </div>
-      </div>
-
-      <a
-         href="configuracion.php"
-         class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white"
-         data-sidebar-item="configuracion"
-      >
-        <svg viewBox="0 0 24 24" class="h-5 w-5 text-white/85" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z" />
-          <path stroke-linecap="round" stroke-linejoin="round" d="M19.4 15a7.96 7.96 0 00.1-1 7.96 7.96 0 00-.1-1l2-1.6-2-3.4-2.4 1a8.3 8.3 0 00-1.7-1l-.4-2.6H9.1L8.7 7a8.3 8.3 0 00-1.7 1l-2.4-1-2 3.4L4.6 13a7.96 7.96 0 00-.1 1 7.96 7.96 0 00.1 1l-2 1.6 2 3.4 2.4-1a8.3 8.3 0 001.7 1l.4 2.6h5.8l.4-2.6a8.3 8.3 0 001.7-1l2.4 1 2-3.4-2-1.6z" />
-        </svg>
-        Configuración
-      </a>
-    </nav>
-  </aside>
+  <?php
+    $sidebarActive = 'proyectos';
+    $sidebarSeedProjects = [];
+    $sidebarCurrentProject = ['t' => $projectToken, 'name' => $proyectoNombre];
+    include __DIR__ . '/../layouts/sidebar.php';
+  ?>
 
   <!-- MAIN -->
   <div class="flex flex-col">
@@ -214,6 +147,21 @@
               <h2 class="text-lg font-semibold">Overview</h2>
               <p class="mt-1 text-sm text-neutral-600">Resumen general del proyecto.</p>
             </div>
+            <?php if (!empty($isCreador)) : ?>
+            <button
+              id="members-manage-open"
+              type="button"
+              class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"
+            >
+              <svg viewBox="0 0 24 24" class="h-5 w-5 text-neutral-700" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.5 11a4 4 0 100-8 4 4 0 000 8z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M22 21v-2a4 4 0 00-3-3.87" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 3.13a4 4 0 010 7.75" />
+              </svg>
+              Gestionar Miembros
+            </button>
+            <?php endif; ?>
           </div>
 
           <div class="mt-5 space-y-4">
@@ -276,18 +224,34 @@
                   <table class="min-w-full text-left text-sm">
                     <thead class="bg-neutral-50 text-xs font-semibold text-neutral-600">
                       <tr>
-                        <th scope="col" class="px-4 py-3">Objetivo estratégico</th>
-                        <th scope="col" class="w-40 px-4 py-3 text-right">Específicos</th>
+                        <th scope="col" class="w-[45%] px-4 py-3">Objetivo estratégico</th>
+                        <th scope="col" class="px-4 py-3">Objetivos específicos</th>
                       </tr>
                     </thead>
                     <tbody class="divide-y divide-neutral-200">
                       <?php foreach ($objetivosEstrategicos as $obj) : ?>
+                        <?php
+                          $oeId = (int) ($obj['id_objetivo_est'] ?? 0);
+                          $esps = ($oeId > 0 && isset($objetivosEspecificosByEstrategico[$oeId]) && is_array($objetivosEspecificosByEstrategico[$oeId]))
+                            ? $objetivosEspecificosByEstrategico[$oeId]
+                            : [];
+                        ?>
                         <tr>
                           <td class="px-4 py-3 text-neutral-800">
                             <?php echo htmlspecialchars((string) ($obj['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
                           </td>
-                          <td class="px-4 py-3 text-right text-neutral-800">
-                            <?php echo (int) ($obj['especificos_count'] ?? 0); ?>
+                          <td class="px-4 py-3 text-neutral-800">
+                            <?php if (empty($esps)) : ?>
+                              <span class="text-sm text-neutral-500">Sin objetivos específicos</span>
+                            <?php else : ?>
+                              <div class="overflow-hidden rounded-xl border border-neutral-200 bg-white">
+                                <?php foreach ($esps as $esp) : ?>
+                                  <div class="border-t border-neutral-200 first:border-t-0 px-3 py-2 text-sm text-neutral-800 leading-relaxed">
+                                    <?php echo htmlspecialchars((string) ($esp['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+                                  </div>
+                                <?php endforeach; ?>
+                              </div>
+                            <?php endif; ?>
                           </td>
                         </tr>
                       <?php endforeach; ?>
@@ -298,6 +262,91 @@
             </div>
           </div>
         </section>
+
+        <?php if (!empty($isCreador)) : ?>
+        <section id="panel-miembros" class="project-panel hidden bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 class="text-lg font-semibold">Gestionar miembros</h2>
+              <p class="mt-1 text-sm text-neutral-600">Invita por correo y administra accesos del proyecto.</p>
+            </div>
+            <button id="members-back" type="button" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+              Volver
+            </button>
+          </div>
+
+          <div class="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="text-sm font-semibold text-neutral-900">Invitar</div>
+              <form id="invite-member-form" class="flex w-full max-w-xl items-center gap-2 sm:w-auto" method="post" action="detalle-proyecto.php">
+                <input type="hidden" name="action" value="invite_member" />
+                <input type="hidden" name="t" value="<?php echo htmlspecialchars((string) $projectToken, ENT_QUOTES, 'UTF-8'); ?>" />
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Invitar por email"
+                  class="h-10 w-full rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200"
+                  required
+                />
+                <button type="submit" class="h-10 shrink-0 rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-brand-700">
+                  Invitar
+                </button>
+              </form>
+            </div>
+
+            <div class="mt-4 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
+              <table class="min-w-full text-left text-sm">
+                <thead class="bg-neutral-50 text-xs font-semibold text-neutral-600">
+                  <tr>
+                    <th scope="col" class="px-4 py-3">Nombre</th>
+                    <th scope="col" class="px-4 py-3">Email</th>
+                    <th scope="col" class="w-32 px-4 py-3">Rol</th>
+                    <th scope="col" class="w-32 px-4 py-3 text-right">Acción</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-neutral-200">
+                  <?php if (empty($miembros)) : ?>
+                    <tr>
+                      <td colspan="4" class="px-4 py-4 text-sm text-neutral-600">Aún no hay miembros.</td>
+                    </tr>
+                  <?php else : ?>
+                    <?php foreach ($miembros as $m) : ?>
+                      <tr data-member-row="<?php echo (int) ($m['id_persona'] ?? 0); ?>">
+                        <td class="px-4 py-3 text-neutral-800">
+                          <?php echo htmlspecialchars((string) ($m['nombre'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+                        </td>
+                        <td class="px-4 py-3 text-neutral-700">
+                          <?php echo htmlspecialchars((string) ($m['email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+                        </td>
+                        <td class="px-4 py-3">
+                          <?php $rol = (string) ($m['rol'] ?? ''); ?>
+                          <span class="<?php echo $rol === 'CREADOR' ? 'inline-flex items-center rounded-xl bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700' : 'inline-flex items-center rounded-xl bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-700'; ?>">
+                            <?php echo htmlspecialchars($rol, ENT_QUOTES, 'UTF-8'); ?>
+                          </span>
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                          <?php if ($rol === 'CREADOR') : ?>
+                            <span class="text-xs text-neutral-500">—</span>
+                          <?php else : ?>
+                            <form class="remove-member-form inline-flex" method="post" action="detalle-proyecto.php">
+                              <input type="hidden" name="action" value="remove_member" />
+                              <input type="hidden" name="t" value="<?php echo htmlspecialchars((string) $projectToken, ENT_QUOTES, 'UTF-8'); ?>" />
+                              <input type="hidden" name="id_persona" value="<?php echo (int) ($m['id_persona'] ?? 0); ?>" />
+                              <button type="submit" class="inline-flex h-9 items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 text-xs font-semibold text-red-700 hover:bg-red-100">
+                                Eliminar
+                              </button>
+                            </form>
+                          <?php endif; ?>
+                        </td>
+                      </tr>
+                    <?php endforeach; ?>
+                  <?php endif; ?>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+        <?php endif; ?>
 
         <section id="panel-mision" class="project-panel hidden bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
           <div class="flex items-center justify-between gap-3">
@@ -855,6 +904,104 @@
             </div>
           </div>
 
+          <div class="mt-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div class="text-sm font-semibold text-neutral-900">FODA</div>
+                <div class="mt-0.5 text-xs text-neutral-500">Fortalezas y debilidades obtenidas desde Cadena de valor.</div>
+              </div>
+              <button
+                id="foda-save"
+                type="button"
+                class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600/25"
+              >
+                Guardar FODA
+              </button>
+            </div>
+
+            <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                <div class="flex items-center justify-between gap-3">
+                  <div class="text-sm font-semibold text-neutral-900">Fortalezas</div>
+                  <button id="foda-add-fortaleza" type="button" class="inline-flex h-9 items-center justify-center rounded-xl border border-neutral-200 bg-white px-3 text-xs font-semibold text-neutral-800 hover:bg-neutral-50">
+                    Agregar
+                  </button>
+                </div>
+                <div class="mt-3 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
+                  <table class="min-w-full text-left text-sm">
+                    <thead class="bg-neutral-50 text-xs font-semibold text-neutral-600">
+                      <tr>
+                        <th scope="col" class="w-14 px-4 py-3 text-center">#</th>
+                        <th scope="col" class="px-4 py-3">Descripción</th>
+                        <th scope="col" class="w-24 px-4 py-3 text-right">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody id="foda-fortalezas-body" class="divide-y divide-neutral-200">
+                      <?php
+                        $fortRows = array_values(array_filter(array_map('trim', array_map('strval', $fodaFortalezas))));
+                        $fortTarget = max(3, count($fortRows));
+                        for ($i = 0; $i < $fortTarget; $i++) :
+                          $value = $fortRows[$i] ?? '';
+                      ?>
+                        <tr data-foda-row="fortaleza">
+                          <td class="px-4 py-3 text-center text-xs font-semibold text-neutral-600"><?php echo $i + 1; ?></td>
+                          <td class="px-4 py-2">
+                            <input type="text" value="<?php echo htmlspecialchars($value, ENT_QUOTES, 'UTF-8'); ?>" class="foda-input h-10 w-full rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200" />
+                          </td>
+                          <td class="px-4 py-2 text-right">
+                            <button type="button" class="foda-remove inline-flex h-9 items-center justify-center rounded-xl border border-neutral-200 bg-white px-3 text-xs font-semibold text-neutral-800 hover:bg-neutral-50">
+                              Quitar
+                            </button>
+                          </td>
+                        </tr>
+                      <?php endfor; ?>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                <div class="flex items-center justify-between gap-3">
+                  <div class="text-sm font-semibold text-neutral-900">Debilidades</div>
+                  <button id="foda-add-debilidad" type="button" class="inline-flex h-9 items-center justify-center rounded-xl border border-neutral-200 bg-white px-3 text-xs font-semibold text-neutral-800 hover:bg-neutral-50">
+                    Agregar
+                  </button>
+                </div>
+                <div class="mt-3 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
+                  <table class="min-w-full text-left text-sm">
+                    <thead class="bg-neutral-50 text-xs font-semibold text-neutral-600">
+                      <tr>
+                        <th scope="col" class="w-14 px-4 py-3 text-center">#</th>
+                        <th scope="col" class="px-4 py-3">Descripción</th>
+                        <th scope="col" class="w-24 px-4 py-3 text-right">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody id="foda-debilidades-body" class="divide-y divide-neutral-200">
+                      <?php
+                        $debRows = array_values(array_filter(array_map('trim', array_map('strval', $fodaDebilidades))));
+                        $debTarget = max(3, count($debRows));
+                        for ($i = 0; $i < $debTarget; $i++) :
+                          $value = $debRows[$i] ?? '';
+                      ?>
+                        <tr data-foda-row="debilidad">
+                          <td class="px-4 py-3 text-center text-xs font-semibold text-neutral-600"><?php echo $i + 1; ?></td>
+                          <td class="px-4 py-2">
+                            <input type="text" value="<?php echo htmlspecialchars($value, ENT_QUOTES, 'UTF-8'); ?>" class="foda-input h-10 w-full rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200" />
+                          </td>
+                          <td class="px-4 py-2 text-right">
+                            <button type="button" class="foda-remove inline-flex h-9 items-center justify-center rounded-xl border border-neutral-200 bg-white px-3 text-xs font-semibold text-neutral-800 hover:bg-neutral-50">
+                              Quitar
+                            </button>
+                          </td>
+                        </tr>
+                      <?php endfor; ?>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div id="cvi-toast" class="pointer-events-none fixed bottom-6 right-6 z-50 hidden w-full max-w-sm">
             <div id="cvi-toast-card" class="pointer-events-auto rounded-2xl border border-neutral-200 bg-white p-4 shadow-lg">
               <div class="flex items-start justify-between gap-3">
@@ -911,140 +1058,6 @@
     }
   });
 
-  const recentProjectsKey = "ri:recent-projects";
-  const sidebarActiveKey = "ri:sidebar:active";
-  const sidebarProjectsOpenKey = "ri:sidebar:projects_open";
-  const sidebarProjectsToggle = document.getElementById("sidebar-projects-toggle");
-  const sidebarProjectsChevron = document.getElementById("sidebar-projects-chevron");
-  const sidebarProjectsPanel = document.getElementById("sidebar-projects-panel");
-  const sidebarRecentProjects = document.getElementById("sidebar-recent-projects");
-
-  function readRecentProjects() {
-    try {
-      const raw = window.localStorage.getItem(recentProjectsKey);
-      const parsed = JSON.parse(raw || "[]");
-      if (!Array.isArray(parsed)) return [];
-      return parsed
-        .filter((x) => x && typeof x === "object" && typeof x.t === "string" && x.t.length > 0 && typeof x.name === "string")
-        .slice(0, 10);
-    } catch (e) {
-      return [];
-    }
-  }
-
-  function writeRecentProjects(list) {
-    try {
-      window.localStorage.setItem(recentProjectsKey, JSON.stringify(list));
-    } catch (e) {}
-  }
-
-  function pushRecentProject(t, name) {
-    if (!t || !name) return;
-    const now = Date.now();
-    const current = readRecentProjects();
-    const filtered = current.filter((x) => x.t !== t);
-    filtered.unshift({ t, name, ts: now });
-    writeRecentProjects(filtered.slice(0, 10));
-  }
-
-  function readProjectsOpen() {
-    try {
-      return window.localStorage.getItem(sidebarProjectsOpenKey) === "1";
-    } catch (e) {
-      return true;
-    }
-  }
-
-  function writeProjectsOpen(open) {
-    try {
-      window.localStorage.setItem(sidebarProjectsOpenKey, open ? "1" : "0");
-    } catch (e) {}
-  }
-
-  function setProjectsPanelOpen(open) {
-    if (!sidebarProjectsToggle || !sidebarProjectsPanel) return;
-    const shouldOpen = !!open;
-    sidebarProjectsToggle.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
-    if (sidebarProjectsChevron) {
-      sidebarProjectsChevron.style.transform = shouldOpen ? "rotate(180deg)" : "rotate(0deg)";
-    }
-    if (shouldOpen) {
-      sidebarProjectsPanel.style.maxHeight = `${sidebarProjectsPanel.scrollHeight}px`;
-    } else {
-      sidebarProjectsPanel.style.maxHeight = "0px";
-    }
-    writeProjectsOpen(shouldOpen);
-  }
-
-  function setSidebarActive(value) {
-    const items = Array.from(document.querySelectorAll("[data-sidebar-item]"));
-    for (const el of items) {
-      const key = el.getAttribute("data-sidebar-item");
-      if (!key) continue;
-      const isActive = key === value;
-      if (key === "proyectos" && el.tagName.toLowerCase() === "button") {
-        el.className = isActive
-          ? "w-full flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-medium bg-white/10 text-white"
-          : "w-full flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white";
-        continue;
-      }
-      if (el.tagName.toLowerCase() === "a") {
-        el.className = isActive
-          ? "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium bg-white/10 text-white"
-          : "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white";
-      }
-    }
-  }
-
-  function renderSidebarRecentProjects() {
-    if (!sidebarRecentProjects) return;
-    const stored = readRecentProjects().slice(0, 3);
-    sidebarRecentProjects.innerHTML = "";
-    if (stored.length === 0) {
-      const empty = document.createElement("div");
-      empty.className = "px-3 py-2 text-sm text-white/60";
-      empty.textContent = "Sin proyectos recientes.";
-      sidebarRecentProjects.appendChild(empty);
-      return;
-    }
-    for (const p of stored) {
-      const a = document.createElement("a");
-      a.className = "flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-white/75 hover:bg-white/10 hover:text-white";
-      a.href = `detalle-proyecto.php?t=${encodeURIComponent(String(p.t))}`;
-      a.addEventListener("click", () => pushRecentProject(String(p.t), String(p.name)));
-
-      const dot = document.createElement("span");
-      dot.className = "h-1.5 w-1.5 rounded-full bg-white/40";
-
-      const label = document.createElement("span");
-      label.className = "truncate";
-      label.textContent = String(p.name || "—");
-
-      a.appendChild(dot);
-      a.appendChild(label);
-      sidebarRecentProjects.appendChild(a);
-    }
-
-    if (sidebarProjectsToggle && sidebarProjectsPanel && sidebarProjectsToggle.getAttribute("aria-expanded") === "true") {
-      sidebarProjectsPanel.style.maxHeight = `${sidebarProjectsPanel.scrollHeight}px`;
-    }
-  }
-
-  if (sidebarProjectsToggle) {
-    sidebarProjectsToggle.addEventListener("click", () => {
-      const expanded = sidebarProjectsToggle.getAttribute("aria-expanded") === "true";
-      setProjectsPanelOpen(!expanded);
-    });
-  }
-
-  pushRecentProject(projectToken || "", projectName || "");
-  try {
-    window.sessionStorage.setItem(sidebarActiveKey, "proyectos");
-  } catch (e) {}
-  setSidebarActive("proyectos");
-  renderSidebarRecentProjects();
-  setProjectsPanelOpen(readProjectsOpen() || true);
-
   const allowedPanels = new Set(["overview", "mision", "vision", "valores", "objetivos", "cadena", "bgg"]);
   const panelStorageKey = projectToken ? `ri:detalle-proyecto:section:${projectToken}` : "ri:detalle-proyecto:section";
 
@@ -1063,7 +1076,8 @@
     }
 
     projectTabs.forEach((tab) => {
-      const isActive = panelId && tab.getAttribute("data-panel") === panelId;
+      const highlightPanel = panelId === "miembros" ? "overview" : panelId;
+      const isActive = highlightPanel && tab.getAttribute("data-panel") === highlightPanel;
       tab.className = isActive
         ? "project-tab rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
         : "project-tab rounded-xl px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-brand-50";
@@ -1078,10 +1092,16 @@
     if (!updateUrl) return;
 
     const url = new URL(window.location.href);
-    if (panelId) {
-      url.searchParams.set("section", panelId);
+    if (panelId === "miembros") {
+      url.searchParams.set("members", "1");
+      url.searchParams.set("section", "overview");
     } else {
-      url.searchParams.delete("section");
+      url.searchParams.delete("members");
+      if (panelId) {
+        url.searchParams.set("section", panelId);
+      } else {
+        url.searchParams.delete("section");
+      }
     }
     const edit = url.searchParams.get("edit");
     if (edit && edit !== panelId) {
@@ -1101,6 +1121,7 @@
   const url = new URL(window.location.href);
   const editParam = url.searchParams.get("edit");
   const sectionParam = url.searchParams.get("section");
+  const membersParam = url.searchParams.get("members");
   const oeEditParam = url.searchParams.get("oe_edit");
   const oespEditParam = url.searchParams.get("oesp_edit");
   let storedPanel = "";
@@ -1112,6 +1133,7 @@
   const initialPanel =
     (editParam === "mision" || editParam === "vision" || editParam === "valores") ? editParam :
     ((oeEditParam || oespEditParam) ? "objetivos" : null) ||
+    ((membersParam === "1" && document.getElementById("panel-miembros")) ? "miembros" : null) ||
     (normalizedSectionParam || normalizedStoredPanel || "overview");
 
   setActiveProjectPanel(initialPanel, { updateUrl: false });
@@ -1361,6 +1383,11 @@
   const cviResultSubEl = document.getElementById("cvi-result-sub");
   const cviSaveButton = document.getElementById("cvi-save");
   const cviRows = Array.from(document.querySelectorAll("[data-cvi-row]"));
+  const fodaSaveButton = document.getElementById("foda-save");
+  const fodaFortBody = document.getElementById("foda-fortalezas-body");
+  const fodaDebBody = document.getElementById("foda-debilidades-body");
+  const fodaAddFort = document.getElementById("foda-add-fortaleza");
+  const fodaAddDeb = document.getElementById("foda-add-debilidad");
   const cviToast = document.getElementById("cvi-toast");
   const cviToastCard = document.getElementById("cvi-toast-card");
   const cviToastTitle = document.getElementById("cvi-toast-title");
@@ -1396,6 +1423,147 @@
 
   if (cviToastClose) {
     cviToastClose.addEventListener("click", () => cviCloseToast());
+  }
+
+  function renumberFodaRows(tbody) {
+    const rows = Array.from(tbody.querySelectorAll("tr"));
+    rows.forEach((row, idx) => {
+      const n = row.querySelector("td");
+      if (n) n.textContent = String(idx + 1);
+    });
+  }
+
+  function attachFodaRemoveHandlers(tbody) {
+    tbody.querySelectorAll(".foda-remove").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const row = btn.closest("tr");
+        if (row) row.remove();
+        renumberFodaRows(tbody);
+      });
+    });
+  }
+
+  function createFodaRow(kind) {
+    const tr = document.createElement("tr");
+    tr.setAttribute("data-foda-row", kind);
+
+    const tdN = document.createElement("td");
+    tdN.className = "px-4 py-3 text-center text-xs font-semibold text-neutral-600";
+    tdN.textContent = "—";
+
+    const tdInput = document.createElement("td");
+    tdInput.className = "px-4 py-2";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "foda-input h-10 w-full rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200";
+    tdInput.appendChild(input);
+
+    const tdAction = document.createElement("td");
+    tdAction.className = "px-4 py-2 text-right";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "foda-remove inline-flex h-9 items-center justify-center rounded-xl border border-neutral-200 bg-white px-3 text-xs font-semibold text-neutral-800 hover:bg-neutral-50";
+    btn.textContent = "Quitar";
+    tdAction.appendChild(btn);
+
+    tr.appendChild(tdN);
+    tr.appendChild(tdInput);
+    tr.appendChild(tdAction);
+    return tr;
+  }
+
+  if (fodaFortBody) attachFodaRemoveHandlers(fodaFortBody);
+  if (fodaDebBody) attachFodaRemoveHandlers(fodaDebBody);
+  if (fodaFortBody) renumberFodaRows(fodaFortBody);
+  if (fodaDebBody) renumberFodaRows(fodaDebBody);
+
+  if (fodaAddFort && fodaFortBody) {
+    fodaAddFort.addEventListener("click", () => {
+      const tr = createFodaRow("fortaleza");
+      fodaFortBody.appendChild(tr);
+      attachFodaRemoveHandlers(fodaFortBody);
+      renumberFodaRows(fodaFortBody);
+      tr.querySelector("input")?.focus();
+    });
+  }
+
+  if (fodaAddDeb && fodaDebBody) {
+    fodaAddDeb.addEventListener("click", () => {
+      const tr = createFodaRow("debilidad");
+      fodaDebBody.appendChild(tr);
+      attachFodaRemoveHandlers(fodaDebBody);
+      renumberFodaRows(fodaDebBody);
+      tr.querySelector("input")?.focus();
+    });
+  }
+
+  function collectFodaValues(tbody) {
+    const rows = Array.from(tbody.querySelectorAll("tr"));
+    const out = [];
+    for (const row of rows) {
+      const value = (row.querySelector("input")?.value || "").trim();
+      if (value) out.push(value);
+    }
+    return out;
+  }
+
+  let fodaSaving = false;
+  if (fodaSaveButton) {
+    fodaSaveButton.addEventListener("click", async () => {
+      if (fodaSaving) return;
+      fodaSaving = true;
+      fodaSaveButton.disabled = true;
+      try {
+        const fortalezas = fodaFortBody ? collectFodaValues(fodaFortBody) : [];
+        const debilidades = fodaDebBody ? collectFodaValues(fodaDebBody) : [];
+        const payload = JSON.stringify({ fortalezas, debilidades });
+
+        const fd = new FormData();
+        fd.set("action", "save_foda_cadena");
+        fd.set("t", projectToken || "");
+        fd.set("payload", payload);
+
+        const res = await fetch("detalle-proyecto.php", {
+          method: "POST",
+          headers: { "Accept": "application/json", "X-Requested-With": "XMLHttpRequest" },
+          body: fd,
+        });
+        const data = await res.json().catch(() => null);
+        if (!data || data.ok !== true) {
+          cviShowToast("error", "Error", (data && data.error) ? String(data.error) : "No se pudo guardar el FODA.");
+          return;
+        }
+        cviShowToast("success", "Guardado", "FODA guardado correctamente.");
+      } catch (e) {
+        cviShowToast("error", "Error", "No se pudo guardar el FODA.");
+      } finally {
+        fodaSaveButton.disabled = false;
+        fodaSaving = false;
+      }
+    });
+  }
+
+  const membersManageOpen = document.getElementById("members-manage-open");
+  const membersBack = document.getElementById("members-back");
+
+  if (membersManageOpen) {
+    membersManageOpen.addEventListener("click", () => {
+      setActiveProjectPanel("miembros", { updateUrl: false });
+      const u = new URL(window.location.href);
+      u.searchParams.set("members", "1");
+      window.history.replaceState({}, "", u.toString());
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+
+  if (membersBack) {
+    membersBack.addEventListener("click", () => {
+      setActiveProjectPanel("overview");
+      const u = new URL(window.location.href);
+      u.searchParams.delete("members");
+      window.history.replaceState({}, "", u.toString());
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
   }
 
   function cviUpdateRowStyles(row) {

@@ -28,7 +28,10 @@ CREATE TABLE proyecto_miembro (
     CONSTRAINT fk_pm_persona
         FOREIGN KEY (id_persona)
         REFERENCES persona(id_persona)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT uq_pm_proyecto_persona
+        UNIQUE (id_proyecto, id_persona)
 );
 
 CREATE TABLE vision (
@@ -123,6 +126,28 @@ CREATE TABLE cadena_valor_resultado (
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
 
     CONSTRAINT fk_cvi_res_proyecto
+        FOREIGN KEY (id_proyecto)
+        REFERENCES proyecto(id_proyecto)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE foda_item (
+    id_item SERIAL PRIMARY KEY,
+    id_proyecto INT NOT NULL,
+    fuente VARCHAR(50) NOT NULL,
+    tipo VARCHAR(20) NOT NULL,
+    posicion INT NOT NULL,
+    descripcion TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT chk_foda_tipo
+        CHECK (tipo IN ('FORTALEZA', 'DEBILIDAD')),
+
+    CONSTRAINT uq_foda_proyecto_fuente_tipo_pos
+        UNIQUE (id_proyecto, fuente, tipo, posicion),
+
+    CONSTRAINT fk_foda_proyecto
         FOREIGN KEY (id_proyecto)
         REFERENCES proyecto(id_proyecto)
         ON DELETE CASCADE
