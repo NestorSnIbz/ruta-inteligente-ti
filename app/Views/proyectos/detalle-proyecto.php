@@ -54,18 +54,57 @@
     </div>
 
     <nav class="px-3 pb-6">
-      <a href="dashboard.php"
-         class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white">
+      <a
+         href="dashboard.php"
+         class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white"
+         data-sidebar-item="dashboard"
+      >
+        <svg viewBox="0 0 24 24" class="h-5 w-5 text-white/85" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9v9a2 2 0 01-2 2h-4v-6H9v6H5a2 2 0 01-2-2v-9z" />
+        </svg>
         Dashboard
       </a>
 
-      <a href="proyectos.php"
-         class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium bg-white/10">
-        Proyectos
-      </a>
+      <div class="mt-1">
+        <button
+          id="sidebar-projects-toggle"
+          type="button"
+          class="w-full flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-medium bg-white/10 text-white"
+          aria-expanded="true"
+          aria-controls="sidebar-projects-panel"
+          data-sidebar-item="proyectos"
+        >
+          <span class="flex items-center gap-3">
+            <svg viewBox="0 0 24 24" class="h-5 w-5 text-white/85" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 12h18M3 17h18" />
+            </svg>
+            Proyectos
+          </span>
+          <svg id="sidebar-projects-chevron" viewBox="0 0 24 24" class="h-4 w-4 text-white/70 transition-transform rotate-180" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <div id="sidebar-projects-panel" class="overflow-hidden transition-[max-height] duration-300 ease-in-out" style="max-height: 520px;">
+          <div class="mt-1 space-y-1 pl-2">
+            <a href="proyectos.php" class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-white/75 hover:bg-white/10 hover:text-white">
+              <span class="h-1.5 w-1.5 rounded-full bg-white/40"></span>
+              Ver todos
+            </a>
+            <div class="h-px bg-white/10 mx-3"></div>
+            <div id="sidebar-recent-projects" class="space-y-1"></div>
+          </div>
+        </div>
+      </div>
 
-      <a href="configuracion.php"
-         class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white">
+      <a
+         href="configuracion.php"
+         class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white"
+         data-sidebar-item="configuracion"
+      >
+        <svg viewBox="0 0 24 24" class="h-5 w-5 text-white/85" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19.4 15a7.96 7.96 0 00.1-1 7.96 7.96 0 00-.1-1l2-1.6-2-3.4-2.4 1a8.3 8.3 0 00-1.7-1l-.4-2.6H9.1L8.7 7a8.3 8.3 0 00-1.7 1l-2.4-1-2 3.4L4.6 13a7.96 7.96 0 00-.1 1 7.96 7.96 0 00.1 1l-2 1.6 2 3.4 2.4-1a8.3 8.3 0 001.7 1l.4 2.6h5.8l.4-2.6a8.3 8.3 0 001.7-1l2.4 1 2-3.4-2-1.6z" />
+        </svg>
         Configuración
       </a>
     </nav>
@@ -848,6 +887,7 @@
 
 <script>
   const projectToken = <?php echo json_encode((string) $projectToken, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+  const projectName = <?php echo json_encode((string) $proyectoNombre, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
   const flashModal = document.getElementById("flash-modal");
   const flashBackdrop = document.getElementById("flash-backdrop");
   const flashClose = document.getElementById("flash-close");
@@ -870,6 +910,140 @@
       closeFlashModal();
     }
   });
+
+  const recentProjectsKey = "ri:recent-projects";
+  const sidebarActiveKey = "ri:sidebar:active";
+  const sidebarProjectsOpenKey = "ri:sidebar:projects_open";
+  const sidebarProjectsToggle = document.getElementById("sidebar-projects-toggle");
+  const sidebarProjectsChevron = document.getElementById("sidebar-projects-chevron");
+  const sidebarProjectsPanel = document.getElementById("sidebar-projects-panel");
+  const sidebarRecentProjects = document.getElementById("sidebar-recent-projects");
+
+  function readRecentProjects() {
+    try {
+      const raw = window.localStorage.getItem(recentProjectsKey);
+      const parsed = JSON.parse(raw || "[]");
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .filter((x) => x && typeof x === "object" && typeof x.t === "string" && x.t.length > 0 && typeof x.name === "string")
+        .slice(0, 10);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function writeRecentProjects(list) {
+    try {
+      window.localStorage.setItem(recentProjectsKey, JSON.stringify(list));
+    } catch (e) {}
+  }
+
+  function pushRecentProject(t, name) {
+    if (!t || !name) return;
+    const now = Date.now();
+    const current = readRecentProjects();
+    const filtered = current.filter((x) => x.t !== t);
+    filtered.unshift({ t, name, ts: now });
+    writeRecentProjects(filtered.slice(0, 10));
+  }
+
+  function readProjectsOpen() {
+    try {
+      return window.localStorage.getItem(sidebarProjectsOpenKey) === "1";
+    } catch (e) {
+      return true;
+    }
+  }
+
+  function writeProjectsOpen(open) {
+    try {
+      window.localStorage.setItem(sidebarProjectsOpenKey, open ? "1" : "0");
+    } catch (e) {}
+  }
+
+  function setProjectsPanelOpen(open) {
+    if (!sidebarProjectsToggle || !sidebarProjectsPanel) return;
+    const shouldOpen = !!open;
+    sidebarProjectsToggle.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+    if (sidebarProjectsChevron) {
+      sidebarProjectsChevron.style.transform = shouldOpen ? "rotate(180deg)" : "rotate(0deg)";
+    }
+    if (shouldOpen) {
+      sidebarProjectsPanel.style.maxHeight = `${sidebarProjectsPanel.scrollHeight}px`;
+    } else {
+      sidebarProjectsPanel.style.maxHeight = "0px";
+    }
+    writeProjectsOpen(shouldOpen);
+  }
+
+  function setSidebarActive(value) {
+    const items = Array.from(document.querySelectorAll("[data-sidebar-item]"));
+    for (const el of items) {
+      const key = el.getAttribute("data-sidebar-item");
+      if (!key) continue;
+      const isActive = key === value;
+      if (key === "proyectos" && el.tagName.toLowerCase() === "button") {
+        el.className = isActive
+          ? "w-full flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-medium bg-white/10 text-white"
+          : "w-full flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white";
+        continue;
+      }
+      if (el.tagName.toLowerCase() === "a") {
+        el.className = isActive
+          ? "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium bg-white/10 text-white"
+          : "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white";
+      }
+    }
+  }
+
+  function renderSidebarRecentProjects() {
+    if (!sidebarRecentProjects) return;
+    const stored = readRecentProjects().slice(0, 3);
+    sidebarRecentProjects.innerHTML = "";
+    if (stored.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "px-3 py-2 text-sm text-white/60";
+      empty.textContent = "Sin proyectos recientes.";
+      sidebarRecentProjects.appendChild(empty);
+      return;
+    }
+    for (const p of stored) {
+      const a = document.createElement("a");
+      a.className = "flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-white/75 hover:bg-white/10 hover:text-white";
+      a.href = `detalle-proyecto.php?t=${encodeURIComponent(String(p.t))}`;
+      a.addEventListener("click", () => pushRecentProject(String(p.t), String(p.name)));
+
+      const dot = document.createElement("span");
+      dot.className = "h-1.5 w-1.5 rounded-full bg-white/40";
+
+      const label = document.createElement("span");
+      label.className = "truncate";
+      label.textContent = String(p.name || "—");
+
+      a.appendChild(dot);
+      a.appendChild(label);
+      sidebarRecentProjects.appendChild(a);
+    }
+
+    if (sidebarProjectsToggle && sidebarProjectsPanel && sidebarProjectsToggle.getAttribute("aria-expanded") === "true") {
+      sidebarProjectsPanel.style.maxHeight = `${sidebarProjectsPanel.scrollHeight}px`;
+    }
+  }
+
+  if (sidebarProjectsToggle) {
+    sidebarProjectsToggle.addEventListener("click", () => {
+      const expanded = sidebarProjectsToggle.getAttribute("aria-expanded") === "true";
+      setProjectsPanelOpen(!expanded);
+    });
+  }
+
+  pushRecentProject(projectToken || "", projectName || "");
+  try {
+    window.sessionStorage.setItem(sidebarActiveKey, "proyectos");
+  } catch (e) {}
+  setSidebarActive("proyectos");
+  renderSidebarRecentProjects();
+  setProjectsPanelOpen(readProjectsOpen() || true);
 
   const allowedPanels = new Set(["overview", "mision", "vision", "valores", "objetivos", "cadena", "bgg"]);
   const panelStorageKey = projectToken ? `ri:detalle-proyecto:section:${projectToken}` : "ri:detalle-proyecto:section";
