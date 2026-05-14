@@ -19,20 +19,20 @@
   $seed = [];
   foreach ($sidebarSeedProjects as $p) {
     if (!is_array($p)) continue;
-    $t = (string) ($p['t'] ?? $p['token'] ?? '');
+    $id = (int) ($p['id_proyecto'] ?? $p['id'] ?? 0);
     $n = (string) ($p['name'] ?? $p['nombre'] ?? '');
-    if ($t !== '' && $n !== '') {
-      $seed[] = ['t' => $t, 'name' => $n];
+    if ($id > 0 && $n !== '') {
+      $seed[] = ['id' => $id, 'name' => $n];
     }
     if (count($seed) >= 10) break;
   }
 
   $currentProject = null;
   if (is_array($sidebarCurrentProject)) {
-    $t = (string) ($sidebarCurrentProject['t'] ?? $sidebarCurrentProject['token'] ?? '');
+    $id = (int) ($sidebarCurrentProject['id'] ?? 0);
     $n = (string) ($sidebarCurrentProject['name'] ?? $sidebarCurrentProject['nombre'] ?? '');
-    if ($t !== '' && $n !== '') {
-      $currentProject = ['t' => $t, 'name' => $n];
+    if ($id > 0 && $n !== '') {
+      $currentProject = ['id' => $id, 'name' => $n];
     }
   }
 ?>
@@ -157,7 +157,7 @@
     const seedProjects = <?php echo json_encode($seed, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
     const currentProject = <?php echo json_encode($currentProject, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
-    const recentProjectsKey = currentUserId ? `ri:recent-projects:${currentUserId}` : "ri:recent-projects";
+    const recentProjectsKey = currentUserId ? `ri:recent-project-ids:${currentUserId}` : "ri:recent-project-ids";
     const sidebarActiveKey = "ri:sidebar:active";
     const sidebarProjectsOpenKey = "ri:sidebar:projects_open";
 
@@ -262,7 +262,9 @@
         const raw = window.localStorage.getItem(recentProjectsKey);
         const parsed = JSON.parse(raw || "[]");
         if (!Array.isArray(parsed)) return [];
-        return parsed.filter((x) => x && typeof x === "object" && typeof x.t === "string" && x.t.length > 0 && typeof x.name === "string").slice(0, 10);
+        return parsed
+          .filter((x) => x && typeof x === "object" && Number.isFinite(Number(x.id)) && Number(x.id) > 0 && typeof x.name === "string")
+          .slice(0, 10);
       } catch (e) { return []; }
     }
 
@@ -270,31 +272,52 @@
       try { window.localStorage.setItem(recentProjectsKey, JSON.stringify(list)); } catch (e) {}
     }
 
-    function pushRecentProject(token, name) {
-      const t = String(token || "");
+    function pushRecentProject(id, name) {
+      const pid = Number(id);
       const n = String(name || "");
-      if (!t || !n) return;
+      if (!Number.isFinite(pid) || pid <= 0 || !n) return;
       const now = Date.now();
       const current = readRecentProjects();
-      const filtered = current.filter((x) => x.t !== t);
-      filtered.unshift({ t, name: n, ts: now });
+      const filtered = current.filter((x) => Number(x.id) !== pid);
+      filtered.unshift({ id: pid, name: n, ts: now });
       writeRecentProjects(filtered.slice(0, 10));
       renderSidebarRecentProjects();
     }
 
+    let dbLatestProjects = null;
+
+    async function fetchDbLatestProjects() {
+      try {
+        const res = await fetch("proyectos.php?format=json&recent=1", { headers: { Accept: "application/json" } });
+        const json = await res.json();
+        if (!json || json.ok !== true || !Array.isArray(json.projects)) return null;
+        const parsed = json.projects
+          .map((p) => ({
+            id: Number(p.id_proyecto),
+            name: String(p.nombre || ""),
+          }))
+          .filter((p) => Number.isFinite(p.id) && p.id > 0 && p.name);
+        return parsed.slice(0, 3);
+      } catch (e) {
+        return null;
+      }
+    }
+
     function renderSidebarRecentProjects() {
       if (!sidebarRecentProjects) return;
-      const stored = readRecentProjects();
-      const list = [];
-      for (const item of stored) {
-        list.push(item);
-        if (list.length >= 3) break;
+      let list = Array.isArray(dbLatestProjects) ? dbLatestProjects.slice(0, 3) : [];
+      if (list.length === 0) {
+        const stored = readRecentProjects();
+        for (const item of stored) {
+          list.push(item);
+          if (list.length >= 3) break;
+        }
       }
       if (list.length < 3 && Array.isArray(seedProjects)) {
         for (const p of seedProjects) {
           if (!p || typeof p !== "object") continue;
-          if (list.some((x) => x.t === p.t)) continue;
-          list.push({ t: p.t, name: p.name, ts: 0 });
+          if (list.some((x) => Number(x.id) === Number(p.id))) continue;
+          list.push({ id: Number(p.id), name: String(p.name || ""), ts: 0 });
           if (list.length >= 3) break;
         }
       }
@@ -311,8 +334,8 @@
       for (const p of list) {
         const a = document.createElement("a");
         a.className = "flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-white/75 hover:bg-white/10 hover:text-white";
-        a.href = `detalle-proyecto.php?t=${encodeURIComponent(String(p.t))}`;
-        a.addEventListener("click", () => pushRecentProject(String(p.t), String(p.name)));
+        a.href = `detalle-proyecto.php?id=${encodeURIComponent(String(p.id))}`;
+        a.addEventListener("click", () => pushRecentProject(Number(p.id), String(p.name)));
 
         const dot = document.createElement("span");
         dot.className = "h-1.5 w-1.5 rounded-full bg-white/40";
@@ -332,9 +355,17 @@
     }
 
     if (sidebarProjectsToggle) {
-      sidebarProjectsToggle.addEventListener("click", () => {
+      sidebarProjectsToggle.addEventListener("click", async () => {
         const expanded = sidebarProjectsToggle.getAttribute("aria-expanded") === "true";
-        setProjectsPanelOpen(!expanded);
+        const willOpen = !expanded;
+        setProjectsPanelOpen(willOpen);
+        if (willOpen) {
+          const latest = await fetchDbLatestProjects();
+          if (latest && latest.length > 0) {
+            dbLatestProjects = latest;
+            renderSidebarRecentProjects();
+          }
+        }
       });
     }
 
@@ -345,7 +376,7 @@
     setProjectsPanelOpen(readProjectsOpen() || active === "proyectos");
 
     if (currentProject && typeof currentProject === "object") {
-      pushRecentProject(String(currentProject.t || ""), String(currentProject.name || ""));
+      pushRecentProject(Number(currentProject.id || 0), String(currentProject.name || ""));
     }
 
     const api = {
