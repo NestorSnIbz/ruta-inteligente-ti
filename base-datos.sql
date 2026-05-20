@@ -153,6 +153,105 @@ CREATE TABLE foda_item (
         ON DELETE CASCADE
 );
 
+CREATE TABLE bcg_producto (
+    id_producto_bcg SERIAL PRIMARY KEY,
+    id_proyecto INT NOT NULL,
+    nombre VARCHAR(150) NOT NULL,
+    ventas_empresa NUMERIC(14,2) NOT NULL DEFAULT 0,
+    porcentaje_ventas NUMERIC(12,6) NOT NULL DEFAULT 0,
+    tcm NUMERIC(12,6) NOT NULL DEFAULT 0,
+    prm NUMERIC(12,6) NOT NULL DEFAULT 0,
+    clasificacion VARCHAR(20) NOT NULL DEFAULT 'PERRO',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT fk_bcg_producto_proyecto
+        FOREIGN KEY (id_proyecto)
+        REFERENCES proyecto(id_proyecto)
+        ON DELETE CASCADE,
+
+    CONSTRAINT uq_bcg_producto_proyecto_nombre
+        UNIQUE (id_proyecto, nombre),
+
+    CONSTRAINT chk_bcg_producto_ventas
+        CHECK (ventas_empresa >= 0)
+);
+
+CREATE TABLE bcg_mercado_periodo (
+    id_periodo SERIAL PRIMARY KEY,
+    id_producto_bcg INT NOT NULL,
+    anio INT NOT NULL,
+    demanda_mercado NUMERIC(14,2) NOT NULL DEFAULT 0,
+
+    CONSTRAINT fk_bcg_periodo_producto
+        FOREIGN KEY (id_producto_bcg)
+        REFERENCES bcg_producto(id_producto_bcg)
+        ON DELETE CASCADE,
+
+    CONSTRAINT uq_bcg_periodo_producto_anio
+        UNIQUE (id_producto_bcg, anio),
+
+    CONSTRAINT chk_bcg_periodo_demanda
+        CHECK (demanda_mercado >= 0)
+);
+
+CREATE TABLE bcg_demanda_sector_periodo (
+    id_periodo_sector SERIAL PRIMARY KEY,
+    id_producto_bcg INT NOT NULL,
+    anio INT NOT NULL,
+    demanda_sector NUMERIC(14,2) NOT NULL DEFAULT 0,
+
+    CONSTRAINT fk_bcg_sector_producto
+        FOREIGN KEY (id_producto_bcg)
+        REFERENCES bcg_producto(id_producto_bcg)
+        ON DELETE CASCADE,
+
+    CONSTRAINT uq_bcg_sector_producto_anio
+        UNIQUE (id_producto_bcg, anio),
+
+    CONSTRAINT chk_bcg_sector_demanda
+        CHECK (demanda_sector >= 0)
+);
+
+CREATE TABLE bcg_competidor (
+    id_competidor SERIAL PRIMARY KEY,
+    id_producto_bcg INT NOT NULL,
+    nombre VARCHAR(150) NOT NULL,
+    ventas NUMERIC(14,2) NOT NULL DEFAULT 0,
+
+    CONSTRAINT fk_bcg_competidor_producto
+        FOREIGN KEY (id_producto_bcg)
+        REFERENCES bcg_producto(id_producto_bcg)
+        ON DELETE CASCADE,
+
+    CONSTRAINT uq_bcg_competidor_producto_nombre
+        UNIQUE (id_producto_bcg, nombre),
+
+    CONSTRAINT chk_bcg_competidor_ventas
+        CHECK (ventas >= 0)
+);
+
+CREATE TABLE bcg_resultado (
+    id_resultado SERIAL PRIMARY KEY,
+    id_proyecto INT NOT NULL,
+    total_ventas NUMERIC(14,2) NOT NULL DEFAULT 0,
+    fecha_calculo TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT fk_bcg_resultado_proyecto
+        FOREIGN KEY (id_proyecto)
+        REFERENCES proyecto(id_proyecto)
+        ON DELETE CASCADE,
+
+    CONSTRAINT chk_bcg_resultado_total
+        CHECK (total_ventas >= 0)
+);
+
+CREATE INDEX idx_bcg_producto_proyecto ON bcg_producto(id_proyecto);
+CREATE INDEX idx_bcg_periodo_producto ON bcg_mercado_periodo(id_producto_bcg);
+CREATE INDEX idx_bcg_sector_producto ON bcg_demanda_sector_periodo(id_producto_bcg);
+CREATE INDEX idx_bcg_competidor_producto ON bcg_competidor(id_producto_bcg);
+CREATE INDEX idx_bcg_resultado_proyecto ON bcg_resultado(id_proyecto);
+
 INSERT INTO cadena_valor_pregunta (numero, texto) VALUES
 (1, 'La empresa tiene una política sistematizada de cero defectos en la producción de productos/servicios.'),
 (2, 'La empresa emplea los medios productivos tecnológicamente más avanzados de su sector.'),
