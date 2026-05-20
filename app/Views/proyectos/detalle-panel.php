@@ -683,10 +683,207 @@
   </section>
 <?php elseif ($panel === 'bgg') : ?>
   <section id="panel-bgg" class="project-panel bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
-    <div class="flex items-center justify-between gap-3">
-      <h2 class="text-lg font-semibold">BGG</h2>
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div>
+        <h2 class="text-lg font-semibold">Autodiagnóstico BCG</h2>
+        <p class="mt-1 text-sm text-neutral-600">Interfaz tipo Excel: edita celdas y el sistema recalcula automáticamente.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="bcg-recalc-btn" type="button" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-800 hover:bg-neutral-50">
+          Recalcular
+        </button>
+      </div>
     </div>
-    <p class="mt-4 text-sm text-neutral-600">Sección lista para incorporar BGG con el espacio ampliado.</p>
+
+    <div id="bcg-loading" class="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+      <div class="flex items-center gap-2 text-sm text-neutral-600">
+        <svg class="h-4 w-4 animate-spin text-neutral-500" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+        </svg>
+        <span>Cargando…</span>
+      </div>
+    </div>
+
+    <div id="bcg-error" class="mt-5 hidden rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800"></div>
+
+    <div id="bcg-app" class="mt-5 hidden">
+      <div class="space-y-6">
+        <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div class="text-sm font-semibold text-neutral-900">PREVISIÓN DE VENTAS</div>
+            <button id="bcg-products-save" type="button" class="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-brand-600 px-3 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-50" disabled>
+              <svg data-bcg-spinner class="hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+              </svg>
+              <span>Guardar cambios</span>
+            </button>
+          </div>
+          <div class="mt-0.5 text-xs text-neutral-500">Edita ventas por producto. El sistema recalcula % sobre total.</div>
+
+          <div class="mt-4 flex flex-col gap-3 sm:flex-row">
+            <input id="bcg-new-product-name" type="text" class="h-10 flex-1 rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200" placeholder="Producto" />
+            <input id="bcg-new-product-sales" type="number" min="0" step="0.01" class="h-10 w-full sm:w-56 rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200" placeholder="Ventas empresa" />
+            <button id="bcg-add-product" type="button" class="h-10 rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700">
+              Agregar
+            </button>
+          </div>
+
+          <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
+            <div class="overflow-x-auto rounded-xl border border-neutral-200 bg-white">
+              <table class="min-w-[860px] w-full text-left text-sm">
+                <thead class="bg-neutral-50 text-xs font-semibold text-neutral-600">
+                  <tr>
+                    <th class="w-64 px-4 py-3">PRODUCTOS</th>
+                    <th class="w-56 px-4 py-3">VENTAS</th>
+                    <th class="w-44 px-4 py-3">% S/ TOTAL</th>
+                    <th class="w-32 px-4 py-3 text-right">ACCIÓN</th>
+                  </tr>
+                </thead>
+                <tbody id="bcg-products-body" class="divide-y divide-neutral-200"></tbody>
+                <tfoot class="bg-neutral-50 text-xs font-semibold text-neutral-700">
+                  <tr>
+                    <td class="px-4 py-3">TOTAL</td>
+                    <td id="bcg-total-ventas-inline" class="px-4 py-3">0</td>
+                    <td class="px-4 py-3">100%</td>
+                    <td class="px-4 py-3"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <div class="rounded-xl border border-neutral-200 bg-white p-4">
+              <div class="text-xs font-semibold text-neutral-600">RESULTADO GLOBAL</div>
+              <div class="mt-3 grid grid-cols-1 gap-3">
+                <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                  <div class="text-xs font-medium text-neutral-600">Total de ventas</div>
+                  <div id="bcg-total-ventas" class="mt-1 text-2xl font-semibold text-neutral-900">0</div>
+                </div>
+                <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                  <div class="text-xs font-medium text-neutral-600">Último cálculo</div>
+                  <div id="bcg-fecha-calculo" class="mt-1 text-sm font-semibold text-neutral-900">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div class="text-sm font-semibold text-neutral-900">TASAS DE CRECIMIENTO DEL MERCADO (TCM)</div>
+            <button id="bcg-market-save-all" type="button" class="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-brand-600 px-3 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-50" disabled>
+              <svg data-bcg-spinner class="hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+              </svg>
+              <span>Guardar cambios</span>
+            </button>
+          </div>
+          <div class="mt-0.5 text-xs text-neutral-500">Ingresa el año de inicio. El sistema genera el periodo automáticamente: 2017-2018, 2018-2019, ...</div>
+
+          <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-4">
+            <input id="bcg-market-year" type="number" min="1900" max="2100" class="h-10 rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200" placeholder="Año inicio (ej. 2017)" />
+            <select id="bcg-market-product" class="h-10 rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200"></select>
+            <input id="bcg-market-demand" type="number" min="0" step="0.01" class="h-10 rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200" placeholder="Tasa % (opcional)" />
+            <button id="bcg-market-save" type="button" class="h-10 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700">
+              Agregar tasa
+            </button>
+          </div>
+
+          <div class="mt-4 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
+            <table class="min-w-[980px] w-full text-left text-sm">
+              <thead class="bg-neutral-50 text-xs font-semibold text-neutral-600">
+                <tr id="bcg-market-head-row">
+                  <th class="w-24 px-4 py-3">PERIODOS</th>
+                </tr>
+              </thead>
+              <tbody id="bcg-market-matrix-body" class="divide-y divide-neutral-200"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+          <div class="text-sm font-semibold text-neutral-900">RESULTADOS AUTOMÁTICOS</div>
+          <div class="mt-4 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
+            <table class="min-w-[980px] w-full text-left text-sm">
+              <thead class="bg-neutral-50 text-xs font-semibold text-neutral-600">
+                <tr id="bcg-summary-head-row">
+                  <th class="w-28 px-4 py-3">INDICADOR</th>
+                </tr>
+              </thead>
+              <tbody id="bcg-summary-body" class="divide-y divide-neutral-200"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div class="text-sm font-semibold text-neutral-900">EVOLUCIÓN DE LA DEMANDA GLOBAL SECTOR (POR PRODUCTO)</div>
+            <button id="bcg-sector-save-all" type="button" class="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-brand-600 px-3 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-50" disabled>
+              <svg data-bcg-spinner class="hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+              </svg>
+              <span>Guardar cambios</span>
+            </button>
+          </div>
+          <div class="mt-0.5 text-xs text-neutral-500">Los años se generan automáticamente desde las tasas registradas en TCM. Edita las celdas y guarda.</div>
+
+          <div class="mt-4 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
+            <table class="min-w-[980px] w-full text-left text-sm">
+              <thead class="bg-neutral-50 text-xs font-semibold text-neutral-600">
+                <tr id="bcg-sector-head-row">
+                  <th class="w-24 px-4 py-3">AÑOS</th>
+                </tr>
+              </thead>
+              <tbody id="bcg-sector-matrix-body" class="divide-y divide-neutral-200"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div class="text-sm font-semibold text-neutral-900">NIVELES DE VENTA DE LOS COMPETIDORES (POR PRODUCTO)</div>
+            <button id="bcg-competitors-save-all" type="button" class="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-brand-600 px-3 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-50" disabled>
+              <svg data-bcg-spinner class="hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+              </svg>
+              <span>Guardar cambios</span>
+            </button>
+          </div>
+          <div class="mt-0.5 text-xs text-neutral-500">PRM se calcula usando el mayor competidor.</div>
+
+          <div id="bcg-competitors-grid" class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2"></div>
+        </div>
+
+        <div class="hidden rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+          <div class="text-sm font-semibold text-neutral-900">Sección 5 — Matriz BCG</div>
+          <div class="mt-1 text-xs text-neutral-500">X = PRM · Y = TCM · Burbuja = % ventas * 100.</div>
+          <div class="mt-4">
+            <canvas id="bcg-chart" height="280"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="bcg-toast" class="pointer-events-none fixed bottom-6 right-6 z-50 hidden w-full max-w-sm">
+      <div class="pointer-events-auto rounded-2xl border border-neutral-200 bg-white p-4 shadow-lg">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div id="bcg-toast-title" class="text-sm font-semibold text-neutral-900"></div>
+            <div id="bcg-toast-msg" class="mt-1 text-sm text-neutral-700"></div>
+          </div>
+          <button id="bcg-toast-close" type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50">
+            <span class="sr-only">Cerrar</span>
+            <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
   </section>
 <?php elseif ($panel === 'overview') : ?>
   <section id="panel-overview" class="project-panel bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">

@@ -889,11 +889,17 @@ final class ProyectoController
         $valores = $_POST['valores'] ?? [];
 
         if ($idProyecto <= 0) {
+            if ($this->wantsJson()) {
+                $this->jsonError('Proyecto inválido.', 400);
+            }
             Session::flash('error', 'Proyecto inválido.');
             $this->redirect('/proyectos.php');
         }
 
         if (!is_array($valores)) {
+            if ($this->wantsJson()) {
+                $this->jsonError('Valores inválidos.', 400);
+            }
             Session::flash('error', 'Valores inválidos.');
             $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&edit=valores');
         }
@@ -905,6 +911,9 @@ final class ProyectoController
                 continue;
             }
             if (mb_strlen($v, 'UTF-8') < 2) {
+                if ($this->wantsJson()) {
+                    $this->jsonError('Cada valor debe tener al menos 2 caracteres.', 400);
+                }
                 Session::flash('error', 'Cada valor debe tener al menos 2 caracteres.');
                 $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&edit=valores');
             }
@@ -915,16 +924,26 @@ final class ProyectoController
             $supabase = new SupabaseClient();
             $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
             if ($proyecto === null) {
+                if ($this->wantsJson()) {
+                    $this->jsonError('No tienes acceso a este proyecto.', 403);
+                }
                 Session::flash('error', 'No tienes acceso a este proyecto.');
                 $this->redirect('/proyectos.php');
             }
 
             Valor::replaceAll($supabase, $idProyecto, $clean);
         } catch (Throwable $e) {
-            Session::flash('error', $this->friendlySupabaseError($e, 'No se pudieron guardar los valores.'));
+            $msg = $this->friendlySupabaseError($e, 'No se pudieron guardar los valores.');
+            if ($this->wantsJson()) {
+                $this->jsonError($msg, 400);
+            }
+            Session::flash('error', $msg);
             $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=valores&edit=valores');
         }
 
+        if ($this->wantsJson()) {
+            $this->jsonOk('Valores guardados correctamente.');
+        }
         Session::flash('success', 'Valores guardados correctamente.');
         $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=valores');
     }
@@ -976,11 +995,17 @@ final class ProyectoController
         $descripcion = trim((string) ($_POST['descripcion'] ?? ''));
 
         if ($idProyecto <= 0) {
+            if ($this->wantsJson()) {
+                $this->jsonError('Proyecto inválido.', 400);
+            }
             Session::flash('error', 'Proyecto inválido.');
             $this->redirect('/proyectos.php');
         }
 
         if ($descripcion === '' || mb_strlen($descripcion, 'UTF-8') < 5) {
+            if ($this->wantsJson()) {
+                $this->jsonError('La descripción del objetivo estratégico es obligatoria (mínimo 5 caracteres).', 400);
+            }
             Session::flash('error', 'La descripción del objetivo estratégico es obligatoria (mínimo 5 caracteres).');
             $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
         }
@@ -988,11 +1013,17 @@ final class ProyectoController
         $supabase = new SupabaseClient();
         $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
         if ($proyecto === null) {
+            if ($this->wantsJson()) {
+                $this->jsonError('No tienes acceso a este proyecto.', 403);
+            }
             Session::flash('error', 'No tienes acceso a este proyecto.');
             $this->redirect('/proyectos.php');
         }
 
         ObjetivoEstrategico::create($supabase, $idProyecto, $descripcion);
+        if ($this->wantsJson()) {
+            $this->jsonOk('Objetivo estratégico registrado correctamente.');
+        }
         Session::flash('success', 'Objetivo estratégico registrado correctamente.');
         $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
     }
@@ -1010,11 +1041,17 @@ final class ProyectoController
         $idObjetivoEst = $this->objetivoEstrategicoIdFromToken($oeToken);
 
         if ($idProyecto <= 0 || $idObjetivoEst <= 0) {
+            if ($this->wantsJson()) {
+                $this->jsonError('Objetivo inválido.', 400);
+            }
             Session::flash('error', 'Objetivo inválido.');
             $this->redirect('/proyectos.php');
         }
 
         if ($descripcion === '' || mb_strlen($descripcion, 'UTF-8') < 5) {
+            if ($this->wantsJson()) {
+                $this->jsonError('La descripción del objetivo estratégico es obligatoria (mínimo 5 caracteres).', 400);
+            }
             Session::flash('error', 'La descripción del objetivo estratégico es obligatoria (mínimo 5 caracteres).');
             $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos&oe_edit=' . urlencode($oeToken));
         }
@@ -1022,11 +1059,17 @@ final class ProyectoController
         $supabase = new SupabaseClient();
         $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
         if ($proyecto === null) {
+            if ($this->wantsJson()) {
+                $this->jsonError('No tienes acceso a este proyecto.', 403);
+            }
             Session::flash('error', 'No tienes acceso a este proyecto.');
             $this->redirect('/proyectos.php');
         }
 
         if (!ObjetivoEstrategico::existsInProyecto($supabase, $idObjetivoEst, $idProyecto)) {
+            if ($this->wantsJson()) {
+                $this->jsonError('No tienes acceso a este objetivo.', 403);
+            }
             Session::flash('error', 'No tienes acceso a este objetivo.');
             $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
         }
@@ -1037,10 +1080,16 @@ final class ProyectoController
             $ok = false;
         }
         if (!$ok) {
+            if ($this->wantsJson()) {
+                $this->jsonError('No se pudo actualizar el objetivo estratégico.', 400);
+            }
             Session::flash('error', 'No se pudo actualizar el objetivo estratégico.');
             $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos&oe_edit=' . urlencode($oeToken));
         }
 
+        if ($this->wantsJson()) {
+            $this->jsonOk('Objetivo estratégico actualizado correctamente.');
+        }
         Session::flash('success', 'Objetivo estratégico actualizado correctamente.');
         $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
     }
@@ -1056,6 +1105,9 @@ final class ProyectoController
         $idObjetivoEst = $this->objetivoEstrategicoIdFromToken($oeToken);
 
         if ($idProyecto <= 0 || $idObjetivoEst <= 0) {
+            if ($this->wantsJson()) {
+                $this->jsonError('Objetivo inválido.', 400);
+            }
             Session::flash('error', 'Objetivo inválido.');
             $this->redirect('/proyectos.php');
         }
@@ -1063,11 +1115,17 @@ final class ProyectoController
         $supabase = new SupabaseClient();
         $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
         if ($proyecto === null) {
+            if ($this->wantsJson()) {
+                $this->jsonError('No tienes acceso a este proyecto.', 403);
+            }
             Session::flash('error', 'No tienes acceso a este proyecto.');
             $this->redirect('/proyectos.php');
         }
 
         if (!ObjetivoEstrategico::existsInProyecto($supabase, $idObjetivoEst, $idProyecto)) {
+            if ($this->wantsJson()) {
+                $this->jsonError('No tienes acceso a este objetivo.', 403);
+            }
             Session::flash('error', 'No tienes acceso a este objetivo.');
             $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
         }
@@ -1078,10 +1136,16 @@ final class ProyectoController
             $ok = false;
         }
         if (!$ok) {
+            if ($this->wantsJson()) {
+                $this->jsonError('No se pudo eliminar el objetivo estratégico.', 400);
+            }
             Session::flash('error', 'No se pudo eliminar el objetivo estratégico.');
             $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
         }
 
+        if ($this->wantsJson()) {
+            $this->jsonOk('Objetivo estratégico eliminado correctamente.');
+        }
         Session::flash('success', 'Objetivo estratégico eliminado correctamente.');
         $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
     }
@@ -1099,11 +1163,17 @@ final class ProyectoController
         $idObjetivoEst = $this->objetivoEstrategicoIdFromToken($oeToken);
 
         if ($idProyecto <= 0 || $idObjetivoEst <= 0) {
+            if ($this->wantsJson()) {
+                $this->jsonError('Objetivo inválido.', 400);
+            }
             Session::flash('error', 'Objetivo inválido.');
             $this->redirect('/proyectos.php');
         }
 
         if ($descripcion === '' || mb_strlen($descripcion, 'UTF-8') < 5) {
+            if ($this->wantsJson()) {
+                $this->jsonError('La descripción del objetivo específico es obligatoria (mínimo 5 caracteres).', 400);
+            }
             Session::flash('error', 'La descripción del objetivo específico es obligatoria (mínimo 5 caracteres).');
             $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
         }
@@ -1111,16 +1181,25 @@ final class ProyectoController
         $supabase = new SupabaseClient();
         $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
         if ($proyecto === null) {
+            if ($this->wantsJson()) {
+                $this->jsonError('No tienes acceso a este proyecto.', 403);
+            }
             Session::flash('error', 'No tienes acceso a este proyecto.');
             $this->redirect('/proyectos.php');
         }
 
         if (!ObjetivoEstrategico::existsInProyecto($supabase, $idObjetivoEst, $idProyecto)) {
+            if ($this->wantsJson()) {
+                $this->jsonError('No tienes acceso a este objetivo.', 403);
+            }
             Session::flash('error', 'No tienes acceso a este objetivo.');
             $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
         }
 
         ObjetivoEspecifico::create($supabase, $idObjetivoEst, $descripcion);
+        if ($this->wantsJson()) {
+            $this->jsonOk('Objetivo específico registrado correctamente.');
+        }
         Session::flash('success', 'Objetivo específico registrado correctamente.');
         $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
     }
@@ -1140,11 +1219,17 @@ final class ProyectoController
         $idObjetivoEsp = $this->objetivoEspecificoIdFromToken($oespToken);
 
         if ($idProyecto <= 0 || $idObjetivoEst <= 0 || $idObjetivoEsp <= 0) {
+            if ($this->wantsJson()) {
+                $this->jsonError('Objetivo inválido.', 400);
+            }
             Session::flash('error', 'Objetivo inválido.');
             $this->redirect('/proyectos.php');
         }
 
         if ($descripcion === '' || mb_strlen($descripcion, 'UTF-8') < 5) {
+            if ($this->wantsJson()) {
+                $this->jsonError('La descripción del objetivo específico es obligatoria (mínimo 5 caracteres).', 400);
+            }
             Session::flash('error', 'La descripción del objetivo específico es obligatoria (mínimo 5 caracteres).');
             $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos&oesp_edit=' . urlencode($oespToken));
         }
@@ -1152,16 +1237,25 @@ final class ProyectoController
         $supabase = new SupabaseClient();
         $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
         if ($proyecto === null) {
+            if ($this->wantsJson()) {
+                $this->jsonError('No tienes acceso a este proyecto.', 403);
+            }
             Session::flash('error', 'No tienes acceso a este proyecto.');
             $this->redirect('/proyectos.php');
         }
 
         if (!ObjetivoEstrategico::existsInProyecto($supabase, $idObjetivoEst, $idProyecto)) {
+            if ($this->wantsJson()) {
+                $this->jsonError('No tienes acceso a este objetivo.', 403);
+            }
             Session::flash('error', 'No tienes acceso a este objetivo.');
             $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
         }
 
         if (!ObjetivoEspecifico::existsInObjetivoEstrategico($supabase, $idObjetivoEsp, $idObjetivoEst)) {
+            if ($this->wantsJson()) {
+                $this->jsonError('No tienes acceso a este objetivo específico.', 403);
+            }
             Session::flash('error', 'No tienes acceso a este objetivo específico.');
             $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
         }
@@ -1172,10 +1266,16 @@ final class ProyectoController
             $ok = false;
         }
         if (!$ok) {
+            if ($this->wantsJson()) {
+                $this->jsonError('No se pudo actualizar el objetivo específico.', 400);
+            }
             Session::flash('error', 'No se pudo actualizar el objetivo específico.');
             $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos&oesp_edit=' . urlencode($oespToken));
         }
 
+        if ($this->wantsJson()) {
+            $this->jsonOk('Objetivo específico actualizado correctamente.');
+        }
         Session::flash('success', 'Objetivo específico actualizado correctamente.');
         $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
     }
@@ -1194,6 +1294,9 @@ final class ProyectoController
         $idObjetivoEsp = $this->objetivoEspecificoIdFromToken($oespToken);
 
         if ($idProyecto <= 0 || $idObjetivoEst <= 0 || $idObjetivoEsp <= 0) {
+            if ($this->wantsJson()) {
+                $this->jsonError('Objetivo inválido.', 400);
+            }
             Session::flash('error', 'Objetivo inválido.');
             $this->redirect('/proyectos.php');
         }
@@ -1201,16 +1304,25 @@ final class ProyectoController
         $supabase = new SupabaseClient();
         $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
         if ($proyecto === null) {
+            if ($this->wantsJson()) {
+                $this->jsonError('No tienes acceso a este proyecto.', 403);
+            }
             Session::flash('error', 'No tienes acceso a este proyecto.');
             $this->redirect('/proyectos.php');
         }
 
         if (!ObjetivoEstrategico::existsInProyecto($supabase, $idObjetivoEst, $idProyecto)) {
+            if ($this->wantsJson()) {
+                $this->jsonError('No tienes acceso a este objetivo.', 403);
+            }
             Session::flash('error', 'No tienes acceso a este objetivo.');
             $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
         }
 
         if (!ObjetivoEspecifico::existsInObjetivoEstrategico($supabase, $idObjetivoEsp, $idObjetivoEst)) {
+            if ($this->wantsJson()) {
+                $this->jsonError('No tienes acceso a este objetivo específico.', 403);
+            }
             Session::flash('error', 'No tienes acceso a este objetivo específico.');
             $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
         }
@@ -1221,10 +1333,16 @@ final class ProyectoController
             $ok = false;
         }
         if (!$ok) {
+            if ($this->wantsJson()) {
+                $this->jsonError('No se pudo eliminar el objetivo específico.', 400);
+            }
             Session::flash('error', 'No se pudo eliminar el objetivo específico.');
             $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
         }
 
+        if ($this->wantsJson()) {
+            $this->jsonOk('Objetivo específico eliminado correctamente.');
+        }
         Session::flash('success', 'Objetivo específico eliminado correctamente.');
         $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
     }
@@ -1239,11 +1357,17 @@ final class ProyectoController
         $descripcion = trim((string) ($_POST['descripcion'] ?? ''));
 
         if ($idProyecto <= 0) {
+            if ($this->wantsJson()) {
+                $this->jsonError('Proyecto inválido.', 400);
+            }
             Session::flash('error', 'Proyecto inválido.');
             $this->redirect('/proyectos.php');
         }
 
         if ($descripcion === '') {
+            if ($this->wantsJson()) {
+                $this->jsonError($emptyMessage, 400);
+            }
             Session::flash('error', $emptyMessage);
             $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=' . urlencode($editQuery) . '&edit=' . $editQuery);
         }
@@ -1251,6 +1375,9 @@ final class ProyectoController
         $supabase = new SupabaseClient();
         $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
         if ($proyecto === null) {
+            if ($this->wantsJson()) {
+                $this->jsonError('No tienes acceso a este proyecto.', 403);
+            }
             Session::flash('error', 'No tienes acceso a este proyecto.');
             $this->redirect('/proyectos.php');
         }
@@ -1261,8 +1388,36 @@ final class ProyectoController
             Vision::save($supabase, $idProyecto, $descripcion);
         }
 
+        if ($this->wantsJson()) {
+            $this->jsonOk('Cambios guardados correctamente.');
+        }
         Session::flash('success', 'Cambios guardados correctamente.');
         $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=' . urlencode($editQuery));
+    }
+
+    private function wantsJson(): bool
+    {
+        $accept = strtolower((string) ($_SERVER['HTTP_ACCEPT'] ?? ''));
+        if (str_contains($accept, 'application/json')) {
+            return true;
+        }
+        $xhr = strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? ''));
+        return $xhr === 'xmlhttprequest';
+    }
+
+    private function jsonOk(string $message, array $extra = []): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => true, 'message' => $message] + $extra, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    private function jsonError(string $message, int $status): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code($status);
+        echo json_encode(['ok' => false, 'error' => $message], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
     }
 
     private function findAccessibleProyecto(SupabaseClient $supabase, int $idProyecto, int $idPersona): ?array
