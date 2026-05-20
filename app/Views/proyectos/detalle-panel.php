@@ -17,10 +17,28 @@
           Define la razón de ser del proyecto.
         </p>
       </div>
+      <a
+        data-js-edit-mision="1"
+        href="detalle-proyecto.php?t=<?php echo urlencode((string) $projectToken); ?>&section=mision&edit=mision"
+        class="<?php echo ($edit ?? '') === 'mision' ? 'hidden' : 'inline-flex'; ?> items-center justify-center rounded-xl border border-neutral-200 bg-white p-2 text-brand-700 hover:bg-brand-50"
+        aria-label="Editar misión"
+        title="Editar"
+      >
+        <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11 4h-4a2 2 0 00-2 2v4m14-4l-9 9-4 1 1-4 9-9 3 3z" />
+        </svg>
+      </a>
     </div>
 
-    <div class="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
-      <form class="space-y-4" method="post" action="detalle-proyecto.php">
+    <div id="mision-editor" class="<?php echo ($edit ?? '') === 'mision' ? 'block' : 'hidden'; ?> mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div class="text-sm font-semibold text-neutral-900">Editor de misión</div>
+          <div class="mt-0.5 text-xs text-neutral-600">Actualiza el texto de la misión del proyecto.</div>
+        </div>
+      </div>
+
+      <form class="mt-4 space-y-4" method="post" action="detalle-proyecto.php">
         <input type="hidden" name="action" value="save_mision" />
         <input type="hidden" name="t" value="<?php echo htmlspecialchars((string) $projectToken, ENT_QUOTES, 'UTF-8'); ?>" />
 
@@ -33,21 +51,33 @@
         ><?php echo htmlspecialchars((string) ($misionTexto ?? ''), ENT_QUOTES, 'UTF-8'); ?></textarea>
 
         <div class="flex justify-end gap-3">
-          <button
-            type="reset"
+          <a
+            data-js-cancel-mision="1"
+            href="detalle-proyecto.php?t=<?php echo urlencode((string) $projectToken); ?>&section=mision"
             class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100"
           >
-            Limpiar
-          </button>
-
+            Cancelar
+          </a>
           <button
             type="submit"
-            class="rounded-xl bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+            class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
           >
             Guardar cambios
           </button>
         </div>
       </form>
+    </div>
+
+    <div id="mision-display" class="<?php echo ($edit ?? '') === 'mision' ? 'hidden' : 'block'; ?>">
+      <?php if ($misionTexto === '') : ?>
+        <p class="mt-4 text-sm text-neutral-600">Aún no se registró la misión. Presiona el lápiz para agregarla.</p>
+      <?php else : ?>
+        <div class="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+          <div class="text-sm leading-relaxed text-neutral-800">
+            <?php echo nl2br(htmlspecialchars($misionTexto, ENT_QUOTES, 'UTF-8')); ?>
+          </div>
+        </div>
+      <?php endif; ?>
     </div>
   </section>
 <?php elseif ($panel === 'vision') : ?>
@@ -252,9 +282,9 @@
       </div>
     </form>
 
-    <div class="mt-6 space-y-4">
+    <div class="mt-6 grid gap-4 sm:grid-cols-2">
       <?php if (empty($objetivosEstrategicos)) : ?>
-        <div class="rounded-2xl border border-neutral-200 bg-neutral-50 px-5 py-4 text-sm text-neutral-700">
+        <div class="rounded-2xl border border-neutral-200 bg-neutral-50 px-5 py-4 text-sm text-neutral-700 sm:col-span-2">
           Aún no hay objetivos estratégicos registrados.
         </div>
       <?php else : ?>
