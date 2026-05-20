@@ -561,9 +561,11 @@
   const loadedPanels = new Set(["overview"]);
   if (document.getElementById("panel-miembros")) loadedPanels.add("miembros");
   const inflight = new Map();
+  let activePanelId = "overview";
 
   function setActiveProjectPanel(panelId, options = {}) {
     const { updateUrl = true } = options;
+    activePanelId = panelId || "";
 
     document.querySelectorAll(".project-panel").forEach((panel) => panel.classList.add("hidden"));
     if (panelId) {
@@ -624,7 +626,6 @@
     const task = (async () => {
       const current = document.getElementById(`panel-${panelId}`);
       if (!current) return;
-      const wasHidden = current.classList.contains("hidden");
       try {
         const u = new URL("detalle-proyecto.php", window.location.href);
         u.searchParams.set("t", String(projectToken));
@@ -639,10 +640,11 @@
         });
         const html = await res.text();
         if (!res.ok) return;
+        const shouldBeHidden = activePanelId !== panelId;
         current.outerHTML = html;
         const updated = document.getElementById(`panel-${panelId}`);
         if (updated) {
-          if (wasHidden) updated.classList.add("hidden");
+          if (shouldBeHidden) updated.classList.add("hidden");
           else updated.classList.remove("hidden");
         }
         loadedPanels.add(panelId);
@@ -665,7 +667,6 @@
 
     const current = document.getElementById(`panel-${panelId}`);
     if (!current) return;
-    const wasHidden = current.classList.contains("hidden");
     try {
       const u = new URL("detalle-proyecto.php", window.location.href);
       u.searchParams.set("t", String(projectToken));
@@ -680,10 +681,11 @@
       });
       const html = await res.text();
       if (!res.ok) return;
+      const shouldBeHidden = activePanelId !== panelId;
       current.outerHTML = html;
       const updated = document.getElementById(`panel-${panelId}`);
       if (updated) {
-        if (wasHidden) updated.classList.add("hidden");
+        if (shouldBeHidden) updated.classList.add("hidden");
         else updated.classList.remove("hidden");
       }
       loadedPanels.add(panelId);
