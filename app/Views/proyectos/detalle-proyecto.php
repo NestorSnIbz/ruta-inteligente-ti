@@ -52,16 +52,38 @@
 
         <div>
           <h1 class="text-2xl font-semibold tracking-tight">
-            <?php echo htmlspecialchars($proyectoNombre, ENT_QUOTES, 'UTF-8'); ?>
+            <span id="project-name-label"><?php echo htmlspecialchars($proyectoNombre, ENT_QUOTES, 'UTF-8'); ?></span>
           </h1>
+
+          <div id="project-name-edit" class="mt-2 hidden flex flex-wrap items-center gap-2">
+            <input
+              id="project-name-input"
+              type="text"
+              value="<?php echo htmlspecialchars($proyectoNombre, ENT_QUOTES, 'UTF-8'); ?>"
+              class="h-10 w-full max-w-lg rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200"
+            />
+            <button id="project-name-save" type="button" class="inline-flex h-10 items-center justify-center rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700">
+              Guardar
+            </button>
+            <button id="project-name-cancel" type="button" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-800 hover:bg-neutral-50">
+              Cancelar
+            </button>
+          </div>
 
           <p class="text-sm text-neutral-600 mt-1">
             Panel estratégico: Misión, Visión y Valores.
           </p>
         </div>
-        <a href="proyectos.php" class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100">
-          Volver
-        </a>
+        <div class="flex items-center gap-2">
+          <?php if (!empty($isCreador)) : ?>
+            <button id="project-name-edit-btn" type="button" class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100">
+              Editar nombre
+            </button>
+          <?php endif; ?>
+          <a href="proyectos.php" class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100">
+            Volver
+          </a>
+        </div>
 
       </div>
     </header>
@@ -425,6 +447,13 @@
   const flashBackdrop = document.getElementById("flash-backdrop");
   const flashClose = document.getElementById("flash-close");
 
+  const projectNameLabel = document.getElementById("project-name-label");
+  const projectNameEditWrap = document.getElementById("project-name-edit");
+  const projectNameInput = document.getElementById("project-name-input");
+  const projectNameEditBtn = document.getElementById("project-name-edit-btn");
+  const projectNameSave = document.getElementById("project-name-save");
+  const projectNameCancel = document.getElementById("project-name-cancel");
+
   function closeFlashModal() {
     if (!flashModal) return;
     flashModal.remove();
@@ -436,6 +465,87 @@
 
   if (flashClose) {
     flashClose.addEventListener("click", closeFlashModal);
+  }
+
+  function setProjectNameEditing(on) {
+    if (!projectNameEditWrap) return;
+    projectNameEditWrap.classList.toggle("hidden", !on);
+    if (projectNameEditBtn) projectNameEditBtn.classList.toggle("hidden", on);
+    if (on) {
+      if (projectNameInput) {
+        projectNameInput.value = String(projectNameLabel ? projectNameLabel.textContent || "" : projectName || "");
+        projectNameInput.focus();
+        projectNameInput.select();
+      }
+    }
+  }
+
+  async function saveProjectName() {
+    const name = String(projectNameInput ? projectNameInput.value : "").trim();
+    if (!name) {
+      if (typeof showInlineToast === "function") showInlineToast("Error", "El nombre no puede quedar vacío.");
+      return;
+    }
+    if (projectNameSave) {
+      projectNameSave.disabled = true;
+      projectNameSave.textContent = "Guardando…";
+    }
+    try {
+      const fd = new FormData();
+      fd.set("action", "update_project_name");
+      fd.set("t", String(projectToken || ""));
+      fd.set("nombre", name);
+
+      const res = await fetch("detalle-proyecto.php", {
+        method: "POST",
+        headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+        body: fd,
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json || json.ok !== true) {
+        const msg = (json && json.error) ? String(json.error) : "No se pudo actualizar el nombre.";
+        if (typeof showInlineToast === "function") showInlineToast("Error", msg);
+        return;
+      }
+      if (projectNameLabel) projectNameLabel.textContent = name;
+      document.title = `${name} - Ruta Inteligente TI`;
+      try {
+        if (window.RISidebar && typeof window.RISidebar.pushRecentProject === "function") {
+          window.RISidebar.pushRecentProject(Number(projectId || 0), name);
+        }
+      } catch {}
+      setProjectNameEditing(false);
+      if (typeof showInlineToast === "function") showInlineToast("Guardado", "Nombre actualizado correctamente.");
+    } catch (e) {
+      if (typeof showInlineToast === "function") showInlineToast("Error", "No se pudo actualizar el nombre.");
+    } finally {
+      if (projectNameSave) {
+        projectNameSave.disabled = false;
+        projectNameSave.textContent = "Guardar";
+      }
+    }
+  }
+
+  if (projectNameEditBtn) {
+    projectNameEditBtn.addEventListener("click", () => setProjectNameEditing(true));
+  }
+  if (projectNameCancel) {
+    projectNameCancel.addEventListener("click", () => setProjectNameEditing(false));
+  }
+  if (projectNameSave) {
+    projectNameSave.addEventListener("click", () => saveProjectName());
+  }
+  if (projectNameInput) {
+    projectNameInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        saveProjectName();
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setProjectNameEditing(false);
+      }
+    });
   }
 
   document.addEventListener("keydown", (e) => {
@@ -934,13 +1044,32 @@
       });
     }
 
-    function attachFodaRemoveHandlers(tbody) {
-      tbody.querySelectorAll(".foda-remove").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const row = btn.closest("tr");
-          if (row) row.remove();
-          renumberFodaRows(tbody);
-        });
+    function ensureAtLeastOneFodaRow(tbody, kind) {
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+      if (rows.length > 0) {
+        renumberFodaRows(tbody);
+        return;
+      }
+      tbody.appendChild(createFodaRow(kind));
+      renumberFodaRows(tbody);
+    }
+
+    function attachFodaRemoveHandlers(tbody, kind) {
+      if (!tbody || tbody.dataset.fodaBound === "1") return;
+      tbody.dataset.fodaBound = "1";
+      tbody.addEventListener("click", (e) => {
+        const btn = e.target && e.target.closest ? e.target.closest(".foda-remove") : null;
+        if (!btn) return;
+        const row = btn.closest("tr");
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+        if (rows.length <= 1) {
+          const input = row ? row.querySelector("input") : null;
+          if (input) input.value = "";
+          ensureAtLeastOneFodaRow(tbody, kind);
+          return;
+        }
+        if (row) row.remove();
+        ensureAtLeastOneFodaRow(tbody, kind);
       });
     }
 
@@ -973,17 +1102,16 @@
       return tr;
     }
 
-    if (fodaFortBody) attachFodaRemoveHandlers(fodaFortBody);
-    if (fodaDebBody) attachFodaRemoveHandlers(fodaDebBody);
-    if (fodaFortBody) renumberFodaRows(fodaFortBody);
-    if (fodaDebBody) renumberFodaRows(fodaDebBody);
+    if (fodaFortBody) attachFodaRemoveHandlers(fodaFortBody, "fortaleza");
+    if (fodaDebBody) attachFodaRemoveHandlers(fodaDebBody, "debilidad");
+    if (fodaFortBody) ensureAtLeastOneFodaRow(fodaFortBody, "fortaleza");
+    if (fodaDebBody) ensureAtLeastOneFodaRow(fodaDebBody, "debilidad");
 
     if (fodaAddFort && fodaFortBody) {
       fodaAddFort.addEventListener("click", () => {
         const tr = createFodaRow("fortaleza");
         fodaFortBody.appendChild(tr);
-        attachFodaRemoveHandlers(fodaFortBody);
-        renumberFodaRows(fodaFortBody);
+        ensureAtLeastOneFodaRow(fodaFortBody, "fortaleza");
         tr.querySelector("input")?.focus();
       });
     }
@@ -992,8 +1120,7 @@
       fodaAddDeb.addEventListener("click", () => {
         const tr = createFodaRow("debilidad");
         fodaDebBody.appendChild(tr);
-        attachFodaRemoveHandlers(fodaDebBody);
-        renumberFodaRows(fodaDebBody);
+        ensureAtLeastOneFodaRow(fodaDebBody, "debilidad");
         tr.querySelector("input")?.focus();
       });
     }
@@ -1013,7 +1140,9 @@
       fodaSaveButton.addEventListener("click", async () => {
         if (fodaSaving) return;
         fodaSaving = true;
+        const prevLabel = fodaSaveButton.textContent;
         fodaSaveButton.disabled = true;
+        fodaSaveButton.textContent = "Guardando…";
         try {
           const fortalezas = fodaFortBody ? collectFodaValues(fodaFortBody) : [];
           const debilidades = fodaDebBody ? collectFodaValues(fodaDebBody) : [];
@@ -1039,6 +1168,7 @@
           cviShowToast("error", "Error", "No se pudo guardar el FODA.");
         } finally {
           fodaSaveButton.disabled = false;
+          fodaSaveButton.textContent = prevLabel || "Guardar FODA";
           fodaSaving = false;
         }
       });
@@ -1120,6 +1250,12 @@
 
     const competitorsGrid = panel.querySelector("#bcg-competitors-grid");
     const competitorsSaveAll = panel.querySelector("#bcg-competitors-save-all");
+
+    const bcgFodaSave = panel.querySelector("#bcg-foda-save");
+    const bcgFodaAddFort = panel.querySelector("#bcg-foda-add-fortaleza");
+    const bcgFodaAddDeb = panel.querySelector("#bcg-foda-add-debilidad");
+    const bcgFodaFortBody = panel.querySelector("#bcg-foda-fortalezas-body");
+    const bcgFodaDebBody = panel.querySelector("#bcg-foda-debilidades-body");
 
     const totalVentasEl = panel.querySelector("#bcg-total-ventas");
     const fechaCalculoEl = panel.querySelector("#bcg-fecha-calculo");
@@ -1308,6 +1444,82 @@
         }
       }
       return Array.from(yearsSet).sort((a, b) => a - b);
+    }
+
+    function renumberBcgFodaRows(tbody) {
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+      rows.forEach((row, idx) => {
+        const n = row.querySelector("td");
+        if (n) n.textContent = String(idx + 1);
+      });
+    }
+
+    function createBcgFodaRow(tipo) {
+      const tr = document.createElement("tr");
+      tr.setAttribute("data-bcg-foda-row", String(tipo || ""));
+
+      const tdN = document.createElement("td");
+      tdN.className = "px-4 py-3 text-center text-xs font-semibold text-neutral-600";
+      tdN.textContent = "—";
+
+      const tdInput = document.createElement("td");
+      tdInput.className = "px-4 py-2";
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "bcg-foda-input h-10 w-full rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200";
+      tdInput.appendChild(input);
+
+      const tdAction = document.createElement("td");
+      tdAction.className = "px-4 py-2 text-right";
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "bcg-foda-remove inline-flex h-9 items-center justify-center rounded-xl border border-neutral-200 bg-white px-3 text-xs font-semibold text-neutral-800 hover:bg-neutral-50";
+      btn.textContent = "Quitar";
+      tdAction.appendChild(btn);
+
+      tr.appendChild(tdN);
+      tr.appendChild(tdInput);
+      tr.appendChild(tdAction);
+      return tr;
+    }
+
+    function ensureAtLeastOneBcgFodaRow(tbody, tipo) {
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+      if (rows.length > 0) {
+        renumberBcgFodaRows(tbody);
+        return;
+      }
+      tbody.appendChild(createBcgFodaRow(tipo));
+      renumberBcgFodaRows(tbody);
+    }
+
+    function bindBcgFodaRemove(tbody, tipo) {
+      if (!tbody || tbody.dataset.bcgFodaBound === "1") return;
+      tbody.dataset.bcgFodaBound = "1";
+      tbody.addEventListener("click", (e) => {
+        const btn = e.target && e.target.closest ? e.target.closest(".bcg-foda-remove") : null;
+        if (!btn) return;
+        const row = btn.closest("tr");
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+        if (rows.length <= 1) {
+          const input = row ? row.querySelector("input") : null;
+          if (input) input.value = "";
+          ensureAtLeastOneBcgFodaRow(tbody, tipo);
+          return;
+        }
+        if (row) row.remove();
+        ensureAtLeastOneBcgFodaRow(tbody, tipo);
+      });
+    }
+
+    function collectBcgFodaValues(tbody) {
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+      const out = [];
+      for (const row of rows) {
+        const value = (row.querySelector("input")?.value || "").trim();
+        if (value) out.push(value);
+      }
+      return out;
     }
 
     async function postAction(action, fields) {
@@ -2149,6 +2361,51 @@
         setButtonEnabled(competitorsSaveAll, false);
         applyState(json.payload);
         showToast("Guardado", "Competidores guardados correctamente.");
+      });
+    }
+
+    if (bcgFodaFortBody) bindBcgFodaRemove(bcgFodaFortBody, "FORTALEZA");
+    if (bcgFodaDebBody) bindBcgFodaRemove(bcgFodaDebBody, "DEBILIDAD");
+
+    if (bcgFodaFortBody) ensureAtLeastOneBcgFodaRow(bcgFodaFortBody, "FORTALEZA");
+    if (bcgFodaDebBody) ensureAtLeastOneBcgFodaRow(bcgFodaDebBody, "DEBILIDAD");
+
+    if (bcgFodaAddFort && bcgFodaFortBody) {
+      bcgFodaAddFort.addEventListener("click", () => {
+        const tr = createBcgFodaRow("FORTALEZA");
+        bcgFodaFortBody.appendChild(tr);
+        ensureAtLeastOneBcgFodaRow(bcgFodaFortBody, "FORTALEZA");
+        tr.querySelector("input")?.focus();
+      });
+    }
+    if (bcgFodaAddDeb && bcgFodaDebBody) {
+      bcgFodaAddDeb.addEventListener("click", () => {
+        const tr = createBcgFodaRow("DEBILIDAD");
+        bcgFodaDebBody.appendChild(tr);
+        ensureAtLeastOneBcgFodaRow(bcgFodaDebBody, "DEBILIDAD");
+        tr.querySelector("input")?.focus();
+      });
+    }
+
+    if (bcgFodaSave) {
+      bcgFodaSave.addEventListener("click", async () => {
+        clearError();
+        const fortalezas = bcgFodaFortBody ? collectBcgFodaValues(bcgFodaFortBody) : [];
+        const debilidades = bcgFodaDebBody ? collectBcgFodaValues(bcgFodaDebBody) : [];
+        setSaving(bcgFodaSave, true);
+        const { ok, json, status, text } = await postAction("save_foda_bcg", { payload: JSON.stringify({ fortalezas, debilidades }) });
+        setSaving(bcgFodaSave, false);
+        if (!ok || !json || json.ok !== true) {
+          const body = String(text || "");
+          const looksHtml = body.includes("<html") || body.includes("<!DOCTYPE");
+          const msg =
+            (json && json.error) ? json.error :
+            (looksHtml ? "No se pudo guardar: la sesión pudo haber expirado. Vuelve a ingresar e inténtalo." :
+            (status ? `No se pudo guardar (HTTP ${status}).` : "No se pudo guardar."));
+          showError(msg);
+          return;
+        }
+        showToast("Guardado", "FODA (BCG) guardado correctamente.");
       });
     }
 
