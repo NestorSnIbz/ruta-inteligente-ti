@@ -73,6 +73,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         case 'save_foda_cadena':
             $controller->saveFodaCadena();
             break;
+        case 'save_foda_bcg':
+            $controller->saveFodaBcg();
+            break;
+        case 'update_project_name':
+            $controller->updateProjectName();
+            break;
         case 'invite_member':
             $controller->inviteMiembro();
             break;

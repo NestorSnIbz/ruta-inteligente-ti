@@ -314,6 +314,8 @@ final class ProyectoController
         ];
         $fodaFortalezas = [];
         $fodaDebilidades = [];
+        $bcgFortalezas = [];
+        $bcgDebilidades = [];
 
         if ($renderOnlySection === 'objetivos') {
             try {
@@ -353,6 +355,28 @@ final class ProyectoController
                         $fodaFortalezas[] = $desc;
                     } elseif ($tipo === 'DEBILIDAD') {
                         $fodaDebilidades[] = $desc;
+                    }
+                }
+            } catch (Throwable $e) {
+            }
+        }
+
+        if ($renderOnlySection === 'bgg') {
+            try {
+                $rows = Foda::listByProyectoFuente($supabase, $idProyecto, 'AUTODIAGNOSTICO_BCG');
+                foreach ($rows as $r) {
+                    if (!is_array($r)) {
+                        continue;
+                    }
+                    $tipo = (string) ($r['tipo'] ?? '');
+                    $desc = trim((string) ($r['descripcion'] ?? ''));
+                    if ($desc === '') {
+                        continue;
+                    }
+                    if ($tipo === 'FORTALEZA') {
+                        $bcgFortalezas[] = $desc;
+                    } elseif ($tipo === 'DEBILIDAD') {
+                        $bcgDebilidades[] = $desc;
                     }
                 }
             } catch (Throwable $e) {
@@ -480,6 +504,127 @@ final class ProyectoController
             exit;
         } catch (Throwable $e) {
             echo json_encode(['ok' => false, 'error' => 'No se pudo guardar el FODA.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+    }
+
+    public function saveFodaBcg(): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $payloadRaw = (string) ($_POST['payload'] ?? '');
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($idProyecto <= 0) {
+            echo json_encode(['ok' => false, 'error' => 'Proyecto inválido.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $decoded = json_decode($payloadRaw, true);
+        if (!is_array($decoded)) {
+            echo json_encode(['ok' => false, 'error' => 'Datos inválidos.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $fortalezas = $decoded['fortalezas'] ?? [];
+        $debilidades = $decoded['debilidades'] ?? [];
+        if (!is_array($fortalezas) || !is_array($debilidades)) {
+            echo json_encode(['ok' => false, 'error' => 'Datos inválidos.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $max = 50;
+        $items = [];
+        $now = gmdate('Y-m-d H:i:s');
+
+        $i = 0;
+        foreach ($fortalezas as $txt) {
+            $txt = trim((string) $txt);
+            if ($txt === '') continue;
+            $i++;
+            if ($i > $max) break;
+            $items[] = ['tipo' => 'FORTALEZA', 'posicion' => $i, 'descripcion' => $txt, 'updated_at' => $now];
+        }
+
+        $j = 0;
+        foreach ($debilidades as $txt) {
+            $txt = trim((string) $txt);
+            if ($txt === '') continue;
+            $j++;
+            if ($j > $max) break;
+            $items[] = ['tipo' => 'DEBILIDAD', 'posicion' => $j, 'descripcion' => $txt, 'updated_at' => $now];
+        }
+
+        try {
+            $supabase = new SupabaseClient();
+            $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
+            if ($proyecto === null) {
+                echo json_encode(['ok' => false, 'error' => 'No tienes acceso a este proyecto.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $ok = Foda::replaceByProyectoFuente($supabase, $idProyecto, 'AUTODIAGNOSTICO_BCG', $items);
+            if (!$ok) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudo guardar el apartado.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            echo json_encode(['ok' => true, 'updated_at' => gmdate('c')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['ok' => false, 'error' => 'No se pudo guardar el apartado.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+    }
+
+    public function updateProjectName(): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $nombre = trim((string) ($_POST['nombre'] ?? ''));
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($idProyecto <= 0) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Proyecto inválido.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+        if ($nombre === '') {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'El nombre no puede quedar vacío.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        try {
+            $supabase = new SupabaseClient();
+            $proyecto = Proyecto::findById($supabase, $idProyecto);
+            if ($proyecto === null) {
+                http_response_code(404);
+                echo json_encode(['ok' => false, 'error' => 'Proyecto no encontrado.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+            $idPersona = (int) ($authUser['id_persona'] ?? 0);
+            if (!$this->isCreadorProyecto($proyecto, $idPersona)) {
+                http_response_code(403);
+                echo json_encode(['ok' => false, 'error' => 'Solo el creador puede editar el nombre.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            Proyecto::updateNombre($supabase, $idProyecto, $nombre);
+            echo json_encode(['ok' => true, 'nombre' => $nombre], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        } catch (Throwable $e) {
+            http_response_code(400);
+            $msg = $this->friendlySupabaseError($e, 'No se pudo actualizar el nombre.');
+            echo json_encode(['ok' => false, 'error' => $msg], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             exit;
         }
     }

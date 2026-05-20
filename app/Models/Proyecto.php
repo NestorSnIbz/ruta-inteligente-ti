@@ -140,6 +140,25 @@ final class Proyecto
         return $response['data'][0];
     }
 
+    public static function updateNombre(SupabaseClient $supabase, int $idProyecto, string $nombre): void
+    {
+        $response = $supabase->request(
+            'PATCH',
+            '/rest/v1/proyecto',
+            [
+                'id_proyecto' => 'eq.' . $idProyecto,
+            ],
+            self::restHeaders($supabase),
+            [
+                'nombre' => $nombre,
+            ]
+        );
+
+        if ($response['status'] >= 400) {
+            throw new RuntimeException((string) ($response['data']['message'] ?? $response['data']['msg'] ?? 'No se pudo actualizar el proyecto.'));
+        }
+    }
+
     private static function restHeaders(SupabaseClient $supabase): array
     {
         $serverKey = $supabase->getServiceRoleKey();
