@@ -256,31 +256,122 @@
       </div>
     <?php endif; ?>
 
-    <form class="mt-6 rounded-2xl border border-neutral-200 bg-white p-5" method="post" action="detalle-proyecto.php">
-      <input type="hidden" name="action" value="create_obj_est" />
-      <input type="hidden" name="t" value="<?php echo htmlspecialchars((string) $projectToken, ENT_QUOTES, 'UTF-8'); ?>" />
-
-      <div class="flex items-center justify-between gap-3">
+    <div id="objetivos-batch-card" class="mt-6 rounded-2xl border border-neutral-200 bg-white p-5">
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div class="text-sm font-semibold text-neutral-900">Nuevo objetivo estratégico</div>
-          <div class="mt-0.5 text-xs text-neutral-600">Define el objetivo estratégico del proyecto.</div>
+          <div class="text-sm font-semibold text-neutral-900">Agregar objetivos (en lote)</div>
+          <div class="mt-0.5 text-xs text-neutral-600">Agrega varios y guarda una sola vez.</div>
         </div>
       </div>
 
-      <textarea
-        name="descripcion"
-        rows="4"
-        class="mt-4 w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none resize-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
-        placeholder="Escribe el objetivo estratégico..."
-        required
-      ></textarea>
+      <form id="objetivos-batch-form" class="mt-4 space-y-4" method="post" action="detalle-proyecto.php">
+        <input type="hidden" name="action" value="save_objetivos_batch" />
+        <input type="hidden" name="t" value="<?php echo htmlspecialchars((string) $projectToken, ENT_QUOTES, 'UTF-8'); ?>" />
+        <input type="hidden" name="payload" id="objetivos-batch-payload" value="" />
 
-      <div class="mt-4 flex justify-end">
-        <button type="submit" class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">
-          + Agregar
-        </button>
-      </div>
-    </form>
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+            <div class="text-sm font-semibold text-neutral-900">Nuevos objetivos estratégicos</div>
+            <div class="mt-0.5 text-xs text-neutral-600">Crea 2, 3 o más antes de guardar.</div>
+
+            <div class="mt-3 space-y-3">
+              <textarea
+                id="oe-batch-input"
+                rows="3"
+                class="w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm outline-none resize-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
+                placeholder="Escribe un objetivo estratégico..."
+              ></textarea>
+
+              <div class="flex justify-end">
+                <button
+                  id="oe-batch-add"
+                  type="button"
+                  class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                >
+                  + Añadir a lista
+                </button>
+              </div>
+            </div>
+
+            <div id="oe-batch-list" class="mt-4 space-y-3"></div>
+          </div>
+
+          <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+            <div class="text-sm font-semibold text-neutral-900">Nuevos objetivos específicos</div>
+            <div class="mt-0.5 text-xs text-neutral-600">
+              Agrega varios objetivos específicos para distintos objetivos estratégicos y guarda una sola vez.
+            </div>
+
+            <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+              <div class="text-xs text-neutral-500">Cada fila puede incluir varios objetivos (uno por línea).</div>
+              <button
+                id="oesp-batch-add-row"
+                type="button"
+                class="inline-flex h-9 items-center justify-center rounded-xl border border-neutral-300 bg-white px-3 text-xs font-semibold text-neutral-700 hover:bg-neutral-100"
+              >
+                + Fila
+              </button>
+            </div>
+
+            <div id="oesp-batch-rows" class="mt-3 space-y-3">
+              <div class="rounded-xl border border-neutral-200 bg-white p-3" data-oesp-row>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-7">
+                  <div class="sm:col-span-3">
+                    <select
+                      class="h-10 w-full rounded-xl border border-neutral-300 bg-white px-3 text-sm outline-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
+                      data-oesp-oe
+                    >
+                      <option value="">Selecciona un objetivo estratégico</option>
+                      <?php foreach ($objetivosEstrategicos as $obj) : ?>
+                        <?php $oeTokenOpt = (string) ($obj['token'] ?? ''); ?>
+                        <?php if ($oeTokenOpt !== '') : ?>
+                          <option value="<?php echo htmlspecialchars($oeTokenOpt, ENT_QUOTES, 'UTF-8'); ?>">
+                            <?php echo htmlspecialchars((string) ($obj['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+                          </option>
+                        <?php endif; ?>
+                      <?php endforeach; ?>
+                    </select>
+                  </div>
+                  <div class="sm:col-span-3">
+                    <textarea
+                      rows="3"
+                      class="w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm outline-none resize-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
+                      placeholder="Escribe objetivos específicos (uno por línea)..."
+                      data-oesp-lines
+                    ></textarea>
+                  </div>
+                  <div class="sm:col-span-1 flex sm:justify-end">
+                    <button
+                      type="button"
+                      class="inline-flex h-10 w-full items-center justify-center rounded-xl bg-red-600 px-3 text-sm font-semibold text-white hover:bg-red-700"
+                      data-oesp-remove
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap justify-end gap-3">
+          <button
+            id="objetivos-batch-clear"
+            type="button"
+            class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100"
+          >
+            Limpiar
+          </button>
+          <button
+            type="submit"
+            class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+          >
+            Guardar todo
+          </button>
+        </div>
+      </form>
+    </div>
 
     <div class="mt-6 grid gap-4 sm:grid-cols-2">
       <?php if (empty($objetivosEstrategicos)) : ?>
@@ -318,7 +409,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M11 4h-4a2 2 0 00-2 2v4m14-4l-9 9-4 1 1-4 9-9 3 3z" />
                   </svg>
                 </a>
-                <form method="post" action="detalle-proyecto.php" onsubmit="return confirm('¿Eliminar este objetivo estratégico y todos sus objetivos específicos?');">
+                <form method="post" action="detalle-proyecto.php" data-confirm="¿Eliminar este objetivo estratégico y todos sus objetivos específicos?">
                   <input type="hidden" name="action" value="delete_obj_est" />
                   <input type="hidden" name="t" value="<?php echo htmlspecialchars((string) $projectToken, ENT_QUOTES, 'UTF-8'); ?>" />
                   <input type="hidden" name="oe" value="<?php echo htmlspecialchars($oeToken, ENT_QUOTES, 'UTF-8'); ?>" />
@@ -369,21 +460,9 @@
                 </div>
               </div>
 
-              <form class="mt-4 flex flex-col gap-3 sm:flex-row" method="post" action="detalle-proyecto.php">
-                <input type="hidden" name="action" value="create_obj_esp" />
-                <input type="hidden" name="t" value="<?php echo htmlspecialchars((string) $projectToken, ENT_QUOTES, 'UTF-8'); ?>" />
-                <input type="hidden" name="oe" value="<?php echo htmlspecialchars($oeToken, ENT_QUOTES, 'UTF-8'); ?>" />
-                <input
-                  type="text"
-                  name="descripcion"
-                  class="flex-1 rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
-                  placeholder="Escribe un objetivo específico..."
-                  required
-                />
-                <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">
-                  + Agregar
-                </button>
-              </form>
+              <div class="mt-4 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-700">
+                Para agregar nuevos objetivos específicos en lote, usa el editor de arriba y luego presiona “Guardar todo”.
+              </div>
 
               <?php if (empty($especificos)) : ?>
                 <div class="mt-4 text-sm text-neutral-600">Aún no hay objetivos específicos registrados.</div>
@@ -409,7 +488,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M11 4h-4a2 2 0 00-2 2v4m14-4l-9 9-4 1 1-4 9-9 3 3z" />
                               </svg>
                             </a>
-                            <form method="post" action="detalle-proyecto.php" onsubmit="return confirm('¿Eliminar este objetivo específico?');">
+                            <form method="post" action="detalle-proyecto.php" data-confirm="¿Eliminar este objetivo específico?">
                               <input type="hidden" name="action" value="delete_obj_esp" />
                               <input type="hidden" name="t" value="<?php echo htmlspecialchars((string) $projectToken, ENT_QUOTES, 'UTF-8'); ?>" />
                               <input type="hidden" name="oe" value="<?php echo htmlspecialchars($oeToken, ENT_QUOTES, 'UTF-8'); ?>" />
@@ -746,7 +825,7 @@
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
         <h2 class="text-lg font-semibold">Autodiagnóstico BCG</h2>
-        <p class="mt-1 text-sm text-neutral-600">Interfaz tipo Excel: edita celdas y el sistema recalcula automáticamente.</p>
+        <p class="mt-1 text-sm text-neutral-600">Edita celdas y el sistema recalcula automáticamente.</p>
       </div>
       <div class="flex items-center gap-2">
         <button id="bcg-recalc-btn" type="button" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-800 hover:bg-neutral-50">
@@ -1111,6 +1190,65 @@
                 <?php endforeach; ?>
               </tbody>
             </table>
+          </div>
+        <?php endif; ?>
+      </div>
+
+      <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+        <div class="text-sm font-semibold text-neutral-900">Objetivos</div>
+        <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <div class="text-sm text-neutral-600">Objetivos estratégicos y sus objetivos específicos.</div>
+          <button
+            type="button"
+            data-open-panel="objetivos"
+            class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"
+          >
+            Gestionar
+          </button>
+        </div>
+
+        <?php if (!empty($objetivosError)) : ?>
+          <div class="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <?php echo htmlspecialchars((string) $objetivosError, ENT_QUOTES, 'UTF-8'); ?>
+          </div>
+        <?php elseif (empty($objetivosEstrategicos)) : ?>
+          <div class="mt-4 text-sm text-neutral-600">Aún no hay objetivos registrados.</div>
+        <?php else : ?>
+          <div class="mt-4 space-y-3">
+            <?php foreach ($objetivosEstrategicos as $obj) : ?>
+              <?php
+                $idObjEst = (int) ($obj['id_objetivo_est'] ?? 0);
+                $especificos = $objetivosEspecificosByEstrategico[$idObjEst] ?? [];
+                $especificos = is_array($especificos) ? $especificos : [];
+              ?>
+              <div class="rounded-xl border border-neutral-200 bg-white p-4">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
+                  <div>
+                    <div class="text-xs font-semibold text-neutral-600">Objetivo estratégico</div>
+                    <div class="mt-2 text-sm text-neutral-800 leading-relaxed">
+                      <?php echo nl2br(htmlspecialchars((string) ($obj['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8')); ?>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="text-xs font-semibold text-neutral-600">Objetivos específicos</div>
+                    <?php if (empty($especificos)) : ?>
+                      <div class="mt-2 text-sm text-neutral-600">Sin objetivos específicos.</div>
+                    <?php else : ?>
+                      <ul class="mt-2 space-y-1 text-sm text-neutral-800">
+                        <?php foreach ($especificos as $esp) : ?>
+                          <li class="flex gap-2">
+                            <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-neutral-400"></span>
+                            <span class="leading-relaxed">
+                              <?php echo htmlspecialchars((string) ($esp['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+                            </span>
+                          </li>
+                        <?php endforeach; ?>
+                      </ul>
+                    <?php endif; ?>
+                  </div>
+                </div>
+              </div>
+            <?php endforeach; ?>
           </div>
         <?php endif; ?>
       </div>
