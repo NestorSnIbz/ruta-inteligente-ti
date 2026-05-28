@@ -66,6 +66,43 @@ Gestiona el acceso a la base de datos PostgreSQL.
 
 ---
 
+## ▶️ Despliegue en local
+
+### Requisitos
+- PHP 8.1+ (recomendado 8.2)  
+- Node.js 18+ (para Tailwind)  
+- Archivo `.env` en la raíz (basado en `.env.example`) con al menos: `SUPABASE_URL` y `SUPABASE_ANON_KEY`
+
+### Opción A: sin Docker (rápido para desarrollo)
+
+1) Instalar dependencias del frontend y compilar Tailwind en modo watch:
+
+```bash
+npm install
+npm run dev
+```
+
+2) Levantar el servidor PHP apuntando a `public/`:
+
+```bash
+php -S localhost:8000 -t public
+```
+
+3) Abrir en el navegador:
+- `http://localhost:8000/`
+
+### Opción B: con Docker (Apache)
+
+```bash
+docker build -t ruta-inteligente-ti .
+docker run --rm -p 10000:10000 -e PORT=10000 ruta-inteligente-ti
+```
+
+Abrir:
+- `http://localhost:10000/`
+
+---
+
 ## 📋 Requerimientos del Sistema
 
 ### 🔹 Requerimientos Funcionales
