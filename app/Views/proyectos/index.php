@@ -45,30 +45,51 @@
             <?php endif; ?>
 
             <!-- BUSCADOR Y FILTROS -->
-            <div class="mb-8 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+            <?php
+            $search = trim((string) ($search ?? ($_GET['q'] ?? '')));
+            $sort = (string) ($sort ?? ($_GET['sort'] ?? 'recent'));
+            ?>
 
+            <form method="get" action="proyectos.php" class="mb-8 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
                 <div class="w-full md:max-w-md">
                     <input
                         type="text"
+                        name="q"
+                        value="<?php echo htmlspecialchars($search, ENT_QUOTES, 'UTF-8'); ?>"
                         placeholder="Buscar proyectos..."
                         class="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15 outline-none"
                     />
                 </div>
 
                 <div class="flex gap-2">
-                    <select class="rounded-xl border border-neutral-300 px-3 py-2 text-sm">
-                        <option>Todos</option>
-                        <option>Activo</option>
-                        <option>Borrador</option>
-                        <option>Compartido</option>
+                    <select
+                        name="sort"
+                        class="rounded-xl border border-neutral-300 px-3 py-2 text-sm"
+                        onchange="this.form.submit()"
+                    >
+                        <option value="recent" <?php echo $sort === 'recent' ? 'selected' : ''; ?>>Más recientes</option>
+                        <option value="oldest" <?php echo $sort === 'oldest' ? 'selected' : ''; ?>>Más antiguos</option>
+                        <option value="name_asc" <?php echo $sort === 'name_asc' ? 'selected' : ''; ?>>Nombre A-Z</option>
+                        <option value="name_desc" <?php echo $sort === 'name_desc' ? 'selected' : ''; ?>>Nombre Z-A</option>
                     </select>
 
-                    <select class="rounded-xl border border-neutral-300 px-3 py-2 text-sm">
-                        <option>Ordenar por fecha</option>
-                        <option>Ordenar por nombre</option>
-                    </select>
+                    <button
+                        type="submit"
+                        class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+                    >
+                        Buscar
+                    </button>
+
+                    <?php if ($search !== '' || $sort !== 'recent') : ?>
+                        <a
+                            href="proyectos.php"
+                            class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-100"
+                        >
+                            Limpiar
+                        </a>
+                    <?php endif; ?>
                 </div>
-            </div>
+            </form>
 
             <!-- LISTA -->
             <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm">
