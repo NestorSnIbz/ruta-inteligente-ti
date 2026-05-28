@@ -317,7 +317,8 @@ final class ProyectoController
         $bcgFortalezas = [];
         $bcgDebilidades = [];
 
-        if ($renderOnlySection === 'objetivos') {
+        $shouldLoadObjetivos = ($renderOnlySection === '' || $renderOnlySection === 'overview' || $renderOnlySection === 'objetivos');
+        if ($shouldLoadObjetivos) {
             try {
                 $objetivosEstrategicos = ObjetivoEstrategico::listByProyecto($supabase, $idProyecto);
                 $objetivosEstrategicos = $this->attachObjetivoEstrategicoTokens($objetivosEstrategicos);
@@ -1128,6 +1129,159 @@ final class ProyectoController
 
         Session::flash('success', 'Valor actualizado correctamente.');
         $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=valores');
+    }
+
+    public function saveObjetivosBatch(): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $payloadRaw = (string) ($_POST['payload'] ?? '');
+
+        if ($idProyecto <= 0) {
+            if ($this->wantsJson()) {
+                $this->jsonError('Proyecto inválido.', 400);
+            }
+            Session::flash('error', 'Proyecto inválido.');
+            $this->redirect('/proyectos.php');
+        }
+
+        $decoded = json_decode($payloadRaw, true);
+        if (!is_array($decoded)) {
+            if ($this->wantsJson()) {
+                $this->jsonError('Datos inválidos.', 400);
+            }
+            Session::flash('error', 'Datos inválidos.');
+            $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
+        }
+
+        $estrategicos = $decoded['estrategicos'] ?? [];
+        $especificos = $decoded['especificos'] ?? [];
+        if (!is_array($estrategicos) || !is_array($especificos)) {
+            if ($this->wantsJson()) {
+                $this->jsonError('Datos inválidos.', 400);
+            }
+            Session::flash('error', 'Datos inválidos.');
+            $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
+        }
+
+        if (count($estrategicos) > 50 || count($especificos) > 200) {
+            if ($this->wantsJson()) {
+                $this->jsonError('Demasiados elementos para guardar.', 400);
+            }
+            Session::flash('error', 'Demasiados elementos para guardar.');
+            $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
+        }
+
+        $supabase = new SupabaseClient();
+        $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
+        if ($proyecto === null) {
+            if ($this->wantsJson()) {
+                $this->jsonError('No tienes acceso a este proyecto.', 403);
+            }
+            Session::flash('error', 'No tienes acceso a este proyecto.');
+            $this->redirect('/proyectos.php');
+        }
+
+        $createdOE = 0;
+        $createdOESP = 0;
+        $tmpToObjEst = [];
+
+        try {
+            foreach ($estrategicos as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $tmpId = trim((string) ($row['tmp_id'] ?? ''));
+                $desc = trim((string) ($row['descripcion'] ?? ''));
+                if ($desc === '' || mb_strlen($desc, 'UTF-8') < 5) {
+                    throw new InvalidArgumentException('Cada objetivo estratégico debe tener al menos 5 caracteres.');
+                }
+
+                $idObjEst = ObjetivoEstrategico::create($supabase, $idProyecto, $desc);
+                if ($idObjEst <= 0) {
+                    throw new RuntimeException('No se pudo crear un objetivo estratégico.');
+                }
+                $createdOE++;
+                if ($tmpId !== '') {
+                    $tmpToObjEst[$tmpId] = (int) $idObjEst;
+                }
+
+                $espList = $row['especificos'] ?? [];
+                if (!is_array($espList)) {
+                    $espList = [];
+                }
+                foreach ($espList as $esp) {
+                    $esp = trim((string) $esp);
+                    if ($esp === '') {
+                        continue;
+                    }
+                    if (mb_strlen($esp, 'UTF-8') < 5) {
+                        throw new InvalidArgumentException('Cada objetivo específico debe tener al menos 5 caracteres.');
+                    }
+                    ObjetivoEspecifico::create($supabase, (int) $idObjEst, $esp);
+                    $createdOESP++;
+                }
+            }
+
+            foreach ($especificos as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $oeToken = trim((string) ($row['oe'] ?? ''));
+                $oeTmp = trim((string) ($row['oe_tmp'] ?? ''));
+                $desc = trim((string) ($row['descripcion'] ?? ''));
+                if ($desc === '' || mb_strlen($desc, 'UTF-8') < 5) {
+                    throw new InvalidArgumentException('Cada objetivo específico debe tener al menos 5 caracteres.');
+                }
+                $idObjEst = 0;
+                if ($oeTmp !== '') {
+                    $idObjEst = (int) ($tmpToObjEst[$oeTmp] ?? 0);
+                    if ($idObjEst <= 0) {
+                        throw new InvalidArgumentException('Objetivo estratégico inválido.');
+                    }
+                } else {
+                    if ($oeToken === '') {
+                        throw new InvalidArgumentException('Objetivo estratégico inválido.');
+                    }
+                    $idObjEst = $this->objetivoEstrategicoIdFromToken($oeToken);
+                    if ($idObjEst <= 0) {
+                        throw new InvalidArgumentException('Objetivo estratégico inválido.');
+                    }
+                    if (!ObjetivoEstrategico::existsInProyecto($supabase, $idObjEst, $idProyecto)) {
+                        throw new InvalidArgumentException('No tienes acceso a este objetivo estratégico.');
+                    }
+                }
+
+                ObjetivoEspecifico::create($supabase, $idObjEst, $desc);
+                $createdOESP++;
+            }
+        } catch (InvalidArgumentException $e) {
+            if ($this->wantsJson()) {
+                $this->jsonError($e->getMessage(), 400);
+            }
+            Session::flash('error', $e->getMessage());
+            $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
+        } catch (Throwable $e) {
+            if ($this->wantsJson()) {
+                $this->jsonError('No se pudieron guardar los objetivos.', 400);
+            }
+            Session::flash('error', 'No se pudieron guardar los objetivos.');
+            $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
+        }
+
+        if ($this->wantsJson()) {
+            $this->jsonOk('Objetivos guardados correctamente.', [
+                'created' => [
+                    'estrategicos' => $createdOE,
+                    'especificos' => $createdOESP,
+                ],
+            ]);
+        }
+        Session::flash('success', 'Objetivos guardados correctamente.');
+        $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
     }
 
     public function createObjetivoEstrategico(): void

@@ -239,16 +239,65 @@
 
             <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
               <div class="text-sm font-semibold text-neutral-900">Objetivos</div>
-              <div class="mt-3 text-sm text-neutral-600">
-                Abre la pestaña “Objetivos” para cargar y gestionar los objetivos del proyecto.
+              <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+                <div class="text-sm text-neutral-600">
+                  Objetivos estratégicos y sus objetivos específicos.
+                </div>
+                <button
+                  type="button"
+                  data-open-panel="objetivos"
+                  class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"
+                >
+                  Gestionar
+                </button>
               </div>
-              <button
-                type="button"
-                data-open-panel="objetivos"
-                class="mt-4 inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"
-              >
-                Abrir Objetivos
-              </button>
+
+              <?php if (!empty($objetivosError)) : ?>
+                <div class="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                  <?php echo htmlspecialchars((string) $objetivosError, ENT_QUOTES, 'UTF-8'); ?>
+                </div>
+              <?php elseif (empty($objetivosEstrategicos)) : ?>
+                <div class="mt-4 text-sm text-neutral-600">
+                  Aún no hay objetivos registrados.
+                </div>
+              <?php else : ?>
+                <div class="mt-4 space-y-3">
+                  <?php foreach ($objetivosEstrategicos as $idx => $obj) : ?>
+                    <?php
+                      $idObjEst = (int) ($obj['id_objetivo_est'] ?? 0);
+                      $especificos = $objetivosEspecificosByEstrategico[$idObjEst] ?? [];
+                      $especificos = is_array($especificos) ? $especificos : [];
+                    ?>
+                    <div class="rounded-xl border border-neutral-200 bg-white p-4">
+                      <div class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
+                        <div>
+                          <div class="text-xs font-semibold text-neutral-600">Objetivo estratégico</div>
+                          <div class="mt-2 text-sm text-neutral-800 leading-relaxed">
+                            <?php echo nl2br(htmlspecialchars((string) ($obj['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8')); ?>
+                          </div>
+                        </div>
+                        <div>
+                          <div class="text-xs font-semibold text-neutral-600">Objetivos específicos</div>
+                          <?php if (empty($especificos)) : ?>
+                            <div class="mt-2 text-sm text-neutral-600">Sin objetivos específicos.</div>
+                          <?php else : ?>
+                            <ul class="mt-2 space-y-1 text-sm text-neutral-800">
+                              <?php foreach ($especificos as $esp) : ?>
+                                <li class="flex gap-2">
+                                  <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-neutral-400"></span>
+                                  <span class="leading-relaxed">
+                                    <?php echo htmlspecialchars((string) ($esp['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+                                  </span>
+                                </li>
+                              <?php endforeach; ?>
+                            </ul>
+                          <?php endif; ?>
+                        </div>
+                      </div>
+                    </div>
+                  <?php endforeach; ?>
+                </div>
+              <?php endif; ?>
             </div>
           </div>
         </section>
@@ -693,6 +742,190 @@
     } catch (e) {}
   }
 
+  function initMisionPanel() {
+    const panel = document.getElementById("panel-mision");
+    if (!panel || panel.dataset.riInit === "1") return;
+    panel.dataset.riInit = "1";
+
+    function openMisionEdit() {
+      const editor = panel.querySelector("#mision-editor");
+      const display = panel.querySelector("#mision-display");
+      if (display) display.classList.add("hidden");
+      if (editor) editor.classList.remove("hidden");
+      const editButton = panel.querySelector("[data-js-edit-mision]");
+      if (editButton) editButton.classList.add("hidden");
+      const textarea = panel.querySelector("#mision-editor textarea");
+      if (textarea) textarea.focus();
+    }
+
+    function closeMisionEdit() {
+      const editor = panel.querySelector("#mision-editor");
+      const display = panel.querySelector("#mision-display");
+      if (editor) editor.classList.add("hidden");
+      if (display) display.classList.remove("hidden");
+      const editButton = panel.querySelector("[data-js-edit-mision]");
+      if (editButton) editButton.classList.remove("hidden");
+    }
+
+    const editButton = panel.querySelector("[data-js-edit-mision]");
+    if (editButton) {
+      editButton.addEventListener("click", (e) => {
+        e.preventDefault();
+        setActiveProjectPanel("mision");
+        openMisionEdit();
+        const u = new URL(window.location.href);
+        u.searchParams.set("edit", "mision");
+        u.searchParams.set("section", "mision");
+        window.history.replaceState({}, "", u.toString());
+      });
+    }
+
+    const cancelLink = panel.querySelector("[data-js-cancel-mision]");
+    if (cancelLink) {
+      cancelLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        closeMisionEdit();
+        const u = new URL(window.location.href);
+        u.searchParams.delete("edit");
+        u.searchParams.set("section", "mision");
+        window.history.replaceState({}, "", u.toString());
+      });
+    }
+
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("edit") === "mision") {
+      openMisionEdit();
+    }
+
+    const editorForm = panel.querySelector("#mision-editor form");
+    if (editorForm && editorForm.dataset.riAjax !== "1") {
+      editorForm.dataset.riAjax = "1";
+      editorForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const submitter = (e.submitter instanceof HTMLButtonElement) ? e.submitter : editorForm.querySelector('button[type="submit"]');
+        setButtonLoading(submitter, true, "Guardando…");
+        try {
+          const fd = new FormData(editorForm);
+          const res = await fetch("detalle-proyecto.php", {
+            method: "POST",
+            headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+            body: fd,
+          });
+          const json = await res.json().catch(() => null);
+          if (!res.ok || !json || json.ok !== true) {
+            const msg = (json && json.error) ? json.error : "No se pudo guardar.";
+            showInlineToast("Error", msg);
+            return;
+          }
+          const u = new URL(window.location.href);
+          u.searchParams.delete("edit");
+          u.searchParams.set("section", "mision");
+          window.history.replaceState({}, "", u.toString());
+          showInlineToast("Guardado", (json && json.message) ? json.message : "Guardado correctamente.");
+          await reloadPanel("mision");
+          setActiveProjectPanel("mision", { updateUrl: false });
+        } catch (err) {
+          showInlineToast("Error", "No se pudo guardar.");
+        } finally {
+          setButtonLoading(submitter, false);
+        }
+      });
+    }
+  }
+
+  function initVisionPanel() {
+    const panel = document.getElementById("panel-vision");
+    if (!panel || panel.dataset.riInit === "1") return;
+    panel.dataset.riInit = "1";
+
+    function openVisionEdit() {
+      const editor = panel.querySelector("#vision-editor");
+      const display = panel.querySelector("#vision-display");
+      if (display) display.classList.add("hidden");
+      if (editor) editor.classList.remove("hidden");
+      const editButton = panel.querySelector("[data-js-edit-vision]");
+      if (editButton) editButton.classList.add("hidden");
+      const textarea = panel.querySelector("#vision-editor textarea");
+      if (textarea) textarea.focus();
+    }
+
+    function closeVisionEdit() {
+      const editor = panel.querySelector("#vision-editor");
+      const display = panel.querySelector("#vision-display");
+      if (editor) editor.classList.add("hidden");
+      if (display) display.classList.remove("hidden");
+      const editButton = panel.querySelector("[data-js-edit-vision]");
+      if (editButton) editButton.classList.remove("hidden");
+    }
+
+    const editButton = panel.querySelector("[data-js-edit-vision]");
+    if (editButton) {
+      editButton.addEventListener("click", (e) => {
+        e.preventDefault();
+        setActiveProjectPanel("vision");
+        openVisionEdit();
+        const u = new URL(window.location.href);
+        u.searchParams.set("edit", "vision");
+        u.searchParams.set("section", "vision");
+        window.history.replaceState({}, "", u.toString());
+      });
+    }
+
+    const cancelLink = panel.querySelector("[data-js-cancel-vision]");
+    if (cancelLink) {
+      cancelLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        closeVisionEdit();
+        const u = new URL(window.location.href);
+        u.searchParams.delete("edit");
+        u.searchParams.set("section", "vision");
+        window.history.replaceState({}, "", u.toString());
+      });
+    }
+
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("edit") === "vision") {
+      openVisionEdit();
+    }
+
+    const editorForm = panel.querySelector("#vision-editor form");
+    if (editorForm && editorForm.dataset.riAjax !== "1") {
+      editorForm.dataset.riAjax = "1";
+      editorForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const submitter = (e.submitter instanceof HTMLButtonElement) ? e.submitter : editorForm.querySelector('button[type="submit"]');
+        setButtonLoading(submitter, true, "Guardando…");
+        try {
+          const fd = new FormData(editorForm);
+          const res = await fetch("detalle-proyecto.php", {
+            method: "POST",
+            headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+            body: fd,
+          });
+          const json = await res.json().catch(() => null);
+          if (!res.ok || !json || json.ok !== true) {
+            const msg = (json && json.error) ? json.error : "No se pudo guardar.";
+            showInlineToast("Error", msg);
+            return;
+          }
+          const u = new URL(window.location.href);
+          u.searchParams.delete("edit");
+          u.searchParams.set("section", "vision");
+          window.history.replaceState({}, "", u.toString());
+          showInlineToast("Guardado", (json && json.message) ? json.message : "Guardado correctamente.");
+          await reloadPanel("vision");
+          setActiveProjectPanel("vision", { updateUrl: false });
+        } catch (err) {
+          showInlineToast("Error", "No se pudo guardar.");
+        } finally {
+          setButtonLoading(submitter, false);
+        }
+      });
+    }
+  }
+
   function initValoresPanel() {
     const panel = document.getElementById("panel-valores");
     if (!panel || panel.dataset.riInit === "1") return;
@@ -779,6 +1012,44 @@
     if (url.searchParams.get("edit") === "valores") {
       openValoresEdit();
     }
+
+    const form = panel.querySelector("#valores-form");
+    if (form && form.dataset.riAjax !== "1") {
+      form.dataset.riAjax = "1";
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const submitter = (e.submitter instanceof HTMLButtonElement) ? e.submitter : form.querySelector('button[type="submit"]');
+        setButtonLoading(submitter, true, "Guardando…");
+        try {
+          const fd = new FormData(form);
+          const res = await fetch("detalle-proyecto.php", {
+            method: "POST",
+            headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+            body: fd,
+          });
+          const json = await res.json().catch(() => null);
+          if (!res.ok || !json || json.ok !== true) {
+            const msg = (json && json.error) ? json.error : "No se pudo guardar.";
+            showInlineToast("Error", msg);
+            return;
+          }
+
+          const u = new URL(window.location.href);
+          u.searchParams.delete("edit");
+          u.searchParams.set("section", "valores");
+          window.history.replaceState({}, "", u.toString());
+
+          showInlineToast("Guardado", (json && json.message) ? json.message : "Guardado correctamente.");
+          await reloadPanel("valores");
+          setActiveProjectPanel("valores", { updateUrl: false });
+        } catch (err) {
+          showInlineToast("Error", "No se pudo guardar.");
+        } finally {
+          setButtonLoading(submitter, false);
+        }
+      });
+    }
   }
 
   function initObjetivosPanel() {
@@ -846,6 +1117,395 @@
     if (oespEditParam) {
       openObjetivoEspecificoEdit(oespEditParam);
     }
+
+    const batchForm = panel.querySelector("#objetivos-batch-form");
+    const batchPayload = panel.querySelector("#objetivos-batch-payload");
+    const oeInput = panel.querySelector("#oe-batch-input");
+    const oeAdd = panel.querySelector("#oe-batch-add");
+    const oeList = panel.querySelector("#oe-batch-list");
+    const oespRows = panel.querySelector("#oesp-batch-rows");
+    const oespAddRow = panel.querySelector("#oesp-batch-add-row");
+    const batchClear = panel.querySelector("#objetivos-batch-clear");
+
+    if (batchForm && batchPayload && oeList && oespRows) {
+      const newStrategic = [];
+
+      function makeId() {
+        return (Math.random().toString(16).slice(2) + Date.now().toString(16)).slice(0, 24);
+      }
+
+      function truncateText(value, max) {
+        const s = String(value || "").trim();
+        if (s.length <= max) return s;
+        return s.slice(0, max - 1) + "…";
+      }
+
+      function getOespRowEls() {
+        return Array.from(oespRows.querySelectorAll("[data-oesp-row]"));
+      }
+
+      function bindOespRow(row) {
+        const remove = row.querySelector("[data-oesp-remove]");
+        if (remove && remove.dataset.riBound !== "1") {
+          remove.dataset.riBound = "1";
+          remove.addEventListener("click", () => {
+            const rows = getOespRowEls();
+            if (rows.length <= 1) {
+              const sel = row.querySelector("[data-oesp-oe]");
+              const ta = row.querySelector("[data-oesp-lines]");
+              if (sel) sel.value = "";
+              if (ta) ta.value = "";
+              return;
+            }
+            row.remove();
+          });
+        }
+      }
+
+      function addOespRow() {
+        const rows = getOespRowEls();
+        const base = rows[0];
+        if (!base) return;
+        const clone = base.cloneNode(true);
+        const sel = clone.querySelector("[data-oesp-oe]");
+        const ta = clone.querySelector("[data-oesp-lines]");
+        const remove = clone.querySelector("[data-oesp-remove]");
+        if (sel) sel.value = "";
+        if (ta) ta.value = "";
+        if (remove) remove.dataset.riBound = "0";
+        bindOespRow(clone);
+        oespRows.appendChild(clone);
+        syncTmpOptions();
+        if (sel) sel.focus();
+      }
+
+      function syncTmpOptions() {
+        const rows = getOespRowEls();
+        for (const row of rows) {
+          const sel = row.querySelector("[data-oesp-oe]");
+          if (!(sel instanceof HTMLSelectElement)) continue;
+          const selected = String(sel.value || "");
+          const existing = sel.querySelector('optgroup[data-tmp="1"]');
+          if (existing) existing.remove();
+          if (newStrategic.length === 0) continue;
+
+          const og = document.createElement("optgroup");
+          og.label = "Nuevos (pendientes)";
+          og.setAttribute("data-tmp", "1");
+          for (const it of newStrategic) {
+            const opt = document.createElement("option");
+            opt.value = `tmp:${it.id}`;
+            opt.textContent = `⏳ ${truncateText(it.descripcion, 60) || "Objetivo estratégico"}`;
+            og.appendChild(opt);
+          }
+          sel.appendChild(og);
+
+          if (selected.startsWith("tmp:")) {
+            const found = newStrategic.some((x) => `tmp:${x.id}` === selected);
+            if (!found) sel.value = "";
+          }
+        }
+      }
+
+      function renderNewStrategic() {
+        oeList.innerHTML = "";
+        newStrategic.forEach((item) => {
+          const card = document.createElement("div");
+          card.className = "rounded-xl border border-neutral-200 bg-white p-4";
+
+          const header = document.createElement("div");
+          header.className = "flex items-start justify-between gap-3";
+
+          const title = document.createElement("div");
+          title.className = "text-xs font-semibold text-neutral-600";
+          title.textContent = "Objetivo estratégico (pendiente)";
+
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.className = "inline-flex items-center justify-center rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700";
+          remove.textContent = "Eliminar";
+          remove.addEventListener("click", () => {
+            const idx = newStrategic.findIndex((x) => x.id === item.id);
+            if (idx >= 0) newStrategic.splice(idx, 1);
+            renderAll();
+          });
+
+          header.appendChild(title);
+          header.appendChild(remove);
+
+          const textarea = document.createElement("textarea");
+          textarea.rows = 3;
+          textarea.className = "mt-3 w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm outline-none resize-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15";
+          textarea.value = String(item.descripcion || "");
+          textarea.addEventListener("input", () => {
+            item.descripcion = String(textarea.value || "");
+          });
+
+          const specWrap = document.createElement("div");
+          specWrap.className = "mt-4 rounded-xl border border-neutral-200 bg-neutral-50 p-3";
+
+          const specTitle = document.createElement("div");
+          specTitle.className = "text-xs font-semibold text-neutral-700";
+          specTitle.textContent = "Objetivos específicos (pendientes)";
+
+          const specForm = document.createElement("div");
+          specForm.className = "mt-2 flex flex-col gap-2 sm:flex-row";
+
+          const specInput = document.createElement("input");
+          specInput.type = "text";
+          specInput.className = "h-10 flex-1 rounded-xl border border-neutral-300 bg-white px-4 text-sm outline-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15";
+          specInput.placeholder = "Escribe un objetivo específico...";
+
+          const specAdd = document.createElement("button");
+          specAdd.type = "button";
+          specAdd.className = "h-10 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700";
+          specAdd.textContent = "+ Añadir";
+          specAdd.addEventListener("click", () => {
+            const txt = String(specInput.value || "").trim();
+            if (txt.length < 5) {
+              showInlineToast("Error", "El objetivo específico debe tener al menos 5 caracteres.");
+              return;
+            }
+            item.especificos.push(txt);
+            specInput.value = "";
+            specInput.focus();
+            renderAll();
+          });
+
+          specInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              specAdd.click();
+            }
+          });
+
+          specForm.appendChild(specInput);
+          specForm.appendChild(specAdd);
+
+          const specList = document.createElement("div");
+          specList.className = "mt-3 space-y-2";
+          if (item.especificos.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "text-sm text-neutral-600";
+            empty.textContent = "Aún no hay objetivos específicos en la lista.";
+            specList.appendChild(empty);
+          } else {
+            item.especificos.forEach((sp, i) => {
+              const row = document.createElement("div");
+              row.className = "flex items-center gap-3 rounded-xl border border-neutral-200 bg-white px-3 py-2";
+
+              const label = document.createElement("div");
+              label.className = "flex-1 text-sm text-neutral-800";
+              label.textContent = String(sp || "");
+
+              const del = document.createElement("button");
+              del.type = "button";
+              del.className = "inline-flex items-center justify-center rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700";
+              del.textContent = "Eliminar";
+              del.addEventListener("click", () => {
+                item.especificos.splice(i, 1);
+                renderAll();
+              });
+
+              row.appendChild(label);
+              row.appendChild(del);
+              specList.appendChild(row);
+            });
+          }
+
+          specWrap.appendChild(specTitle);
+          specWrap.appendChild(specForm);
+          specWrap.appendChild(specList);
+
+          card.appendChild(header);
+          card.appendChild(textarea);
+          card.appendChild(specWrap);
+          oeList.appendChild(card);
+        });
+        syncTmpOptions();
+      }
+
+      function renderAll() {
+        renderNewStrategic();
+      }
+
+      function clearAll() {
+        newStrategic.splice(0, newStrategic.length);
+        if (oeInput) oeInput.value = "";
+        batchPayload.value = "";
+        const rows = getOespRowEls();
+        rows.slice(1).forEach((r) => r.remove());
+        const first = rows[0];
+        if (first) {
+          const sel = first.querySelector("[data-oesp-oe]");
+          const ta = first.querySelector("[data-oesp-lines]");
+          if (sel) sel.value = "";
+          if (ta) ta.value = "";
+          bindOespRow(first);
+        }
+        syncTmpOptions();
+        renderAll();
+      }
+
+      if (oeAdd && oeInput) {
+        oeAdd.addEventListener("click", () => {
+          const txt = String(oeInput.value || "").trim();
+          if (txt.length < 5) {
+            showInlineToast("Error", "El objetivo estratégico debe tener al menos 5 caracteres.");
+            return;
+          }
+          newStrategic.push({ id: makeId(), descripcion: txt, especificos: [] });
+          oeInput.value = "";
+          oeInput.focus();
+          renderAll();
+        });
+      }
+
+      if (oeInput) {
+        oeInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            if (oeAdd) oeAdd.click();
+          }
+        });
+      }
+
+      getOespRowEls().forEach((r) => bindOespRow(r));
+      syncTmpOptions();
+      if (oespAddRow) {
+        oespAddRow.addEventListener("click", addOespRow);
+      }
+
+      if (batchClear) {
+        batchClear.addEventListener("click", clearAll);
+      }
+
+      batchForm.addEventListener("submit", (e) => {
+        const estrategicos = newStrategic
+          .map((it) => ({
+            tmp_id: String(it.id || ""),
+            descripcion: String(it.descripcion || "").trim(),
+            especificos: Array.isArray(it.especificos) ? it.especificos.map((s) => String(s || "").trim()).filter((s) => s) : [],
+          }))
+          .filter((it) => it.descripcion);
+
+        const especificos = [];
+        const rows = getOespRowEls();
+        for (const row of rows) {
+          const sel = row.querySelector("[data-oesp-oe]");
+          const ta = row.querySelector("[data-oesp-lines]");
+          const oe = String(sel instanceof HTMLSelectElement ? (sel.value || "") : "").trim();
+          const raw = String(ta instanceof HTMLTextAreaElement ? (ta.value || "") : "");
+          const lines = raw.split(/\r?\n/).map((v) => String(v || "").trim()).filter((v) => v !== "");
+          if (oe === "" && lines.length === 0) {
+            continue;
+          }
+          if (oe === "") {
+            e.preventDefault();
+            showInlineToast("Error", "Selecciona un objetivo estratégico en todas las filas con texto.");
+            return;
+          }
+          for (const line of lines) {
+            if (line.length < 5) {
+              e.preventDefault();
+              showInlineToast("Error", "Cada objetivo específico debe tener al menos 5 caracteres.");
+              return;
+            }
+            if (oe.startsWith("tmp:")) {
+              especificos.push({ oe_tmp: oe.slice(4), descripcion: line });
+            } else {
+              especificos.push({ oe, descripcion: line });
+            }
+          }
+        }
+
+        if (estrategicos.length === 0 && especificos.length === 0) {
+          e.preventDefault();
+          showInlineToast("Error", "Agrega al menos un objetivo antes de guardar.");
+          return;
+        }
+
+        const badOE = estrategicos.find((x) => x.descripcion.length < 5);
+        if (badOE) {
+          e.preventDefault();
+          showInlineToast("Error", "Cada objetivo estratégico debe tener al menos 5 caracteres.");
+          return;
+        }
+
+        const badOESP =
+          estrategicos.some((x) => x.especificos.some((s) => String(s || "").trim().length < 5)) ||
+          especificos.some((x) => String(x.descripcion || "").trim().length < 5);
+        if (badOESP) {
+          e.preventDefault();
+          showInlineToast("Error", "Cada objetivo específico debe tener al menos 5 caracteres.");
+          return;
+        }
+
+        batchPayload.value = JSON.stringify({ estrategicos, especificos });
+      });
+
+      renderAll();
+    }
+
+    panel.querySelectorAll("form").forEach((form) => {
+      if (!(form instanceof HTMLFormElement)) return;
+      if (form.dataset.riAjax === "1") return;
+      const actionEl = form.querySelector('input[name="action"]');
+      const action = actionEl ? String(actionEl.value || "") : "";
+      if (!["update_obj_est", "delete_obj_est", "update_obj_esp", "delete_obj_esp", "save_objetivos_batch"].includes(action)) {
+        return;
+      }
+      form.dataset.riAjax = "1";
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const confirmMsg = String(form.getAttribute("data-confirm") || "").trim();
+        if (confirmMsg) {
+          const ok = await openConfirmModal({
+            title: "Confirmar eliminación",
+            message: confirmMsg,
+            confirmText: "Eliminar",
+            cancelText: "Cancelar",
+          });
+          if (!ok) {
+            return;
+          }
+        }
+
+        const submitter = (e.submitter instanceof HTMLButtonElement) ? e.submitter : form.querySelector('button[type="submit"]');
+        const loadingText = action.startsWith("delete_") ? "Eliminando…" : "Guardando…";
+        setButtonLoading(submitter, true, loadingText);
+        try {
+          const fd = new FormData(form);
+          const res = await fetch("detalle-proyecto.php", {
+            method: "POST",
+            headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+            body: fd,
+          });
+          const json = await res.json().catch(() => null);
+          if (!res.ok || !json || json.ok !== true) {
+            const msg = (json && json.error) ? json.error : "No se pudo guardar.";
+            showInlineToast("Error", msg);
+            return;
+          }
+
+          const u = new URL(window.location.href);
+          u.searchParams.delete("oe_edit");
+          u.searchParams.delete("oesp_edit");
+          u.searchParams.set("section", "objetivos");
+          window.history.replaceState({}, "", u.toString());
+
+          showInlineToast("Guardado", (json && json.message) ? json.message : "Guardado correctamente.");
+          await reloadPanel("objetivos");
+          setActiveProjectPanel("objetivos", { updateUrl: false });
+        } catch (err) {
+          showInlineToast("Error", "No se pudo guardar.");
+        } finally {
+          setButtonLoading(submitter, false);
+        }
+      });
+    });
   }
 
   function initCadenaPanel() {
@@ -2415,6 +3075,8 @@
   }
 
   function initLazyPanel(panelId) {
+    if (panelId === "mision") initMisionPanel();
+    if (panelId === "vision") initVisionPanel();
     if (panelId === "valores") initValoresPanel();
     if (panelId === "objetivos") initObjetivosPanel();
     if (panelId === "cadena") initCadenaPanel();
@@ -2487,11 +3149,125 @@
     riToastTimer = setTimeout(() => el.classList.add("hidden"), 2200);
   }
 
+  function openConfirmModal(options = {}) {
+    const title = String(options.title || "Confirmar acción");
+    const message = String(options.message || "¿Confirmas esta acción?");
+    const confirmText = String(options.confirmText || "Eliminar");
+    const cancelText = String(options.cancelText || "Cancelar");
+
+    return new Promise((resolve) => {
+      let modal = document.getElementById("ri-confirm-modal");
+      if (!modal) {
+        modal = document.createElement("div");
+        modal.id = "ri-confirm-modal";
+        modal.className = "fixed inset-0 z-50 hidden";
+        modal.innerHTML = `
+          <div data-backdrop class="absolute inset-0 bg-neutral-900/40 backdrop-blur-[1px]"></div>
+          <div class="relative flex min-h-full items-end justify-center p-4 sm:items-center">
+            <div role="dialog" aria-modal="true" class="w-full max-w-md rounded-2xl border border-neutral-200 bg-white shadow-xl">
+              <div class="flex items-start gap-4 p-5">
+                <div class="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-700">
+                  <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.29 3.86l-8.23 14.27A2 2 0 003.79 21h16.42a2 2 0 001.73-2.87L13.71 3.86a2 2 0 00-3.42 0z" />
+                  </svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div data-title class="text-base font-semibold text-neutral-900"></div>
+                  <div data-message class="mt-1 text-sm text-neutral-700"></div>
+                </div>
+              </div>
+              <div class="flex flex-col-reverse gap-2 p-5 pt-0 sm:flex-row sm:justify-end">
+                <button type="button" data-cancel class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-300 bg-white px-4 text-sm font-semibold text-neutral-800 hover:bg-neutral-50">
+                  Cancelar
+                </button>
+                <button type="button" data-confirm class="inline-flex h-10 items-center justify-center rounded-xl bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700">
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      }
+
+      const titleEl = modal.querySelector("[data-title]");
+      const msgEl = modal.querySelector("[data-message]");
+      const cancelBtn = modal.querySelector("[data-cancel]");
+      const confirmBtn = modal.querySelector("[data-confirm]");
+      const backdrop = modal.querySelector("[data-backdrop]");
+
+      if (titleEl) titleEl.textContent = title;
+      if (msgEl) msgEl.textContent = message;
+      if (cancelBtn) cancelBtn.textContent = cancelText;
+      if (confirmBtn) confirmBtn.textContent = confirmText;
+
+      function cleanup(result) {
+        modal.classList.add("hidden");
+        document.removeEventListener("keydown", onKeyDown, true);
+        if (cancelBtn) cancelBtn.removeEventListener("click", onCancel);
+        if (confirmBtn) confirmBtn.removeEventListener("click", onConfirm);
+        if (backdrop) backdrop.removeEventListener("click", onCancel);
+        resolve(result);
+      }
+
+      function onCancel() {
+        cleanup(false);
+      }
+
+      function onConfirm() {
+        cleanup(true);
+      }
+
+      function onKeyDown(e) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          cleanup(false);
+        }
+      }
+
+      if (cancelBtn) cancelBtn.addEventListener("click", onCancel);
+      if (confirmBtn) confirmBtn.addEventListener("click", onConfirm);
+      if (backdrop) backdrop.addEventListener("click", onCancel);
+      document.addEventListener("keydown", onKeyDown, true);
+
+      modal.classList.remove("hidden");
+      if (confirmBtn instanceof HTMLButtonElement) confirmBtn.focus();
+    });
+  }
+
+  function setButtonLoading(btn, on, loadingText) {
+    if (!(btn instanceof HTMLButtonElement)) return;
+    if (on) {
+      if (btn.dataset.riOrigHtml === undefined) btn.dataset.riOrigHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.setAttribute("aria-busy", "true");
+      const text = String(loadingText || "Guardando…");
+      btn.innerHTML = `
+        <span class="inline-flex items-center gap-2">
+          <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+          </svg>
+          <span>${text}</span>
+        </span>
+      `;
+      return;
+    }
+
+    if (btn.dataset.riOrigHtml !== undefined) {
+      btn.innerHTML = btn.dataset.riOrigHtml;
+    }
+    btn.disabled = false;
+    btn.removeAttribute("aria-busy");
+  }
+
   function isAjaxSaveAction(action) {
     return [
       "save_mision",
       "save_vision",
       "save_valores",
+      "save_objetivos_batch",
       "create_obj_est",
       "update_obj_est",
       "delete_obj_est",
@@ -2509,6 +3285,7 @@
   }
 
   document.addEventListener("submit", async (e) => {
+    if (e.defaultPrevented) return;
     const form = e.target;
     if (!(form instanceof HTMLFormElement)) return;
     if (!form.action || !form.action.includes("detalle-proyecto.php")) return;
@@ -2518,8 +3295,9 @@
     e.preventDefault();
 
     const panelId = panelForAction(action);
-    const buttons = Array.from(form.querySelectorAll('button[type="submit"]'));
-    buttons.forEach((b) => (b.disabled = true));
+    const submitter = (e.submitter instanceof HTMLButtonElement) ? e.submitter : form.querySelector('button[type="submit"]');
+    const loadingText = action.startsWith("delete_") ? "Eliminando…" : "Guardando…";
+    setButtonLoading(submitter, true, loadingText);
 
     try {
       const fd = new FormData(form);
@@ -2536,6 +3314,11 @@
       }
 
       const u = new URL(window.location.href);
+      if (panelId === "mision" || panelId === "vision") {
+        u.searchParams.delete("edit");
+        u.searchParams.set("section", panelId);
+        window.history.replaceState({}, "", u.toString());
+      }
       if (panelId === "valores") {
         u.searchParams.delete("edit");
         u.searchParams.set("section", "valores");
@@ -2554,7 +3337,7 @@
     } catch (err) {
       showInlineToast("Error", "No se pudo guardar.");
     } finally {
-      buttons.forEach((b) => (b.disabled = false));
+      setButtonLoading(submitter, false);
     }
   });
 
