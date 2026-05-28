@@ -52,35 +52,52 @@ final class Proyecto
         }
 
         return is_array($response['data']) ? $response['data'] : [];
-    }
+        }
 
-    public static function listByIds(SupabaseClient $supabase, array $ids): array
-    {
-        return self::listByIdsPaged($supabase, $ids, 200, 0, 'id_proyecto.desc');
-    }
+        public static function listByIds(SupabaseClient $supabase, array $ids): array
+        {
+            return self::listByIdsPaged($supabase, $ids, 200, 0, 'id_proyecto.desc');
+        }
 
-    public static function listByIdsPaged(SupabaseClient $supabase, array $ids, int $limit, int $offset, string $order): array
+        public static function listByIdsPaged(SupabaseClient $supabase, array $ids, int $limit, int $offset, string $order, string $search = ''): array
     {
         $ids = array_values(array_unique(array_map('intval', $ids)));
         $ids = array_filter($ids, fn ($v) => $v > 0);
+
         if (empty($ids)) {
             return [];
         }
 
         $limit = max(1, min(200, $limit));
         $offset = max(0, $offset);
-        $order = trim($order) !== '' ? $order : 'id_proyecto.desc';
+
+        $allowedOrders = [
+            'id_proyecto.desc',
+            'id_proyecto.asc',
+            'nombre.asc',
+            'nombre.desc',
+        ];
+
+        $order = in_array($order, $allowedOrders, true) ? $order : 'id_proyecto.desc';
+
+        $query = [
+            'select' => 'id_proyecto,nombre,creador_id',
+            'id_proyecto' => 'in.(' . implode(',', $ids) . ')',
+            'order' => $order,
+            'limit' => $limit,
+            'offset' => $offset,
+        ];
+
+        $search = trim($search);
+        if ($search !== '') {
+            $search = str_replace(['*', '%'], '', $search);
+            $query['nombre'] = 'ilike.*' . $search . '*';
+        }
 
         $response = $supabase->request(
             'GET',
             '/rest/v1/proyecto',
-            [
-                'select' => 'id_proyecto,nombre,creador_id',
-                'id_proyecto' => 'in.(' . implode(',', $ids) . ')',
-                'order' => $order,
-                'limit' => $limit,
-                'offset' => $offset,
-            ],
+            $query,
             self::restHeaders($supabase)
         );
 
@@ -89,6 +106,41 @@ final class Proyecto
         }
 
         return is_array($response['data']) ? $response['data'] : [];
+    }
+
+    public static function countByIds(SupabaseClient $supabase, array $ids, string $search = ''): int
+    {
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+        $ids = array_filter($ids, fn ($v) => $v > 0);
+
+        if (empty($ids)) {
+            return 0;
+        }
+
+        $query = [
+            'select' => 'id_proyecto',
+            'id_proyecto' => 'in.(' . implode(',', $ids) . ')',
+            'limit' => 1000,
+        ];
+
+        $search = trim($search);
+        if ($search !== '') {
+            $search = str_replace(['*', '%'], '', $search);
+            $query['nombre'] = 'ilike.*' . $search . '*';
+        }
+
+        $response = $supabase->request(
+            'GET',
+            '/rest/v1/proyecto',
+            $query,
+            self::restHeaders($supabase)
+        );
+
+        if ($response['status'] >= 400 || !is_array($response['data'])) {
+            return 0;
+        }
+
+        return count($response['data']);
     }
 
     public static function findById(SupabaseClient $supabase, int $idProyecto): ?array

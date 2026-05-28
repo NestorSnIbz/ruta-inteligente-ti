@@ -20,6 +20,18 @@ final class ProyectoController
         $totalProyectos = 0;
         $totalPages = 1;
 
+        $search = trim((string) ($_GET['q'] ?? ''));
+        $sort = (string) ($_GET['sort'] ?? 'recent');
+
+        $sortOptions = [
+            'recent' => 'id_proyecto.desc',
+            'oldest' => 'id_proyecto.asc',
+            'name_asc' => 'nombre.asc',
+            'name_desc' => 'nombre.desc',
+        ];
+
+        $order = $sortOptions[$sort] ?? $sortOptions['recent'];
+
         try {
             $supabase = new SupabaseClient();
             $idPersona = (int) ($authUser['id_persona'] ?? 0);
@@ -47,7 +59,7 @@ final class ProyectoController
             }
 
             $idList = array_keys($ids);
-            $totalProyectos = count($idList);
+            $totalProyectos = Proyecto::countByIds($supabase, $idList, $search);
             $totalPages = max(1, (int) ceil($totalProyectos / $perPage));
             $page = min($page, $totalPages);
             $offset = ($page - 1) * $perPage;
@@ -71,7 +83,7 @@ final class ProyectoController
                 exit;
             }
 
-            $proyectos = Proyecto::listByIdsPaged($supabase, $idList, $perPage, $offset, 'id_proyecto.desc');
+            $proyectos = Proyecto::listByIdsPaged($supabase, $idList, $perPage, $offset, $order, $search);
             $proyectos = $this->attachProjectTokens($proyectos);
         } catch (Throwable $e) {
             $proyectos = [];
