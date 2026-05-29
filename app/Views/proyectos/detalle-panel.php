@@ -994,7 +994,60 @@
           </div>
           <div class="mt-0.5 text-xs text-neutral-500">PRM se calcula usando el mayor competidor.</div>
 
-          <div id="bcg-competitors-grid" class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2"></div>
+          <div id="bcg-competitors-grid" class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"></div>
+        </div>
+
+        <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div class="text-sm font-semibold text-neutral-900">Matriz BCG</div>
+              <div class="mt-1 text-xs text-neutral-500">X = PRM · Y = TCM (%) · Burbuja = % ventas.</div>
+            </div>
+          </div>
+          <div class="mt-4 flex flex-col items-stretch gap-4 md:flex-row md:items-start md:gap-6">
+            <div class="rounded-xl border border-neutral-200 bg-white p-3 md:flex-none" style="flex: 0 0 1040px; width: 1040px; max-width: 100%;">
+              <canvas id="bcg-chart" height="500" style="display:block; width:100%;"></canvas>
+            </div>
+            <div class="rounded-xl border border-neutral-200 bg-white p-4 md:min-w-0 md:flex-1">
+              <div class="text-xs font-semibold text-neutral-600">LEYENDA</div>
+              <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-neutral-800">
+                <div class="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
+                  <div class="font-semibold">Estrella</div>
+                  <div class="mt-0.5 text-neutral-600">TCM &gt; 10% · PRM ≥ 1</div>
+                </div>
+                <div class="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
+                  <div class="font-semibold">Interrogante</div>
+                  <div class="mt-0.5 text-neutral-600">TCM &gt; 10% · PRM &lt; 1</div>
+                </div>
+                <div class="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
+                  <div class="font-semibold">Vaca</div>
+                  <div class="mt-0.5 text-neutral-600">TCM ≤ 10% · PRM ≥ 1</div>
+                </div>
+                <div class="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
+                  <div class="font-semibold">Perro</div>
+                  <div class="mt-0.5 text-neutral-600">TCM ≤ 10% · PRM &lt; 1</div>
+                </div>
+              </div>
+
+              <div class="mt-4">
+                <div class="text-xs font-semibold text-neutral-600">PRODUCTOS</div>
+                <div class="mt-2 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
+                  <table class="min-w-full text-left text-xs">
+                    <thead class="bg-neutral-50 text-[11px] font-semibold text-neutral-600">
+                      <tr>
+                        <th class="px-3 py-2">Producto</th>
+                        <th class="px-3 py-2">Cuadrante</th>
+                        <th class="px-3 py-2 text-right">PRM</th>
+                        <th class="px-3 py-2 text-right">TCM</th>
+                        <th class="px-3 py-2 text-right">% Ventas</th>
+                      </tr>
+                    </thead>
+                    <tbody id="bcg-legend-products" class="divide-y divide-neutral-200"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
@@ -1087,14 +1140,6 @@
               </div>
             </div>
 
-          </div>
-        </div>
-
-        <div class="hidden rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
-          <div class="text-sm font-semibold text-neutral-900">Sección 5 — Matriz BCG</div>
-          <div class="mt-1 text-xs text-neutral-500">X = PRM · Y = TCM · Burbuja = % ventas * 100.</div>
-          <div class="mt-4">
-            <canvas id="bcg-chart" height="280"></canvas>
           </div>
         </div>
       </div>

@@ -2206,6 +2206,63 @@
     const chartCanvas = panel.querySelector("#bcg-chart");
     let chart = null;
 
+    const legendProductsBody = panel.querySelector("#bcg-legend-products");
+
+    function quadrantFrom(prm, tcm) {
+      const prmN = Number(prm);
+      const tcmN = Number(tcm);
+      const prmHigh = Number.isFinite(prmN) && prmN >= 1;
+      const tcmHigh = Number.isFinite(tcmN) && tcmN > 0.1;
+      if (prmHigh && tcmHigh) return "Estrella";
+      if (!prmHigh && tcmHigh) return "Interrogante";
+      if (prmHigh && !tcmHigh) return "Vaca";
+      return "Perro";
+    }
+
+    function renderLegendProducts(payload) {
+      if (!legendProductsBody) return;
+      legendProductsBody.innerHTML = "";
+      const products = payload && Array.isArray(payload.products) ? payload.products : [];
+      if (!products.length) return;
+
+      const sorted = [...products].sort((a, b) => Number(b.porcentaje_ventas ?? 0) - Number(a.porcentaje_ventas ?? 0));
+      for (const p of sorted) {
+        const prm = Number(p.prm ?? 0);
+        const tcm = Number(p.tcm ?? 0);
+        const salesPct = Number(p.porcentaje_ventas_pct ?? (Number(p.porcentaje_ventas ?? 0) * 100));
+        const name = String(p.nombre || "—");
+        const q = quadrantFrom(prm, tcm);
+
+        const tr = document.createElement("tr");
+        const tdName = document.createElement("td");
+        tdName.className = "px-3 py-2 font-semibold text-neutral-900";
+        tdName.textContent = name;
+
+        const tdQ = document.createElement("td");
+        tdQ.className = "px-3 py-2 text-neutral-800";
+        tdQ.textContent = q;
+
+        const tdPrm = document.createElement("td");
+        tdPrm.className = "px-3 py-2 text-right text-neutral-700";
+        tdPrm.textContent = Number.isFinite(prm) ? prm.toFixed(2) : "—";
+
+        const tdTcm = document.createElement("td");
+        tdTcm.className = "px-3 py-2 text-right text-neutral-700";
+        tdTcm.textContent = Number.isFinite(tcm) ? `${(tcm * 100).toFixed(2)}%` : "—";
+
+        const tdSales = document.createElement("td");
+        tdSales.className = "px-3 py-2 text-right text-neutral-700";
+        tdSales.textContent = Number.isFinite(salesPct) ? `${salesPct.toFixed(2)}%` : "—";
+
+        tr.appendChild(tdName);
+        tr.appendChild(tdQ);
+        tr.appendChild(tdPrm);
+        tr.appendChild(tdTcm);
+        tr.appendChild(tdSales);
+        legendProductsBody.appendChild(tr);
+      }
+    }
+
     let toastTimer = null;
     function showToast(title, msg) {
       if (!toastEl || !toastTitle || !toastMsg) return;
@@ -2271,6 +2328,13 @@
       return `${n.toFixed(2)}%`;
     }
 
+    function formatPlainNumber(v, decimals = 2) {
+      const n = Number(v);
+      if (!Number.isFinite(n)) return "";
+      const fixed = n.toFixed(decimals);
+      return fixed.replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+    }
+
     function buildBadge(classification) {
       const c = String(classification || "");
       const map = {
@@ -2318,7 +2382,7 @@
     function rateDisplayValue(v) {
       const n = Number(v);
       if (!Number.isFinite(n)) return "";
-      return String(n * 100);
+      return formatPlainNumber(n * 100, 2);
     }
 
     function rateToDecimal(v) {
@@ -2528,7 +2592,7 @@
         salesInput.min = "0";
         salesInput.step = "0.01";
         const dirty = dirtyProducts.get(p.id_producto_bcg) || {};
-        salesInput.value = String(dirty.ventas_empresa ?? (p.ventas_empresa ?? 0));
+        salesInput.value = String(dirty.ventas_empresa ?? formatPlainNumber(p.ventas_empresa ?? 0, 2));
         salesInput.setAttribute("data-bcg-sales", "1");
         salesInput.className = "h-10 w-full rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200";
         tdSales.appendChild(salesInput);
@@ -2744,7 +2808,7 @@
           cell.step = "0.01";
           const sp = demandByProductYear.get(`${p.id_producto_bcg}:${y}`);
           const dirtyKey = `${p.id_producto_bcg}:${y}`;
-          cell.value = dirtySector.has(dirtyKey) ? String(dirtySector.get(dirtyKey)) : (sp ? String(sp.demanda_sector ?? 0) : "");
+          cell.value = dirtySector.has(dirtyKey) ? String(dirtySector.get(dirtyKey)) : (sp ? formatPlainNumber(sp.demanda_sector ?? 0, 2) : "");
           cell.placeholder = "0";
           cell.className = "h-10 w-full rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200";
           cell.addEventListener("input", () => {
@@ -2831,7 +2895,7 @@
             vInput.type = "number";
             vInput.min = "0";
             vInput.step = "0.01";
-            vInput.value = String(c.ventas ?? 0);
+            vInput.value = formatPlainNumber(c.ventas ?? 0, 2);
             vInput.className = "h-10 w-full rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200";
             tdV.appendChild(vInput);
 
@@ -2890,7 +2954,7 @@
             vInput.type = "number";
             vInput.min = "0";
             vInput.step = "0.01";
-            vInput.value = String(q.ventas ?? 0);
+            vInput.value = formatPlainNumber(q.ventas ?? 0, 2);
             vInput.className = "h-10 w-full rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200";
             tdV.appendChild(vInput);
 
@@ -3009,10 +3073,25 @@
           if (!x || !y) return;
           const xPx = x.getPixelForValue(1);
           const yPx = y.getPixelForValue(0.1);
+
+          const left = chartArea.left;
+          const right = chartArea.right;
+          const top = chartArea.top;
+          const bottom = chartArea.bottom;
           ctx.save();
           ctx.strokeStyle = "rgba(120, 120, 120, 0.35)";
+          ctx.fillStyle = "rgba(34, 197, 94, 0.08)";
+          ctx.fillRect(xPx, top, right - xPx, yPx - top);
+          ctx.fillStyle = "rgba(245, 158, 11, 0.10)";
+          ctx.fillRect(left, top, xPx - left, yPx - top);
+          ctx.fillStyle = "rgba(59, 130, 246, 0.08)";
+          ctx.fillRect(xPx, yPx, right - xPx, bottom - yPx);
+          ctx.fillStyle = "rgba(239, 68, 68, 0.08)";
+          ctx.fillRect(left, yPx, xPx - left, bottom - yPx);
+
           ctx.lineWidth = 1;
           ctx.setLineDash([6, 6]);
+          ctx.beginPath();
           ctx.beginPath();
           ctx.moveTo(xPx, chartArea.top);
           ctx.lineTo(xPx, chartArea.bottom);
@@ -3037,14 +3116,33 @@
                 label: (ctx) => {
                   const raw = ctx.raw || {};
                   const label = raw.label ? `${raw.label}: ` : "";
-                  return `${label}PRM ${raw.x}, TCM ${raw.y}, Burbuja ${raw.r}`;
+                  const prm = Number(raw.x ?? 0);
+                  const tcm = Number(raw.y ?? 0);
+                  const salesPct = Number(raw.salesPct ?? 0);
+                  const tcmPct = Number.isFinite(tcm) ? `${(tcm * 100).toFixed(2)}%` : "—";
+                  const prmTxt = Number.isFinite(prm) ? prm.toFixed(2) : "—";
+                  const bubble = Number.isFinite(salesPct) ? `${salesPct.toFixed(2)}%` : "—";
+                  return `${label}PRM ${prmTxt}, TCM ${tcmPct}, % ventas ${bubble}`;
                 },
               },
             },
           },
+          onHover: () => {},
+          onClick: () => {},
           scales: {
             x: { title: { display: true, text: "PRM" }, min: 0, max: 2 },
-            y: { title: { display: true, text: "TCM" }, min: 0, max: 2 },
+            y: {
+              title: { display: true, text: "TCM (%)" },
+              min: 0,
+              max: 0.2,
+              ticks: {
+                callback: (v) => {
+                  const n = Number(v);
+                  if (!Number.isFinite(n)) return "";
+                  return `${Math.round(n * 100)}%`;
+                },
+              },
+            },
           },
         },
       });
@@ -3062,6 +3160,7 @@
             y: Number(p.tcm ?? 0),
             r: Math.max(6, Number(p.bubbleSize ?? 0) * 0.25),
             label: String(p.productName || ""),
+            salesPct: Number(p.bubbleSize ?? 0),
           })),
           backgroundColor: payload.matrix.map((p) => String(p.color || "#999999")),
           borderColor: payload.matrix.map((p) => String(p.color || "#999999")),
@@ -3069,6 +3168,8 @@
         },
       ];
       c.update();
+
+      renderLegendProducts(payload);
     }
 
     let lastPayload = null;

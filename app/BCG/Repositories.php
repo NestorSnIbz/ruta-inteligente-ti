@@ -39,7 +39,7 @@ final class BcgProductRepository
             [
                 'id_proyecto' => $idProyecto,
                 'nombre' => $nombre,
-                'ventas_empresa' => $ventasEmpresa,
+                'ventas_empresa' => $this->num($ventasEmpresa, 2),
                 'updated_at' => gmdate('Y-m-d H:i:s'),
             ]
         );
@@ -55,6 +55,19 @@ final class BcgProductRepository
 
     public function update(SupabaseClient $supabase, int $idProductoBcg, array $fields): void
     {
+        if (array_key_exists('ventas_empresa', $fields)) {
+            $fields['ventas_empresa'] = $this->num((float) $fields['ventas_empresa'], 2);
+        }
+        if (array_key_exists('porcentaje_ventas', $fields)) {
+            $fields['porcentaje_ventas'] = $this->num((float) $fields['porcentaje_ventas'], 6);
+        }
+        if (array_key_exists('tcm', $fields)) {
+            $fields['tcm'] = $this->num((float) $fields['tcm'], 6);
+        }
+        if (array_key_exists('prm', $fields)) {
+            $fields['prm'] = $this->num((float) $fields['prm'], 6);
+        }
+
         $fields['updated_at'] = gmdate('Y-m-d H:i:s');
         $res = $supabase->request(
             'PATCH',
@@ -91,6 +104,25 @@ final class BcgProductRepository
         if (empty($rows)) {
             return;
         }
+        foreach ($rows as &$r) {
+            if (!is_array($r)) {
+                continue;
+            }
+            if (array_key_exists('porcentaje_ventas', $r)) {
+                $r['porcentaje_ventas'] = $this->num((float) $r['porcentaje_ventas'], 6);
+            }
+            if (array_key_exists('tcm', $r)) {
+                $r['tcm'] = $this->num((float) $r['tcm'], 6);
+            }
+            if (array_key_exists('prm', $r)) {
+                $r['prm'] = $this->num((float) $r['prm'], 6);
+            }
+            if (array_key_exists('ventas_empresa', $r)) {
+                $r['ventas_empresa'] = $this->num((float) $r['ventas_empresa'], 2);
+            }
+        }
+        unset($r);
+
         $headers = $this->headers($supabase);
         $headers['Prefer'] = 'resolution=merge-duplicates';
         $res = $supabase->request(
@@ -105,6 +137,13 @@ final class BcgProductRepository
         if ($res['status'] >= 400) {
             throw new RuntimeException($this->errorFromResponse($res, 'No se pudieron guardar cálculos BCG.'));
         }
+    }
+
+    private function num(float $value, int $scale): string
+    {
+        $scale = max(0, min(10, $scale));
+        $value = is_finite($value) ? $value : 0.0;
+        return number_format($value, $scale, '.', '');
     }
 
     private function errorFromResponse(array $res, string $default): string
@@ -183,12 +222,19 @@ final class BcgMarketRepository
             [
                 'id_producto_bcg' => $idProductoBcg,
                 'anio' => $anio,
-                'demanda_mercado' => $demandaMercado,
+                'demanda_mercado' => $this->num($demandaMercado, 6),
             ]
         );
         if ($res['status'] >= 400) {
             throw new RuntimeException($this->errorFromResponse($res, 'No se pudo guardar el periodo.'));
         }
+    }
+
+    private function num(float $value, int $scale): string
+    {
+        $scale = max(0, min(10, $scale));
+        $value = is_finite($value) ? $value : 0.0;
+        return number_format($value, $scale, '.', '');
     }
 
     public function deletePeriodo(SupabaseClient $supabase, int $idPeriodo): void
@@ -282,12 +328,19 @@ final class BcgSectorDemandRepository
             [
                 'id_producto_bcg' => $idProductoBcg,
                 'anio' => $anio,
-                'demanda_sector' => $demandaSector,
+                'demanda_sector' => $this->num($demandaSector, 2),
             ]
         );
         if ($res['status'] >= 400) {
             throw new RuntimeException($this->errorFromResponse($res, 'No se pudo guardar el periodo de demanda sector.'));
         }
+    }
+
+    private function num(float $value, int $scale): string
+    {
+        $scale = max(0, min(10, $scale));
+        $value = is_finite($value) ? $value : 0.0;
+        return number_format($value, $scale, '.', '');
     }
 
     public function deletePeriodo(SupabaseClient $supabase, int $idPeriodoSector): void
@@ -379,7 +432,7 @@ final class BcgCompetitorRepository
             [
                 'id_producto_bcg' => $idProductoBcg,
                 'nombre' => $nombre,
-                'ventas' => $ventas,
+                'ventas' => $this->num($ventas, 2),
             ]
         );
         if ($res['status'] >= 400) {
@@ -389,6 +442,9 @@ final class BcgCompetitorRepository
 
     public function update(SupabaseClient $supabase, int $idCompetidor, array $fields): void
     {
+        if (array_key_exists('ventas', $fields)) {
+            $fields['ventas'] = $this->num((float) $fields['ventas'], 2);
+        }
         $res = $supabase->request(
             'PATCH',
             '/rest/v1/bcg_competidor',
@@ -401,6 +457,13 @@ final class BcgCompetitorRepository
         if ($res['status'] >= 400) {
             throw new RuntimeException($this->errorFromResponse($res, 'No se pudo actualizar el competidor.'));
         }
+    }
+
+    private function num(float $value, int $scale): string
+    {
+        $scale = max(0, min(10, $scale));
+        $value = is_finite($value) ? $value : 0.0;
+        return number_format($value, $scale, '.', '');
     }
 
     public function delete(SupabaseClient $supabase, int $idCompetidor): void
@@ -461,13 +524,20 @@ final class BcgResultRepository
             $headers,
             [
                 'id_proyecto' => $idProyecto,
-                'total_ventas' => $totalVentas,
+                'total_ventas' => $this->num($totalVentas, 2),
                 'fecha_calculo' => gmdate('Y-m-d H:i:s'),
             ]
         );
         if ($res['status'] >= 400) {
             throw new RuntimeException($this->errorFromResponse($res, 'No se pudo guardar el resultado.'));
         }
+    }
+
+    private function num(float $value, int $scale): string
+    {
+        $scale = max(0, min(10, $scale));
+        $value = is_finite($value) ? $value : 0.0;
+        return number_format($value, $scale, '.', '');
     }
 
     public function findLatestByProyecto(SupabaseClient $supabase, int $idProyecto): ?BcgResultEntity

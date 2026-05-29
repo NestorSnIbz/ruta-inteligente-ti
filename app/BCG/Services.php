@@ -179,13 +179,13 @@ final class BcgCalculationService
 
     private function classify(float $tcm, float $prm): string
     {
-        if ($prm >= 1.0 && $tcm >= 0.1) {
+        if ($prm >= 1.0 && $tcm > 0.1) {
             return 'ESTRELLA';
         }
         if ($prm >= 1.0 && $tcm < 0.1) {
             return 'VACA';
         }
-        if ($prm < 1.0 && $tcm >= 0.1) {
+        if ($prm < 1.0 && $tcm > 0.1) {
             return 'INTERROGANTE';
         }
         return 'PERRO';
