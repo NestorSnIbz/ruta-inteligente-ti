@@ -152,12 +152,14 @@ final class ProyectoController
         $token = trim((string) ($_GET['t'] ?? ''));
         $partial = trim((string) ($_GET['partial'] ?? ''));
         $section = trim((string) ($_GET['section'] ?? 'overview'));
+        $export = trim((string) ($_GET['export'] ?? ''));
+        $isExportOverviewPdf = $export === 'overview_pdf';
         $allowedSections = ['overview', 'mision', 'vision', 'valores', 'objetivos', 'cadena', 'bgg'];
         $requestedSection = $partial !== '' ? $partial : ($section !== '' ? $section : 'overview');
         if (!in_array($requestedSection, $allowedSections, true)) {
             $requestedSection = 'overview';
         }
-        $renderOnlySection = $partial !== '' ? $requestedSection : '';
+        $renderOnlySection = ($partial !== '' && !$isExportOverviewPdf) ? $requestedSection : '';
         $initialPanel = $requestedSection;
         $idProyecto = 0;
 
@@ -206,6 +208,9 @@ final class ProyectoController
             $isCreador = $this->isCreadorProyecto($proyecto, $idPersona);
 
             $dataSection = $renderOnlySection !== '' ? $renderOnlySection : 'overview';
+            if ($isExportOverviewPdf) {
+                $dataSection = 'overview';
+            }
             $mision = null;
             $vision = null;
             $valores = [];
@@ -328,6 +333,9 @@ final class ProyectoController
         $fodaDebilidades = [];
         $bcgFortalezas = [];
         $bcgDebilidades = [];
+        $cadenaOverview = [];
+        $bcgOverview = [];
+        $fodaOverview = [];
 
         $shouldLoadObjetivos = ($renderOnlySection === '' || $renderOnlySection === 'overview' || $renderOnlySection === 'objetivos');
         if ($shouldLoadObjetivos) {
@@ -341,6 +349,159 @@ final class ProyectoController
                 $objetivosEstrategicos = $this->attachEspecificosCountToObjetivosEstrategicos($objetivosEstrategicos, $objetivosEspecificosByEstrategico);
             } catch (Throwable $e) {
                 $objetivosError = $this->isDebug() ? ('No se pudieron cargar los objetivos. Detalle: ' . $e->getMessage()) : 'No se pudieron cargar los objetivos.';
+            }
+        }
+
+        $shouldLoadOverviewAnalytics = ($renderOnlySection === '' || $renderOnlySection === 'overview' || $isExportOverviewPdf);
+        if ($shouldLoadOverviewAnalytics) {
+            $headers = $this->supabaseRestHeaders($supabase);
+
+            try {
+                $res = $supabase->request(
+                    'GET',
+                    '/rest/v1/cadena_valor_resultado',
+                    [
+                        'select' => 'suma,potencial,updated_at',
+                        'id_proyecto' => 'eq.' . $idProyecto,
+                        'limit' => 1,
+                    ],
+                    $headers
+                );
+
+                $row = null;
+                if (($res['status'] ?? 500) < 400 && is_array($res['data'] ?? null) && !empty($res['data'])) {
+                    $row = is_array($res['data'][0] ?? null) ? $res['data'][0] : null;
+                }
+
+                $sum = is_array($row) ? (int) ($row['suma'] ?? 0) : null;
+                $potential = is_array($row) && isset($row['potencial']) && is_numeric($row['potencial']) ? (float) $row['potencial'] : null;
+                $updatedAt = is_array($row) ? (string) ($row['updated_at'] ?? '') : '';
+
+                $badgeClass = 'bg-neutral-100 text-neutral-700';
+                $statusLabel = 'Sin evaluación';
+                $statusSub = 'Completa la Cadena de valor para ver resultados.';
+                if ($potential !== null) {
+                    $pct = max(0, min(100, (int) round($potential * 100)));
+                    if ($pct <= 33) {
+                        $badgeClass = 'bg-emerald-50 text-emerald-800 border border-emerald-200';
+                        $statusLabel = 'Buen desempeño';
+                        $statusSub = 'Bajo potencial de mejora.';
+                    } elseif ($pct <= 66) {
+                        $badgeClass = 'bg-amber-50 text-amber-900 border border-amber-200';
+                        $statusLabel = 'Oportunidad moderada';
+                        $statusSub = 'Potencial de mejora medio.';
+                    } else {
+                        $badgeClass = 'bg-red-50 text-red-800 border border-red-200';
+                        $statusLabel = 'Alta oportunidad';
+                        $statusSub = 'Alto potencial de mejora.';
+                    }
+                }
+
+                $cadenaOverview = [
+                    'sum' => $sum,
+                    'potential' => $potential,
+                    'updated_at' => $updatedAt,
+                    'status_label' => $statusLabel,
+                    'status_sub' => $statusSub,
+                    'badge_class' => $badgeClass,
+                ];
+            } catch (Throwable $e) {
+                $cadenaOverview = [];
+            }
+
+            try {
+                $res = $supabase->request(
+                    'GET',
+                    '/rest/v1/bcg_producto',
+                    [
+                        'select' => 'id_producto_bcg,nombre,ventas_empresa,porcentaje_ventas,tcm,prm,clasificacion,updated_at',
+                        'id_proyecto' => 'eq.' . $idProyecto,
+                        'order' => 'porcentaje_ventas.desc',
+                        'limit' => 200,
+                    ],
+                    $headers
+                );
+
+                $productos = (($res['status'] ?? 500) < 400 && is_array($res['data'] ?? null)) ? (array) $res['data'] : [];
+                $counts = [
+                    'ESTRELLA' => 0,
+                    'VACA' => 0,
+                    'INTERROGANTE' => 0,
+                    'PERRO' => 0,
+                ];
+
+                $top = [];
+                foreach ($productos as $p) {
+                    if (!is_array($p)) {
+                        continue;
+                    }
+                    $c = strtoupper(trim((string) ($p['clasificacion'] ?? '')));
+                    if (!isset($counts[$c])) {
+                        $c = 'PERRO';
+                    }
+                    $counts[$c] += 1;
+                    if (count($top) < 3) {
+                        $top[] = [
+                            'nombre' => (string) ($p['nombre'] ?? ''),
+                            'clasificacion' => $c,
+                            'porcentaje_ventas' => isset($p['porcentaje_ventas']) && is_numeric($p['porcentaje_ventas']) ? (float) $p['porcentaje_ventas'] : null,
+                            'tcm' => isset($p['tcm']) && is_numeric($p['tcm']) ? (float) $p['tcm'] : null,
+                            'prm' => isset($p['prm']) && is_numeric($p['prm']) ? (float) $p['prm'] : null,
+                        ];
+                    }
+                }
+
+                $total = count($productos);
+                $statusLabel = $total > 0 ? 'Calculado' : 'Sin datos';
+                $statusSub = $total > 0 ? 'Clasificación por producto disponible.' : 'Registra productos para ver el resumen.';
+                $badgeClass = $total > 0 ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-neutral-100 text-neutral-700';
+
+                $bcgOverview = [
+                    'total' => $total,
+                    'counts' => $counts,
+                    'top' => $top,
+                    'status_label' => $statusLabel,
+                    'status_sub' => $statusSub,
+                    'badge_class' => $badgeClass,
+                ];
+            } catch (Throwable $e) {
+                $bcgOverview = [];
+            }
+
+            try {
+                $fuentes = [
+                    'CADENA_VALOR_INTERNA' => 'Cadena de valor',
+                    'AUTODIAGNOSTICO_BCG' => 'Matriz BCG',
+                ];
+                $out = [];
+                foreach ($fuentes as $fuente => $label) {
+                    $rows = Foda::listByProyectoFuente($supabase, $idProyecto, $fuente);
+                    $bucket = [
+                        'label' => $label,
+                        'FORTALEZA' => [],
+                        'DEBILIDAD' => [],
+                        'OPORTUNIDAD' => [],
+                        'AMENAZA' => [],
+                    ];
+                    foreach ($rows as $r) {
+                        if (!is_array($r)) {
+                            continue;
+                        }
+                        $tipo = strtoupper(trim((string) ($r['tipo'] ?? '')));
+                        $desc = trim((string) ($r['descripcion'] ?? ''));
+                        if ($desc === '') {
+                            continue;
+                        }
+                        if (!isset($bucket[$tipo])) {
+                            continue;
+                        }
+                        $bucket[$tipo][] = $desc;
+                    }
+                    $out[$fuente] = $bucket;
+                }
+                $fodaOverview = $out;
+            } catch (Throwable $e) {
+                $fodaOverview = [];
             }
         }
 
@@ -420,6 +581,33 @@ final class ProyectoController
         $oeEditToken = trim((string) ($_GET['oe_edit'] ?? ''));
         $oespEditToken = trim((string) ($_GET['oesp_edit'] ?? ''));
 
+        if ($isExportOverviewPdf) {
+            $fileProjectName = is_array($proyecto ?? null) ? (string) ($proyecto['nombre'] ?? '') : 'proyecto';
+            $safeName = $this->safePdfFilename($fileProjectName);
+            $stamp = date('Ymd-His');
+            $filename = 'overview-' . ($safeName !== '' ? $safeName : 'proyecto') . '-' . $stamp . '.pdf';
+
+            $pdf = $this->buildOverviewPdf(
+                $fileProjectName,
+                $misionTexto ?? '',
+                $visionTexto ?? '',
+                is_array($valores ?? null) ? $valores : [],
+                is_array($objetivosEstrategicos ?? null) ? $objetivosEstrategicos : [],
+                is_array($objetivosEspecificosByEstrategico ?? null) ? $objetivosEspecificosByEstrategico : [],
+                is_array($cadenaOverview ?? null) ? $cadenaOverview : [],
+                is_array($bcgOverview ?? null) ? $bcgOverview : [],
+                is_array($fodaOverview ?? null) ? $fodaOverview : []
+            );
+
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+            header('Pragma: no-cache');
+            header('Expires: 0');
+            echo $pdf;
+            exit;
+        }
+
         if ($renderOnlySection !== '') {
             header('Content-Type: text/html; charset=utf-8');
             $panel = $renderOnlySection;
@@ -428,6 +616,352 @@ final class ProyectoController
         }
 
         require dirname(__DIR__) . '/Views/proyectos/detalle-proyecto.php';
+    }
+
+    private function supabaseRestHeaders(SupabaseClient $supabase): array
+    {
+        $serverKey = $supabase->getServiceRoleKey();
+        $apiKey = $serverKey ?: $supabase->getAnonKey();
+        $authBearer = $serverKey ?: $supabase->getAnonKey();
+
+        return [
+            'apikey' => $apiKey,
+            'Authorization' => 'Bearer ' . $authBearer,
+        ];
+    }
+
+    private function buildOverviewPdf(
+        string $projectName,
+        string $mision,
+        string $vision,
+        array $valores,
+        array $objetivosEstrategicos,
+        array $objetivosEspecificosByEstrategico,
+        array $cadenaOverview,
+        array $bcgOverview,
+        array $fodaOverview
+    ): string {
+        $lines = [];
+        $lines[] = ['font' => 'F2', 'size' => 18, 'text' => 'Reporte - Overview'];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Proyecto: ' . $projectName];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Fecha: ' . date('Y-m-d H:i')];
+        $lines[] = ['spacer' => 10];
+
+        $lines = array_merge($lines, $this->pdfSection('Misión', $mision !== '' ? $mision : 'Sin registros.'));
+        $lines = array_merge($lines, $this->pdfSection('Visión', $vision !== '' ? $vision : 'Sin registros.'));
+
+        $valoresList = [];
+        foreach ($valores as $v) {
+            if (!is_array($v)) continue;
+            $txt = trim((string) ($v['descripcion'] ?? ''));
+            if ($txt !== '') $valoresList[] = $txt;
+        }
+        $lines = array_merge($lines, $this->pdfSectionList('Valores', $valoresList));
+
+        $lines[] = ['spacer' => 6];
+        $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'Objetivos'];
+        if (empty($objetivosEstrategicos)) {
+            $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Sin registros.'];
+        } else {
+            foreach ($objetivosEstrategicos as $obj) {
+                if (!is_array($obj)) continue;
+                $idObjEst = (int) ($obj['id_objetivo_est'] ?? 0);
+                $descEst = trim((string) ($obj['descripcion'] ?? ''));
+                if ($descEst === '') continue;
+
+                $lines[] = ['spacer' => 4];
+                $lines[] = ['font' => 'F2', 'size' => 11, 'text' => '• ' . $descEst];
+
+                $esps = $objetivosEspecificosByEstrategico[$idObjEst] ?? [];
+                $esps = is_array($esps) ? $esps : [];
+                $espList = [];
+                foreach ($esps as $esp) {
+                    if (!is_array($esp)) continue;
+                    $t = trim((string) ($esp['descripcion'] ?? ''));
+                    if ($t !== '') $espList[] = $t;
+                }
+                if (empty($espList)) {
+                    $lines[] = ['font' => 'F1', 'size' => 11, 'indent' => 18, 'text' => '- Sin objetivos específicos.'];
+                } else {
+                    foreach ($espList as $t) {
+                        $lines[] = ['font' => 'F1', 'size' => 11, 'indent' => 18, 'text' => '- ' . $t];
+                    }
+                }
+            }
+        }
+
+        $lines[] = ['spacer' => 10];
+        $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'Cadena de Valor (resumen)'];
+        $cSum = $cadenaOverview['sum'] ?? null;
+        $cPotential = $cadenaOverview['potential'] ?? null;
+        $cStatus = (string) ($cadenaOverview['status_label'] ?? 'Sin evaluación');
+        $cPotentialText = ($cPotential !== null && is_numeric($cPotential)) ? number_format((float) $cPotential, 2, '.', '') : '—';
+        $cPotentialPct = ($cPotential !== null && is_numeric($cPotential)) ? ((string) round(((float) $cPotential) * 100) . '%') : '';
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Suma: ' . (($cSum === null) ? '—' : (string) ((int) $cSum))];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Potencial de mejora: ' . $cPotentialText . ($cPotentialPct !== '' ? (' (' . $cPotentialPct . ')') : '')];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Estado: ' . $cStatus];
+
+        $lines[] = ['spacer' => 10];
+        $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'Matriz BCG (resumen)'];
+        $bTotal = (int) ($bcgOverview['total'] ?? 0);
+        $bCounts = is_array($bcgOverview['counts'] ?? null) ? (array) $bcgOverview['counts'] : [];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Productos: ' . (string) $bTotal];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Estrella: ' . (string) ((int) ($bCounts['ESTRELLA'] ?? 0)) . ' | Vaca: ' . (string) ((int) ($bCounts['VACA'] ?? 0)) . ' | Interrogante: ' . (string) ((int) ($bCounts['INTERROGANTE'] ?? 0)) . ' | Perro: ' . (string) ((int) ($bCounts['PERRO'] ?? 0))];
+
+        $bTop = is_array($bcgOverview['top'] ?? null) ? (array) $bcgOverview['top'] : [];
+        $lines[] = ['spacer' => 4];
+        $lines[] = ['font' => 'F2', 'size' => 11, 'text' => 'Top productos'];
+        if (empty($bTop)) {
+            $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Sin registros.'];
+        } else {
+            foreach ($bTop as $p) {
+                if (!is_array($p)) continue;
+                $pn = trim((string) ($p['nombre'] ?? ''));
+                $pc = trim((string) ($p['clasificacion'] ?? ''));
+                $pp = isset($p['porcentaje_ventas']) && is_numeric($p['porcentaje_ventas']) ? round(((float) $p['porcentaje_ventas']) * 100, 1) . '%' : '—';
+                $label = ($pn !== '' ? $pn : 'Producto') . ' — ' . ($pc !== '' ? $pc : '—') . ' — Ventas: ' . $pp;
+                $lines[] = ['font' => 'F1', 'size' => 11, 'text' => '- ' . $label];
+            }
+        }
+
+        $lines[] = ['spacer' => 10];
+        $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'FODA (resumen)'];
+        $fuentes = [
+            'CADENA_VALOR_INTERNA' => 'Cadena de valor',
+            'AUTODIAGNOSTICO_BCG' => 'Matriz BCG',
+        ];
+        foreach ($fuentes as $fuente => $label) {
+            $block = is_array($fodaOverview[$fuente] ?? null) ? (array) $fodaOverview[$fuente] : [];
+            $fort = is_array($block['FORTALEZA'] ?? null) ? (array) $block['FORTALEZA'] : [];
+            $deb = is_array($block['DEBILIDAD'] ?? null) ? (array) $block['DEBILIDAD'] : [];
+            $lines[] = ['spacer' => 4];
+            $lines[] = ['font' => 'F2', 'size' => 11, 'text' => $label];
+            $lines[] = ['font' => 'F2', 'size' => 11, 'indent' => 14, 'text' => 'Fortalezas'];
+            $lines = array_merge($lines, $this->pdfBulletLines($fort, 28));
+            $lines[] = ['font' => 'F2', 'size' => 11, 'indent' => 14, 'text' => 'Debilidades'];
+            $lines = array_merge($lines, $this->pdfBulletLines($deb, 28));
+        }
+        $lines[] = ['spacer' => 4];
+        $lines[] = ['font' => 'F2', 'size' => 11, 'text' => 'Oportunidades'];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Sin registros.'];
+        $lines[] = ['font' => 'F2', 'size' => 11, 'text' => 'Amenazas'];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Sin registros.'];
+
+        return $this->simplePdfFromLines($lines);
+    }
+
+    private function pdfSection(string $title, string $body): array
+    {
+        $out = [];
+        $out[] = ['font' => 'F2', 'size' => 13, 'text' => $title];
+        $out[] = ['spacer' => 2];
+        foreach ($this->wrapPdfText($body, 95) as $line) {
+            $out[] = ['font' => 'F1', 'size' => 11, 'text' => $line];
+        }
+        $out[] = ['spacer' => 8];
+        return $out;
+    }
+
+    private function pdfSectionList(string $title, array $items): array
+    {
+        $out = [];
+        $out[] = ['font' => 'F2', 'size' => 13, 'text' => $title];
+        $out[] = ['spacer' => 2];
+        if (empty($items)) {
+            $out[] = ['font' => 'F1', 'size' => 11, 'text' => 'Sin registros.'];
+        } else {
+            foreach ($items as $txt) {
+                $txt = trim((string) $txt);
+                if ($txt === '') continue;
+                $wrapped = $this->wrapPdfText($txt, 90);
+                if (empty($wrapped)) continue;
+                $first = array_shift($wrapped);
+                $out[] = ['font' => 'F1', 'size' => 11, 'text' => '• ' . $first];
+                foreach ($wrapped as $rest) {
+                    $out[] = ['font' => 'F1', 'size' => 11, 'indent' => 14, 'text' => $rest];
+                }
+            }
+        }
+        $out[] = ['spacer' => 8];
+        return $out;
+    }
+
+    private function pdfBulletLines(array $items, int $indent): array
+    {
+        $out = [];
+        $clean = [];
+        foreach ($items as $t) {
+            $t = trim((string) $t);
+            if ($t !== '') $clean[] = $t;
+        }
+        if (empty($clean)) {
+            $out[] = ['font' => 'F1', 'size' => 11, 'indent' => $indent, 'text' => '- Sin registros.'];
+            return $out;
+        }
+        foreach ($clean as $txt) {
+            $wrapped = $this->wrapPdfText($txt, 88);
+            if (empty($wrapped)) continue;
+            $first = array_shift($wrapped);
+            $out[] = ['font' => 'F1', 'size' => 11, 'indent' => $indent, 'text' => '- ' . $first];
+            foreach ($wrapped as $rest) {
+                $out[] = ['font' => 'F1', 'size' => 11, 'indent' => $indent + 14, 'text' => $rest];
+            }
+        }
+        return $out;
+    }
+
+    private function wrapPdfText(string $text, int $maxLen): array
+    {
+        $text = trim(preg_replace('/\s+/u', ' ', (string) $text));
+        if ($text === '') return [];
+        $words = preg_split('/\s+/u', $text) ?: [];
+        $lines = [];
+        $line = '';
+        foreach ($words as $w) {
+            $w = (string) $w;
+            if ($line === '') {
+                $line = $w;
+                continue;
+            }
+            $candidate = $line . ' ' . $w;
+            $len = function_exists('mb_strlen') ? mb_strlen($candidate, 'UTF-8') : strlen($candidate);
+            if ($len <= $maxLen) {
+                $line .= ' ' . $w;
+            } else {
+                $lines[] = $line;
+                $line = $w;
+            }
+        }
+        if ($line !== '') $lines[] = $line;
+        return $lines;
+    }
+
+    private function simplePdfFromLines(array $lines): string
+    {
+        $pageWidth = 612;
+        $pageHeight = 792;
+        $marginX = 54;
+        $marginTop = 54;
+        $marginBottom = 54;
+        $y = $pageHeight - $marginTop;
+        $pages = [];
+        $current = '';
+
+        $lineHeight = 14;
+        foreach ($lines as $row) {
+            if (is_array($row) && array_key_exists('spacer', $row)) {
+                $y -= (int) $row['spacer'];
+                if ($y <= $marginBottom) {
+                    $pages[] = $current;
+                    $current = '';
+                    $y = $pageHeight - $marginTop;
+                }
+                continue;
+            }
+            if (!is_array($row)) continue;
+            $text = (string) ($row['text'] ?? '');
+            $font = (string) ($row['font'] ?? 'F1');
+            $size = (int) ($row['size'] ?? 11);
+            $indent = (int) ($row['indent'] ?? 0);
+
+            $y -= $lineHeight;
+            if ($y <= $marginBottom) {
+                $pages[] = $current;
+                $current = '';
+                $y = $pageHeight - $marginTop - $lineHeight;
+            }
+
+            $x = $marginX + $indent;
+            $current .= $this->pdfTextCmd($x, $y, $font, $size, $text);
+        }
+        $pages[] = $current;
+
+        $catalogId = 1;
+        $pagesId = 2;
+        $fontRegularId = 3;
+        $fontBoldId = 4;
+        $nextId = 5;
+
+        $objs = [];
+        $objs[$fontRegularId] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
+        $objs[$fontBoldId] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>";
+
+        $pageIds = [];
+        foreach ($pages as $content) {
+            $contentId = $nextId++;
+            $pageId = $nextId++;
+            $pageIds[] = $pageId;
+            $stream = "stream\n" . $content . "endstream";
+            $objs[$contentId] = "<< /Length " . strlen($content) . " >>\n" . $stream;
+            $objs[$pageId] = "<< /Type /Page /Parent {$pagesId} 0 R /MediaBox [0 0 {$pageWidth} {$pageHeight}] /Resources << /Font << /F1 {$fontRegularId} 0 R /F2 {$fontBoldId} 0 R >> >> /Contents {$contentId} 0 R >>";
+        }
+
+        $kids = implode(' ', array_map(fn ($id) => $id . " 0 R", $pageIds));
+        $objs[$pagesId] = "<< /Type /Pages /Kids [ {$kids} ] /Count " . count($pageIds) . " >>";
+        $objs[$catalogId] = "<< /Type /Catalog /Pages {$pagesId} 0 R >>";
+
+        $maxId = max(array_keys($objs));
+        $pdf = "%PDF-1.4\n";
+        $offsets = [];
+        $offsets[0] = 0;
+
+        for ($id = 1; $id <= $maxId; $id++) {
+            if (!isset($objs[$id])) continue;
+            $offsets[$id] = strlen($pdf);
+            $pdf .= $id . " 0 obj\n" . $objs[$id] . "\nendobj\n";
+        }
+
+        $xrefPos = strlen($pdf);
+        $pdf .= "xref\n";
+        $pdf .= "0 " . ($maxId + 1) . "\n";
+        $pdf .= sprintf("%010d %05d f \n", 0, 65535);
+        for ($id = 1; $id <= $maxId; $id++) {
+            $off = $offsets[$id] ?? 0;
+            $pdf .= sprintf("%010d %05d n \n", $off, 0);
+        }
+        $pdf .= "trailer\n";
+        $pdf .= "<< /Size " . ($maxId + 1) . " /Root {$catalogId} 0 R >>\n";
+        $pdf .= "startxref\n";
+        $pdf .= $xrefPos . "\n";
+        $pdf .= "%%EOF";
+
+        return $pdf;
+    }
+
+    private function pdfTextCmd(int $x, int $y, string $font, int $size, string $text): string
+    {
+        $safe = $this->pdfEscapeString($this->toPdfWinAnsi($text));
+        $font = ($font === 'F2') ? 'F2' : 'F1';
+        $size = max(8, min(24, $size));
+        return "BT /{$font} {$size} Tf {$x} {$y} Td ({$safe}) Tj ET\n";
+    }
+
+    private function pdfEscapeString(string $s): string
+    {
+        $s = str_replace(["\\", "(", ")", "\r", "\n"], ["\\\\", "\\(", "\\)", ' ', ' '], $s);
+        return $s;
+    }
+
+    private function toPdfWinAnsi(string $s): string
+    {
+        $s = (string) $s;
+        if (function_exists('iconv')) {
+            $converted = @iconv('UTF-8', 'Windows-1252//TRANSLIT', $s);
+            if (is_string($converted)) {
+                return $converted;
+            }
+        }
+        return utf8_decode($s);
+    }
+
+    private function safePdfFilename(string $name): string
+    {
+        $name = trim((string) $name);
+        if ($name === '') return '';
+        $name = preg_replace('/\s+/u', '-', $name);
+        $name = preg_replace('/[^A-Za-z0-9\-_]+/', '', (string) $name);
+        $name = trim((string) $name, '-_');
+        return substr((string) $name, 0, 60);
     }
 
     public function saveFodaCadena(): void
