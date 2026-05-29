@@ -994,7 +994,60 @@
           </div>
           <div class="mt-0.5 text-xs text-neutral-500">PRM se calcula usando el mayor competidor.</div>
 
-          <div id="bcg-competitors-grid" class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2"></div>
+          <div id="bcg-competitors-grid" class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"></div>
+        </div>
+
+        <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div class="text-sm font-semibold text-neutral-900">Matriz BCG</div>
+              <div class="mt-1 text-xs text-neutral-500">X = PRM · Y = TCM (%) · Burbuja = % ventas.</div>
+            </div>
+          </div>
+          <div class="mt-4 flex flex-col items-stretch gap-4 md:flex-row md:items-start md:gap-6">
+            <div class="rounded-xl border border-neutral-200 bg-white p-3 md:flex-none" style="flex: 0 0 1040px; width: 1040px; max-width: 100%;">
+              <canvas id="bcg-chart" height="500" style="display:block; width:100%;"></canvas>
+            </div>
+            <div class="rounded-xl border border-neutral-200 bg-white p-4 md:min-w-0 md:flex-1">
+              <div class="text-xs font-semibold text-neutral-600">LEYENDA</div>
+              <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-neutral-800">
+                <div class="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
+                  <div class="font-semibold">Estrella</div>
+                  <div class="mt-0.5 text-neutral-600">TCM &gt; 10% · PRM ≥ 1</div>
+                </div>
+                <div class="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
+                  <div class="font-semibold">Interrogante</div>
+                  <div class="mt-0.5 text-neutral-600">TCM &gt; 10% · PRM &lt; 1</div>
+                </div>
+                <div class="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
+                  <div class="font-semibold">Vaca</div>
+                  <div class="mt-0.5 text-neutral-600">TCM ≤ 10% · PRM ≥ 1</div>
+                </div>
+                <div class="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
+                  <div class="font-semibold">Perro</div>
+                  <div class="mt-0.5 text-neutral-600">TCM ≤ 10% · PRM &lt; 1</div>
+                </div>
+              </div>
+
+              <div class="mt-4">
+                <div class="text-xs font-semibold text-neutral-600">PRODUCTOS</div>
+                <div class="mt-2 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
+                  <table class="min-w-full text-left text-xs">
+                    <thead class="bg-neutral-50 text-[11px] font-semibold text-neutral-600">
+                      <tr>
+                        <th class="px-3 py-2">Producto</th>
+                        <th class="px-3 py-2">Cuadrante</th>
+                        <th class="px-3 py-2 text-right">PRM</th>
+                        <th class="px-3 py-2 text-right">TCM</th>
+                        <th class="px-3 py-2 text-right">% Ventas</th>
+                      </tr>
+                    </thead>
+                    <tbody id="bcg-legend-products" class="divide-y divide-neutral-200"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
@@ -1089,14 +1142,6 @@
 
           </div>
         </div>
-
-        <div class="hidden rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
-          <div class="text-sm font-semibold text-neutral-900">Sección 5 — Matriz BCG</div>
-          <div class="mt-1 text-xs text-neutral-500">X = PRM · Y = TCM · Burbuja = % ventas * 100.</div>
-          <div class="mt-4">
-            <canvas id="bcg-chart" height="280"></canvas>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -1124,21 +1169,34 @@
         <h2 class="text-lg font-semibold">Overview</h2>
         <p class="mt-1 text-sm text-neutral-600">Resumen general del proyecto.</p>
       </div>
-      <?php if (!empty($isCreador)) : ?>
-      <button
-        id="members-manage-open"
-        type="button"
-        class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"
-      >
-        <svg viewBox="0 0 24 24" class="h-5 w-5 text-neutral-700" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9.5 11a4 4 0 100-8 4 4 0 000 8z" />
-          <path stroke-linecap="round" stroke-linejoin="round" d="M22 21v-2a4 4 0 00-3-3.87" />
-          <path stroke-linecap="round" stroke-linejoin="round" d="M16 3.13a4 4 0 010 7.75" />
-        </svg>
-        Gestionar Miembros
-      </button>
-      <?php endif; ?>
+      <div class="flex flex-wrap items-center justify-end gap-2">
+        <a
+          href="detalle-proyecto.php?t=<?php echo urlencode((string) $projectToken); ?>&export=overview_pdf"
+          download
+          class="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-brand-700"
+        >
+          <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-3-3m3 3l3-3" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 17v3a1 1 0 001 1h14a1 1 0 001-1v-3" />
+          </svg>
+          Descargar PDF
+        </a>
+        <?php if (!empty($isCreador)) : ?>
+        <button
+          id="members-manage-open"
+          type="button"
+          class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"
+        >
+          <svg viewBox="0 0 24 24" class="h-5 w-5 text-neutral-700" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.5 11a4 4 0 100-8 4 4 0 000 8z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M22 21v-2a4 4 0 00-3-3.87" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16 3.13a4 4 0 010 7.75" />
+          </svg>
+          Gestionar Miembros
+        </button>
+        <?php endif; ?>
+      </div>
     </div>
 
     <div class="mt-5 space-y-4">
@@ -1251,6 +1309,272 @@
             <?php endforeach; ?>
           </div>
         <?php endif; ?>
+      </div>
+
+      <?php
+        $cadenaOverview = is_array($cadenaOverview ?? null) ? (array) $cadenaOverview : [];
+        $bcgOverview = is_array($bcgOverview ?? null) ? (array) $bcgOverview : [];
+        $fodaOverview = is_array($fodaOverview ?? null) ? (array) $fodaOverview : [];
+
+        $cBadge = (string) ($cadenaOverview['badge_class'] ?? 'bg-neutral-100 text-neutral-700');
+        $cStatus = (string) ($cadenaOverview['status_label'] ?? 'Sin evaluación');
+        $cSub = (string) ($cadenaOverview['status_sub'] ?? '');
+        $cSum = $cadenaOverview['sum'] ?? null;
+        $cPotential = $cadenaOverview['potential'] ?? null;
+        $cPotentialText = ($cPotential !== null && is_numeric($cPotential)) ? number_format((float) $cPotential, 2, '.', '') : '—';
+        $cPotentialPct = ($cPotential !== null && is_numeric($cPotential)) ? ((string) round(((float) $cPotential) * 100) . '%') : '';
+
+        $bBadge = (string) ($bcgOverview['badge_class'] ?? 'bg-neutral-100 text-neutral-700');
+        $bStatus = (string) ($bcgOverview['status_label'] ?? 'Sin datos');
+        $bSub = (string) ($bcgOverview['status_sub'] ?? '');
+        $bTotal = (int) ($bcgOverview['total'] ?? 0);
+        $bCounts = is_array($bcgOverview['counts'] ?? null) ? (array) $bcgOverview['counts'] : [];
+        $bTop = is_array($bcgOverview['top'] ?? null) ? (array) $bcgOverview['top'] : [];
+
+        $fCadena = is_array($fodaOverview['CADENA_VALOR_INTERNA'] ?? null) ? (array) $fodaOverview['CADENA_VALOR_INTERNA'] : [];
+        $fBcg = is_array($fodaOverview['AUTODIAGNOSTICO_BCG'] ?? null) ? (array) $fodaOverview['AUTODIAGNOSTICO_BCG'] : [];
+        $fCadenaLabel = (string) ($fCadena['label'] ?? 'Cadena de valor');
+        $fBcgLabel = (string) ($fBcg['label'] ?? 'Matriz BCG');
+        $fFortCadena = is_array($fCadena['FORTALEZA'] ?? null) ? (array) $fCadena['FORTALEZA'] : [];
+        $fDebCadena = is_array($fCadena['DEBILIDAD'] ?? null) ? (array) $fCadena['DEBILIDAD'] : [];
+        $fFortBcg = is_array($fBcg['FORTALEZA'] ?? null) ? (array) $fBcg['FORTALEZA'] : [];
+        $fDebBcg = is_array($fBcg['DEBILIDAD'] ?? null) ? (array) $fBcg['DEBILIDAD'] : [];
+      ?>
+
+      <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div class="text-sm font-semibold text-neutral-900">Análisis Estratégico</div>
+            <div class="mt-1 text-sm text-neutral-600">Resumen ejecutivo de Cadena de valor y Matriz BCG.</div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" data-open-panel="cadena" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+              Ver Cadena
+            </button>
+            <button type="button" data-open-panel="bgg" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+              Ver BCG
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div class="rounded-2xl border border-neutral-200 bg-white p-5">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="text-sm font-semibold text-neutral-900">Cadena de valor</div>
+                <div class="mt-1 text-sm text-neutral-600">Potencial de mejora y estado general.</div>
+              </div>
+              <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold <?php echo htmlspecialchars($cBadge, ENT_QUOTES, 'UTF-8'); ?>">
+                <?php echo htmlspecialchars($cStatus, ENT_QUOTES, 'UTF-8'); ?>
+              </span>
+            </div>
+            <?php if ($cSub !== '') : ?>
+              <div class="mt-2 text-xs text-neutral-600"><?php echo htmlspecialchars($cSub, ENT_QUOTES, 'UTF-8'); ?></div>
+            <?php endif; ?>
+            <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                <div class="text-xs font-medium text-neutral-600">Suma</div>
+                <div class="mt-1 text-2xl font-semibold text-neutral-900"><?php echo ($cSum === null) ? '—' : (int) $cSum; ?></div>
+              </div>
+              <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                <div class="text-xs font-medium text-neutral-600">Potencial</div>
+                <div class="mt-1 text-2xl font-semibold text-brand-900"><?php echo htmlspecialchars($cPotentialText, ENT_QUOTES, 'UTF-8'); ?></div>
+                <div class="mt-1 text-xs text-neutral-500"><?php echo htmlspecialchars($cPotentialPct, ENT_QUOTES, 'UTF-8'); ?></div>
+              </div>
+              <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                <div class="text-xs font-medium text-neutral-600">Interpretación</div>
+                <div class="mt-1 text-sm font-semibold text-neutral-900"><?php echo htmlspecialchars($cStatus, ENT_QUOTES, 'UTF-8'); ?></div>
+                <div class="mt-1 text-xs text-neutral-500">Basado en 1 - (Σ/100).</div>
+              </div>
+            </div>
+            <?php
+              $cBar = ($cPotential !== null && is_numeric($cPotential)) ? max(0, min(100, (int) round(((float) $cPotential) * 100))) : 0;
+            ?>
+            <div class="mt-4">
+              <div class="flex items-center justify-between text-xs text-neutral-600">
+                <span>Potencial de mejora</span>
+                <span><?php echo htmlspecialchars($cPotentialPct !== '' ? $cPotentialPct : '—', ENT_QUOTES, 'UTF-8'); ?></span>
+              </div>
+              <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-neutral-200">
+                <div class="h-2 rounded-full bg-brand-600" style="width: <?php echo (int) $cBar; ?>%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-neutral-200 bg-white p-5">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="text-sm font-semibold text-neutral-900">Matriz BCG</div>
+                <div class="mt-1 text-sm text-neutral-600">Clasificación y métricas por producto.</div>
+              </div>
+              <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold <?php echo htmlspecialchars($bBadge, ENT_QUOTES, 'UTF-8'); ?>">
+                <?php echo htmlspecialchars($bStatus, ENT_QUOTES, 'UTF-8'); ?>
+              </span>
+            </div>
+            <?php if ($bSub !== '') : ?>
+              <div class="mt-2 text-xs text-neutral-600"><?php echo htmlspecialchars($bSub, ENT_QUOTES, 'UTF-8'); ?></div>
+            <?php endif; ?>
+            <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                <div class="text-xs font-medium text-neutral-600">Productos</div>
+                <div class="mt-1 text-2xl font-semibold text-neutral-900"><?php echo (int) $bTotal; ?></div>
+                <div class="mt-2 grid grid-cols-2 gap-2 text-xs text-neutral-700">
+                  <div class="rounded-lg border border-neutral-200 bg-white px-2 py-1">Estrella: <?php echo (int) ($bCounts['ESTRELLA'] ?? 0); ?></div>
+                  <div class="rounded-lg border border-neutral-200 bg-white px-2 py-1">Vaca: <?php echo (int) ($bCounts['VACA'] ?? 0); ?></div>
+                  <div class="rounded-lg border border-neutral-200 bg-white px-2 py-1">Interrogante: <?php echo (int) ($bCounts['INTERROGANTE'] ?? 0); ?></div>
+                  <div class="rounded-lg border border-neutral-200 bg-white px-2 py-1">Perro: <?php echo (int) ($bCounts['PERRO'] ?? 0); ?></div>
+                </div>
+                <?php
+                  $bStar = (int) ($bCounts['ESTRELLA'] ?? 0);
+                  $bCow = (int) ($bCounts['VACA'] ?? 0);
+                  $bQ = (int) ($bCounts['INTERROGANTE'] ?? 0);
+                  $bDog = (int) ($bCounts['PERRO'] ?? 0);
+                  $bDen = max(1, $bTotal);
+                  $pStar = (int) round(($bStar / $bDen) * 100);
+                  $pCow = (int) round(($bCow / $bDen) * 100);
+                  $pQ = (int) round(($bQ / $bDen) * 100);
+                  $pDog = max(0, 100 - ($pStar + $pCow + $pQ));
+                ?>
+                <div class="mt-3">
+                  <div class="flex items-center justify-between text-xs text-neutral-600">
+                    <span>Distribución</span>
+                    <span><?php echo (int) $bTotal; ?> total</span>
+                  </div>
+                  <div class="mt-2 flex h-2 w-full overflow-hidden rounded-full bg-neutral-200">
+                    <div class="h-2 bg-emerald-500" style="width: <?php echo (int) $pStar; ?>%"></div>
+                    <div class="h-2 bg-amber-400" style="width: <?php echo (int) $pCow; ?>%"></div>
+                    <div class="h-2 bg-sky-500" style="width: <?php echo (int) $pQ; ?>%"></div>
+                    <div class="h-2 bg-red-500" style="width: <?php echo (int) $pDog; ?>%"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                <div class="text-xs font-medium text-neutral-600">Top productos</div>
+                <?php if (empty($bTop)) : ?>
+                  <div class="mt-2 text-sm text-neutral-600">Sin registros.</div>
+                <?php else : ?>
+                  <div class="mt-2 space-y-2">
+                    <?php foreach ($bTop as $p) : ?>
+                      <?php
+                        $pn = trim((string) ($p['nombre'] ?? ''));
+                        $pc = trim((string) ($p['clasificacion'] ?? ''));
+                        $pp = isset($p['porcentaje_ventas']) && is_numeric($p['porcentaje_ventas']) ? round(((float) $p['porcentaje_ventas']) * 100, 1) . '%' : '—';
+                      ?>
+                      <div class="rounded-lg border border-neutral-200 bg-white px-3 py-2">
+                        <div class="flex items-center justify-between gap-2">
+                          <div class="min-w-0">
+                            <div class="truncate text-sm font-semibold text-neutral-900"><?php echo htmlspecialchars($pn !== '' ? $pn : 'Producto', ENT_QUOTES, 'UTF-8'); ?></div>
+                            <div class="mt-0.5 text-xs text-neutral-600"><?php echo htmlspecialchars($pc !== '' ? $pc : '—', ENT_QUOTES, 'UTF-8'); ?> · Ventas: <?php echo htmlspecialchars($pp, ENT_QUOTES, 'UTF-8'); ?></div>
+                          </div>
+                        </div>
+                      </div>
+                    <?php endforeach; ?>
+                  </div>
+                <?php endif; ?>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div class="text-sm font-semibold text-neutral-900">Análisis FODA</div>
+            <div class="mt-1 text-sm text-neutral-600">Fortalezas y debilidades derivadas de Cadena de valor y BCG.</div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" data-open-panel="cadena" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+              Editar (Cadena)
+            </button>
+            <button type="button" data-open-panel="bgg" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+              Editar (BCG)
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div class="rounded-2xl border border-neutral-200 bg-white p-4">
+            <div class="text-sm font-semibold text-neutral-900">Fortalezas</div>
+            <div class="mt-2 space-y-3 text-sm text-neutral-800">
+              <div>
+                <div class="text-xs font-semibold text-neutral-600"><?php echo htmlspecialchars($fCadenaLabel, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php if (empty($fFortCadena)) : ?>
+                  <div class="mt-1 text-sm text-neutral-600">Sin registros.</div>
+                <?php else : ?>
+                  <ul class="mt-2 space-y-1">
+                    <?php foreach ($fFortCadena as $txt) : ?>
+                      <li class="flex gap-2">
+                        <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500"></span>
+                        <span class="leading-relaxed"><?php echo htmlspecialchars((string) $txt, ENT_QUOTES, 'UTF-8'); ?></span>
+                      </li>
+                    <?php endforeach; ?>
+                  </ul>
+                <?php endif; ?>
+              </div>
+              <div>
+                <div class="text-xs font-semibold text-neutral-600"><?php echo htmlspecialchars($fBcgLabel, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php if (empty($fFortBcg)) : ?>
+                  <div class="mt-1 text-sm text-neutral-600">Sin registros.</div>
+                <?php else : ?>
+                  <ul class="mt-2 space-y-1">
+                    <?php foreach ($fFortBcg as $txt) : ?>
+                      <li class="flex gap-2">
+                        <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500"></span>
+                        <span class="leading-relaxed"><?php echo htmlspecialchars((string) $txt, ENT_QUOTES, 'UTF-8'); ?></span>
+                      </li>
+                    <?php endforeach; ?>
+                  </ul>
+                <?php endif; ?>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-neutral-200 bg-white p-4">
+            <div class="text-sm font-semibold text-neutral-900">Debilidades</div>
+            <div class="mt-2 space-y-3 text-sm text-neutral-800">
+              <div>
+                <div class="text-xs font-semibold text-neutral-600"><?php echo htmlspecialchars($fCadenaLabel, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php if (empty($fDebCadena)) : ?>
+                  <div class="mt-1 text-sm text-neutral-600">Sin registros.</div>
+                <?php else : ?>
+                  <ul class="mt-2 space-y-1">
+                    <?php foreach ($fDebCadena as $txt) : ?>
+                      <li class="flex gap-2">
+                        <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500"></span>
+                        <span class="leading-relaxed"><?php echo htmlspecialchars((string) $txt, ENT_QUOTES, 'UTF-8'); ?></span>
+                      </li>
+                    <?php endforeach; ?>
+                  </ul>
+                <?php endif; ?>
+              </div>
+              <div>
+                <div class="text-xs font-semibold text-neutral-600"><?php echo htmlspecialchars($fBcgLabel, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php if (empty($fDebBcg)) : ?>
+                  <div class="mt-1 text-sm text-neutral-600">Sin registros.</div>
+                <?php else : ?>
+                  <ul class="mt-2 space-y-1">
+                    <?php foreach ($fDebBcg as $txt) : ?>
+                      <li class="flex gap-2">
+                        <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500"></span>
+                        <span class="leading-relaxed"><?php echo htmlspecialchars((string) $txt, ENT_QUOTES, 'UTF-8'); ?></span>
+                      </li>
+                    <?php endforeach; ?>
+                  </ul>
+                <?php endif; ?>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-neutral-200 bg-white p-4">
+            <div class="text-sm font-semibold text-neutral-900">Oportunidades</div>
+            <div class="mt-2 text-sm text-neutral-600">Aún no hay una fuente registrada para oportunidades en este módulo.</div>
+          </div>
+          <div class="rounded-2xl border border-neutral-200 bg-white p-4">
+            <div class="text-sm font-semibold text-neutral-900">Amenazas</div>
+            <div class="mt-2 text-sm text-neutral-600">Aún no hay una fuente registrada para amenazas en este módulo.</div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
