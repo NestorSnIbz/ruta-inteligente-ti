@@ -159,6 +159,9 @@
           <button type="button" data-panel="cadena" class="project-tab rounded-xl px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-brand-50">
             Cadena de valor
           </button>
+          <button type="button" data-panel="perfil_competitivo" class="project-tab rounded-xl px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-brand-50">
+            Perfil competitivo
+          </button>
           <button type="button" data-panel="bgg" class="project-tab rounded-xl px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-brand-50">
             BCG
           </button>
@@ -746,6 +749,21 @@
           </div>
         </section>
 
+        <section id="panel-perfil_competitivo" class="project-panel hidden bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm" data-lazy-panel="perfil_competitivo">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-lg font-semibold">Perfil competitivo</h2>
+          </div>
+          <div class="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+            <div class="flex items-center gap-2 text-sm text-neutral-600">
+              <svg class="h-4 w-4 animate-spin text-neutral-500" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+              </svg>
+              <span>Cargando…</span>
+            </div>
+          </div>
+        </section>
+
         <section id="panel-bgg" class="project-panel hidden bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm" data-lazy-panel="bgg">
           <div class="flex items-center justify-between gap-3">
             <h2 class="text-lg font-semibold">Autodiagnóstico BCG</h2>
@@ -766,13 +784,16 @@
   </div>
 </div>
 
+<script src="perfil-competitivo.js"></script>
 <script>
   const projectToken = <?php echo json_encode((string) $projectToken, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
   const projectId = <?php echo (int) $idProyecto; ?>;
   const projectName = <?php echo json_encode((string) $proyectoNombre, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+  window.projectToken = projectToken;
   const flashModal = document.getElementById("flash-modal");
   const flashBackdrop = document.getElementById("flash-backdrop");
   const flashClose = document.getElementById("flash-close");
+
 
   const projectNameLabel = document.getElementById("project-name-label");
   const projectNameEditWrap = document.getElementById("project-name-edit");
@@ -881,7 +902,7 @@
     }
   });
 
-  const allowedPanels = new Set(["overview", "mision", "vision", "valores", "objetivos", "cadena", "bgg"]);
+  const allowedPanels = new Set(["overview", "mision", "vision", "valores", "objetivos", "cadena", "perfil_competitivo", "bgg"]);
   const panelStorageKey = projectToken ? `ri:detalle-proyecto:section:${projectToken}` : "ri:detalle-proyecto:section";
 
   const projectTabs = Array.from(document.querySelectorAll(".project-tab"));
@@ -3459,6 +3480,7 @@
     if (panelId === "valores") initValoresPanel();
     if (panelId === "objetivos") initObjetivosPanel();
     if (panelId === "cadena") initCadenaPanel();
+    if (panelId === "perfil_competitivo") window.RI && typeof window.RI.initPerfilCompetitivoPanel === "function" && window.RI.initPerfilCompetitivoPanel();
     if (panelId === "bgg") initBcgPanel();
   }
 

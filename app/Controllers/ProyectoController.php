@@ -154,7 +154,7 @@ final class ProyectoController
         $section = trim((string) ($_GET['section'] ?? 'overview'));
         $export = trim((string) ($_GET['export'] ?? ''));
         $isExportOverviewPdf = $export === 'overview_pdf';
-        $allowedSections = ['overview', 'mision', 'vision', 'valores', 'objetivos', 'cadena', 'bgg'];
+        $allowedSections = ['overview', 'mision', 'vision', 'valores', 'objetivos', 'cadena', 'perfil_competitivo', 'bgg'];
         $requestedSection = $partial !== '' ? $partial : ($section !== '' ? $section : 'overview');
         if (!in_array($requestedSection, $allowedSections, true)) {
             $requestedSection = 'overview';
@@ -531,6 +531,16 @@ final class ProyectoController
                         $fodaDebilidades[] = $desc;
                     }
                 }
+            } catch (Throwable $e) {
+            }
+        }
+
+        if ($renderOnlySection === 'perfil_competitivo') {
+            try {
+                PerfilCompetitivo::ensureSeeded($supabase);
+                $perfilFactores = PerfilCompetitivo::listFactores($supabase);
+                $perfilRespuestas = PerfilCompetitivo::listRespuestasByProyecto($supabase, $idProyecto);
+                $perfilCalc = PerfilCompetitivo::compute($perfilFactores, $perfilRespuestas);
             } catch (Throwable $e) {
             }
         }
@@ -1416,7 +1426,7 @@ final class ProyectoController
             );
             exit;
         } catch (Throwable $e) {
-            echo json_encode(['ok' => false, 'error' => 'Error al guardar.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            echo json_encode(['ok' => false, 'error' => $this->friendlySupabaseError($e, 'Error al guardar.')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             exit;
         }
     }
@@ -1525,7 +1535,265 @@ final class ProyectoController
             );
             exit;
         } catch (Throwable $e) {
+            echo json_encode(['ok' => false, 'error' => $this->friendlySupabaseError($e, 'Error al guardar la evaluación.')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+    }
+
+    public function savePerfilCompetitivo(): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $idFactor = (int) ($_POST['id_factor'] ?? 0);
+        $valor = (int) ($_POST['valor'] ?? -1);
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($idProyecto <= 0) {
+            echo json_encode(['ok' => false, 'error' => 'Proyecto inválido.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        if ($idFactor <= 0 || $valor < 0 || $valor > 4) {
+            echo json_encode(['ok' => false, 'error' => 'Datos inválidos.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        try {
+            $supabase = new SupabaseClient();
+            $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
+            if ($proyecto === null) {
+                echo json_encode(['ok' => false, 'error' => 'No tienes acceso a este proyecto.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            PerfilCompetitivo::ensureSeeded($supabase);
+            if (!PerfilCompetitivo::existsFactor($supabase, $idFactor)) {
+                echo json_encode(['ok' => false, 'error' => 'Factor inválido.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $ok = PerfilCompetitivo::upsertRespuesta($supabase, $idProyecto, $idFactor, $valor);
+            if (!$ok) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudo guardar la respuesta.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $factores = PerfilCompetitivo::listFactores($supabase);
+            $respuestas = PerfilCompetitivo::listRespuestasByProyecto($supabase, $idProyecto);
+            $calc = PerfilCompetitivo::compute($factores, $respuestas);
+
+            if (($calc['missing'] ?? 0) === 0 && isset($calc['conclusion_code'], $calc['conclusion_text'])) {
+                PerfilCompetitivo::upsertResultado(
+                    $supabase,
+                    $idProyecto,
+                    (int) ($calc['total'] ?? 0),
+                    (int) $calc['conclusion_code'],
+                    (string) $calc['conclusion_text']
+                );
+            }
+
+            echo json_encode(
+                [
+                    'ok' => true,
+                    'calc' => $calc,
+                    'updated_at' => gmdate('c'),
+                ],
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            );
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['ok' => false, 'error' => 'Error al guardar.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+    }
+
+    public function savePerfilCompetitivoBatch(): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $answersRaw = (string) ($_POST['answers'] ?? '');
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($idProyecto <= 0) {
+            echo json_encode(['ok' => false, 'error' => 'Proyecto inválido.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $decoded = json_decode($answersRaw, true);
+        if (!is_array($decoded)) {
+            echo json_encode(['ok' => false, 'error' => 'Respuestas inválidas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $answers = [];
+        foreach ($decoded as $fid => $value) {
+            $fid = (int) $fid;
+            $value = (int) $value;
+            if ($fid <= 0 || $value < 0 || $value > 4) {
+                echo json_encode(['ok' => false, 'error' => 'Respuestas inválidas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+            $answers[$fid] = $value;
+        }
+
+        try {
+            $supabase = new SupabaseClient();
+            $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
+            if ($proyecto === null) {
+                echo json_encode(['ok' => false, 'error' => 'No tienes acceso a este proyecto.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            PerfilCompetitivo::ensureSeeded($supabase);
+            $factores = PerfilCompetitivo::listFactores($supabase);
+            if (empty($factores)) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudieron cargar los factores.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $ids = [];
+            foreach ($factores as $f) {
+                if (!is_array($f)) {
+                    continue;
+                }
+                $id = (int) ($f['id_factor'] ?? 0);
+                if ($id > 0) {
+                    $ids[$id] = true;
+                }
+            }
+
+            $count = count($ids);
+            if ($count <= 0) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudieron cargar los factores.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            if (count($answers) !== $count) {
+                echo json_encode(['ok' => false, 'error' => 'Debes responder todas las filas antes de guardar.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $total = 0;
+            foreach ($ids as $fid => $_) {
+                if (!array_key_exists($fid, $answers)) {
+                    echo json_encode(['ok' => false, 'error' => 'Debes responder todas las filas antes de guardar.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    exit;
+                }
+                $total += (int) $answers[$fid];
+            }
+
+            $ok = PerfilCompetitivo::upsertRespuestasBatch($supabase, $idProyecto, $answers);
+            if (!$ok) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudo guardar la evaluación.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $conclusion = PerfilCompetitivo::conclusionForTotal($total);
+            PerfilCompetitivo::upsertResultado($supabase, $idProyecto, (int) $total, (int) $conclusion['code'], (string) $conclusion['text']);
+
+            echo json_encode(
+                [
+                    'ok' => true,
+                    'calc' => [
+                        'total' => (int) $total,
+                        'valid' => (int) $count,
+                        'count' => (int) $count,
+                        'missing' => 0,
+                        'conclusion_code' => (int) $conclusion['code'],
+                        'conclusion_text' => (string) $conclusion['text'],
+                    ],
+                    'updated_at' => gmdate('c'),
+                ],
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            );
+            exit;
+        } catch (Throwable $e) {
             echo json_encode(['ok' => false, 'error' => 'Error al guardar la evaluación.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+    }
+
+    public function savePerfilCompetitivoAutosaveBatch(): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $answersRaw = (string) ($_POST['answers'] ?? '');
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($idProyecto <= 0) {
+            echo json_encode(['ok' => false, 'error' => 'Proyecto inválido.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $decoded = json_decode($answersRaw, true);
+        if (!is_array($decoded) || empty($decoded)) {
+            echo json_encode(['ok' => false, 'error' => 'Respuestas inválidas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $answers = [];
+        foreach ($decoded as $fid => $value) {
+            $fid = (int) $fid;
+            $value = (int) $value;
+            if ($fid <= 0 || $value < 0 || $value > 4) {
+                echo json_encode(['ok' => false, 'error' => 'Respuestas inválidas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+            $answers[$fid] = $value;
+        }
+
+        try {
+            $supabase = new SupabaseClient();
+            $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
+            if ($proyecto === null) {
+                echo json_encode(['ok' => false, 'error' => 'No tienes acceso a este proyecto.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            PerfilCompetitivo::ensureSeeded($supabase);
+            $ok = PerfilCompetitivo::upsertRespuestasBatch($supabase, $idProyecto, $answers);
+            if (!$ok) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudo guardar automáticamente.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $factores = PerfilCompetitivo::listFactores($supabase);
+            $respuestas = PerfilCompetitivo::listRespuestasByProyecto($supabase, $idProyecto);
+            $calc = PerfilCompetitivo::compute($factores, $respuestas);
+
+            if (($calc['missing'] ?? 0) === 0 && isset($calc['conclusion_code'], $calc['conclusion_text'])) {
+                PerfilCompetitivo::upsertResultado(
+                    $supabase,
+                    $idProyecto,
+                    (int) ($calc['total'] ?? 0),
+                    (int) $calc['conclusion_code'],
+                    (string) $calc['conclusion_text']
+                );
+            }
+
+            echo json_encode(
+                [
+                    'ok' => true,
+                    'calc' => $calc,
+                    'updated_at' => gmdate('c'),
+                ],
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            );
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['ok' => false, 'error' => $this->friendlySupabaseError($e, 'Error al guardar automáticamente.')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             exit;
         }
     }

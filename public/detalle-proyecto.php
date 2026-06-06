@@ -11,6 +11,7 @@ require __DIR__ . '/../app/Models/Valor.php';
 require __DIR__ . '/../app/Models/ObjetivoEstrategico.php';
 require __DIR__ . '/../app/Models/ObjetivoEspecifico.php';
 require __DIR__ . '/../app/Models/CadenaValor.php';
+require __DIR__ . '/../app/Models/PerfilCompetitivo.php';
 require __DIR__ . '/../app/Models/Foda.php';
 require __DIR__ . '/../app/Controllers/AuthController.php';
 require __DIR__ . '/../app/Controllers/ProyectoController.php';
@@ -72,6 +73,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             break;
         case 'save_cadena_valor_batch':
             $controller->saveCadenaValorBatch();
+            break;
+        case 'save_perfil_competitivo':
+            $controller->savePerfilCompetitivo();
+            break;
+        case 'save_perfil_competitivo_batch':
+            $controller->savePerfilCompetitivoBatch();
+            break;
+        case 'save_perfil_competitivo_autosave_batch':
+            $controller->savePerfilCompetitivoAutosaveBatch();
             break;
         case 'save_foda_cadena':
             $controller->saveFodaCadena();

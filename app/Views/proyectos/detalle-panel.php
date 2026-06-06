@@ -1,6 +1,6 @@
 <?php
   $panel = (string) ($panel ?? '');
-  $allowed = ['overview', 'mision', 'vision', 'valores', 'objetivos', 'cadena', 'bgg'];
+  $allowed = ['overview', 'mision', 'vision', 'valores', 'objetivos', 'cadena', 'perfil_competitivo', 'bgg'];
   if (!in_array($panel, $allowed, true)) {
     http_response_code(400);
     header('Content-Type: text/plain; charset=utf-8');
@@ -704,7 +704,6 @@
         POTENCIAL DE MEJORA DE LA CADENA DE VALOR INTERNA
       </div>
     </div>
-
     <div class="mt-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -820,6 +819,8 @@
       </div>
     </div>
   </section>
+<?php elseif ($panel === 'perfil_competitivo') : ?>
+  <?php require dirname(__DIR__) . '/proyectos/panel-perfil-competitivo.php'; ?>
 <?php elseif ($panel === 'bgg') : ?>
   <section id="panel-bgg" class="project-panel bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

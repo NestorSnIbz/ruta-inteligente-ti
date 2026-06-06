@@ -131,6 +131,55 @@ CREATE TABLE cadena_valor_resultado (
         ON DELETE CASCADE
 );
 
+CREATE TABLE perfil_competitivo_factor (
+    id_factor SERIAL PRIMARY KEY,
+    numero INT UNIQUE NOT NULL,
+    categoria VARCHAR(80) NOT NULL,
+    nombre_factor TEXT NOT NULL,
+    hostil_label VARCHAR(80) NOT NULL,
+    favorable_label VARCHAR(80) NOT NULL
+);
+
+CREATE TABLE perfil_competitivo_respuesta (
+    id_respuesta SERIAL PRIMARY KEY,
+    id_proyecto INT NOT NULL,
+    id_factor INT NOT NULL,
+    valor INT NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT chk_pc_valor
+        CHECK (valor >= 0 AND valor <= 4),
+
+    CONSTRAINT uq_pc_proyecto_factor
+        UNIQUE (id_proyecto, id_factor),
+
+    CONSTRAINT fk_pc_resp_proyecto
+        FOREIGN KEY (id_proyecto)
+        REFERENCES proyecto(id_proyecto)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_pc_resp_factor
+        FOREIGN KEY (id_factor)
+        REFERENCES perfil_competitivo_factor(id_factor)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE perfil_competitivo_resultado (
+    id_proyecto INT PRIMARY KEY,
+    total INT NOT NULL,
+    conclusion_code INT NOT NULL,
+    conclusion_text TEXT NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT chk_pc_conclusion_code
+        CHECK (conclusion_code >= 1 AND conclusion_code <= 4),
+
+    CONSTRAINT fk_pc_res_proyecto
+        FOREIGN KEY (id_proyecto)
+        REFERENCES proyecto(id_proyecto)
+        ON DELETE CASCADE
+);
+
 CREATE TABLE foda_item (
     id_item SERIAL PRIMARY KEY,
     id_proyecto INT NOT NULL,
