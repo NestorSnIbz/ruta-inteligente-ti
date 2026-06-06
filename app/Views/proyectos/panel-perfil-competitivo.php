@@ -32,6 +32,9 @@
   $calcMissing = (int) ($perfilCalc['missing'] ?? 0);
   $calcConclusion = $perfilCalc['conclusion_text'] ?? null;
   $calcConclusionText = ($calcMissing > 0 || $calcConclusion === null) ? '—' : (string) $calcConclusion;
+
+  $pcOportunidades = array_values(array_filter(array_map('trim', array_map('strval', $pcOportunidades ?? []))));
+  $pcAmenazas = array_values(array_filter(array_map('trim', array_map('strval', $pcAmenazas ?? []))));
 ?>
 
 <section id="panel-perfil_competitivo" class="project-panel bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
@@ -151,6 +154,102 @@
     </div>
   </div>
 
+  <div class="mt-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <div class="text-sm font-semibold text-neutral-900">FODA</div>
+        <div class="mt-0.5 text-xs text-neutral-500">Oportunidades y amenazas obtenidas desde Perfil competitivo.</div>
+      </div>
+      <button
+        id="pc-foda-save"
+        type="button"
+        class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600/25"
+      >
+        Guardar FODA
+      </button>
+    </div>
+
+    <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+        <div class="flex items-center justify-between gap-3">
+          <div class="text-sm font-semibold text-neutral-900">Oportunidades</div>
+          <button id="pc-foda-add-oportunidad" type="button" class="inline-flex h-9 items-center justify-center rounded-xl border border-neutral-200 bg-white px-3 text-xs font-semibold text-neutral-800 hover:bg-neutral-50">
+            Agregar
+          </button>
+        </div>
+        <div class="mt-3 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
+          <table class="min-w-full text-left text-sm">
+            <thead class="bg-neutral-50 text-xs font-semibold text-neutral-600">
+              <tr>
+                <th scope="col" class="w-14 px-4 py-3 text-center">#</th>
+                <th scope="col" class="px-4 py-3">Descripción</th>
+                <th scope="col" class="w-24 px-4 py-3 text-right">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="pc-foda-oportunidades-body" class="divide-y divide-neutral-200">
+              <?php
+                $opTarget = max(1, count($pcOportunidades));
+                for ($i = 0; $i < $opTarget; $i++) :
+                  $value = $pcOportunidades[$i] ?? '';
+              ?>
+                <tr data-foda-row="OPORTUNIDAD">
+                  <td class="px-4 py-3 text-center text-xs font-semibold text-neutral-600"><?php echo $i + 1; ?></td>
+                  <td class="px-4 py-2">
+                    <input type="text" value="<?php echo htmlspecialchars($value, ENT_QUOTES, 'UTF-8'); ?>" class="foda-input h-10 w-full rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200" />
+                  </td>
+                  <td class="px-4 py-2 text-right">
+                    <button type="button" class="foda-remove inline-flex h-9 items-center justify-center rounded-xl border border-neutral-200 bg-white px-3 text-xs font-semibold text-neutral-800 hover:bg-neutral-50">
+                      Quitar
+                    </button>
+                  </td>
+                </tr>
+              <?php endfor; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+        <div class="flex items-center justify-between gap-3">
+          <div class="text-sm font-semibold text-neutral-900">Amenazas</div>
+          <button id="pc-foda-add-amenaza" type="button" class="inline-flex h-9 items-center justify-center rounded-xl border border-neutral-200 bg-white px-3 text-xs font-semibold text-neutral-800 hover:bg-neutral-50">
+            Agregar
+          </button>
+        </div>
+        <div class="mt-3 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
+          <table class="min-w-full text-left text-sm">
+            <thead class="bg-neutral-50 text-xs font-semibold text-neutral-600">
+              <tr>
+                <th scope="col" class="w-14 px-4 py-3 text-center">#</th>
+                <th scope="col" class="px-4 py-3">Descripción</th>
+                <th scope="col" class="w-24 px-4 py-3 text-right">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="pc-foda-amenazas-body" class="divide-y divide-neutral-200">
+              <?php
+                $amTarget = max(1, count($pcAmenazas));
+                for ($i = 0; $i < $amTarget; $i++) :
+                  $value = $pcAmenazas[$i] ?? '';
+              ?>
+                <tr data-foda-row="AMENAZA">
+                  <td class="px-4 py-3 text-center text-xs font-semibold text-neutral-600"><?php echo $i + 1; ?></td>
+                  <td class="px-4 py-2">
+                    <input type="text" value="<?php echo htmlspecialchars($value, ENT_QUOTES, 'UTF-8'); ?>" class="foda-input h-10 w-full rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200" />
+                  </td>
+                  <td class="px-4 py-2 text-right">
+                    <button type="button" class="foda-remove inline-flex h-9 items-center justify-center rounded-xl border border-neutral-200 bg-white px-3 text-xs font-semibold text-neutral-800 hover:bg-neutral-50">
+                      Quitar
+                    </button>
+                  </td>
+                </tr>
+              <?php endfor; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="pc-toast" class="pointer-events-none fixed bottom-6 right-6 z-50 hidden w-full max-w-sm">
     <div id="pc-toast-card" class="pointer-events-auto rounded-2xl border border-neutral-200 bg-white p-4 shadow-lg">
       <div class="flex items-start justify-between gap-3">
@@ -168,4 +267,3 @@
     </div>
   </div>
 </section>
-

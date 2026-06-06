@@ -154,7 +154,7 @@ final class ProyectoController
         $section = trim((string) ($_GET['section'] ?? 'overview'));
         $export = trim((string) ($_GET['export'] ?? ''));
         $isExportOverviewPdf = $export === 'overview_pdf';
-        $allowedSections = ['overview', 'mision', 'vision', 'valores', 'objetivos', 'cadena', 'perfil_competitivo', 'bgg'];
+        $allowedSections = ['overview', 'mision', 'vision', 'valores', 'objetivos', 'cadena', 'perfil_competitivo', 'pest', 'bgg'];
         $requestedSection = $partial !== '' ? $partial : ($section !== '' ? $section : 'overview');
         if (!in_array($requestedSection, $allowedSections, true)) {
             $requestedSection = 'overview';
@@ -333,6 +333,10 @@ final class ProyectoController
         $fodaDebilidades = [];
         $bcgFortalezas = [];
         $bcgDebilidades = [];
+        $pcOportunidades = [];
+        $pcAmenazas = [];
+        $pestOportunidades = [];
+        $pestAmenazas = [];
         $cadenaOverview = [];
         $bcgOverview = [];
         $fodaOverview = [];
@@ -472,6 +476,8 @@ final class ProyectoController
                 $fuentes = [
                     'CADENA_VALOR_INTERNA' => 'Cadena de valor',
                     'AUTODIAGNOSTICO_BCG' => 'Matriz BCG',
+                    'PERFIL_COMPETITIVO' => 'Perfil competitivo',
+                    'PEST' => 'P.E.S.T.',
                 ];
                 $out = [];
                 foreach ($fuentes as $fuente => $label) {
@@ -541,6 +547,56 @@ final class ProyectoController
                 $perfilFactores = PerfilCompetitivo::listFactores($supabase);
                 $perfilRespuestas = PerfilCompetitivo::listRespuestasByProyecto($supabase, $idProyecto);
                 $perfilCalc = PerfilCompetitivo::compute($perfilFactores, $perfilRespuestas);
+            } catch (Throwable $e) {
+            }
+
+            try {
+                $rows = Foda::listByProyectoFuente($supabase, $idProyecto, 'PERFIL_COMPETITIVO');
+                foreach ($rows as $r) {
+                    if (!is_array($r)) {
+                        continue;
+                    }
+                    $tipo = (string) ($r['tipo'] ?? '');
+                    $desc = trim((string) ($r['descripcion'] ?? ''));
+                    if ($desc === '') {
+                        continue;
+                    }
+                    if ($tipo === 'OPORTUNIDAD') {
+                        $pcOportunidades[] = $desc;
+                    } elseif ($tipo === 'AMENAZA') {
+                        $pcAmenazas[] = $desc;
+                    }
+                }
+            } catch (Throwable $e) {
+            }
+        }
+
+        if ($renderOnlySection === 'pest') {
+            try {
+                Pest::ensureSeeded($supabase);
+                $pestPreguntas = Pest::listPreguntas($supabase);
+                $pestRespuestas = Pest::listRespuestasByProyecto($supabase, $idProyecto);
+                $pestCalc = Pest::compute($pestPreguntas, $pestRespuestas);
+            } catch (Throwable $e) {
+            }
+
+            try {
+                $rows = Foda::listByProyectoFuente($supabase, $idProyecto, 'PEST');
+                foreach ($rows as $r) {
+                    if (!is_array($r)) {
+                        continue;
+                    }
+                    $tipo = (string) ($r['tipo'] ?? '');
+                    $desc = trim((string) ($r['descripcion'] ?? ''));
+                    if ($desc === '') {
+                        continue;
+                    }
+                    if ($tipo === 'OPORTUNIDAD') {
+                        $pestOportunidades[] = $desc;
+                    } elseif ($tipo === 'AMENAZA') {
+                        $pestAmenazas[] = $desc;
+                    }
+                }
             } catch (Throwable $e) {
             }
         }
@@ -1125,6 +1181,152 @@ final class ProyectoController
             }
 
             $ok = Foda::replaceByProyectoFuente($supabase, $idProyecto, 'AUTODIAGNOSTICO_BCG', $items);
+            if (!$ok) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudo guardar el apartado.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            echo json_encode(['ok' => true, 'updated_at' => gmdate('c')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['ok' => false, 'error' => 'No se pudo guardar el apartado.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+    }
+
+    public function saveFodaPerfilCompetitivo(): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $payloadRaw = (string) ($_POST['payload'] ?? '');
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($idProyecto <= 0) {
+            echo json_encode(['ok' => false, 'error' => 'Proyecto inválido.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $decoded = json_decode($payloadRaw, true);
+        if (!is_array($decoded)) {
+            echo json_encode(['ok' => false, 'error' => 'Datos inválidos.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $oportunidades = $decoded['oportunidades'] ?? [];
+        $amenazas = $decoded['amenazas'] ?? [];
+        if (!is_array($oportunidades) || !is_array($amenazas)) {
+            echo json_encode(['ok' => false, 'error' => 'Datos inválidos.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $max = 50;
+        $items = [];
+        $now = gmdate('Y-m-d H:i:s');
+
+        $i = 0;
+        foreach ($oportunidades as $txt) {
+            $txt = trim((string) $txt);
+            if ($txt === '') continue;
+            $i++;
+            if ($i > $max) break;
+            $items[] = ['tipo' => 'OPORTUNIDAD', 'posicion' => $i, 'descripcion' => $txt, 'updated_at' => $now];
+        }
+
+        $j = 0;
+        foreach ($amenazas as $txt) {
+            $txt = trim((string) $txt);
+            if ($txt === '') continue;
+            $j++;
+            if ($j > $max) break;
+            $items[] = ['tipo' => 'AMENAZA', 'posicion' => $j, 'descripcion' => $txt, 'updated_at' => $now];
+        }
+
+        try {
+            $supabase = new SupabaseClient();
+            $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
+            if ($proyecto === null) {
+                echo json_encode(['ok' => false, 'error' => 'No tienes acceso a este proyecto.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $ok = Foda::replaceByProyectoFuente($supabase, $idProyecto, 'PERFIL_COMPETITIVO', $items);
+            if (!$ok) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudo guardar el apartado.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            echo json_encode(['ok' => true, 'updated_at' => gmdate('c')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['ok' => false, 'error' => 'No se pudo guardar el apartado.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+    }
+
+    public function saveFodaPest(): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $payloadRaw = (string) ($_POST['payload'] ?? '');
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($idProyecto <= 0) {
+            echo json_encode(['ok' => false, 'error' => 'Proyecto inválido.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $decoded = json_decode($payloadRaw, true);
+        if (!is_array($decoded)) {
+            echo json_encode(['ok' => false, 'error' => 'Datos inválidos.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $oportunidades = $decoded['oportunidades'] ?? [];
+        $amenazas = $decoded['amenazas'] ?? [];
+        if (!is_array($oportunidades) || !is_array($amenazas)) {
+            echo json_encode(['ok' => false, 'error' => 'Datos inválidos.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $max = 50;
+        $items = [];
+        $now = gmdate('Y-m-d H:i:s');
+
+        $i = 0;
+        foreach ($oportunidades as $txt) {
+            $txt = trim((string) $txt);
+            if ($txt === '') continue;
+            $i++;
+            if ($i > $max) break;
+            $items[] = ['tipo' => 'OPORTUNIDAD', 'posicion' => $i, 'descripcion' => $txt, 'updated_at' => $now];
+        }
+
+        $j = 0;
+        foreach ($amenazas as $txt) {
+            $txt = trim((string) $txt);
+            if ($txt === '') continue;
+            $j++;
+            if ($j > $max) break;
+            $items[] = ['tipo' => 'AMENAZA', 'posicion' => $j, 'descripcion' => $txt, 'updated_at' => $now];
+        }
+
+        try {
+            $supabase = new SupabaseClient();
+            $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
+            if ($proyecto === null) {
+                echo json_encode(['ok' => false, 'error' => 'No tienes acceso a este proyecto.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $ok = Foda::replaceByProyectoFuente($supabase, $idProyecto, 'PEST', $items);
             if (!$ok) {
                 echo json_encode(['ok' => false, 'error' => 'No se pudo guardar el apartado.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 exit;
@@ -1794,6 +1996,181 @@ final class ProyectoController
             exit;
         } catch (Throwable $e) {
             echo json_encode(['ok' => false, 'error' => $this->friendlySupabaseError($e, 'Error al guardar automáticamente.')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+    }
+
+    public function savePestAutosaveBatch(): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $answersRaw = (string) ($_POST['answers'] ?? '');
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($idProyecto <= 0) {
+            echo json_encode(['ok' => false, 'error' => 'Proyecto inválido.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $decoded = json_decode($answersRaw, true);
+        if (!is_array($decoded) || empty($decoded)) {
+            echo json_encode(['ok' => false, 'error' => 'Respuestas inválidas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $answers = [];
+        foreach ($decoded as $qid => $value) {
+            $qid = (int) $qid;
+            $value = (int) $value;
+            if ($qid <= 0 || $value < 0 || $value > 4) {
+                echo json_encode(['ok' => false, 'error' => 'Respuestas inválidas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+            $answers[$qid] = $value;
+        }
+
+        try {
+            $supabase = new SupabaseClient();
+            $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
+            if ($proyecto === null) {
+                echo json_encode(['ok' => false, 'error' => 'No tienes acceso a este proyecto.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            Pest::ensureSeeded($supabase);
+            $ok = Pest::upsertRespuestasBatch($supabase, $idProyecto, $answers);
+            if (!$ok) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudo guardar automáticamente.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $preguntas = Pest::listPreguntas($supabase);
+            $respuestas = Pest::listRespuestasByProyecto($supabase, $idProyecto);
+            $calc = Pest::compute($preguntas, $respuestas);
+
+            if (($calc['missing'] ?? 0) === 0) {
+                $pct = is_array($calc['pct'] ?? null) ? (array) $calc['pct'] : [];
+                Pest::upsertResultado($supabase, $idProyecto, $pct);
+            }
+
+            echo json_encode(
+                [
+                    'ok' => true,
+                    'calc' => $calc,
+                    'updated_at' => gmdate('c'),
+                ],
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            );
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['ok' => false, 'error' => $this->friendlySupabaseError($e, 'Error al guardar automáticamente.')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+    }
+
+    public function savePestBatch(): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $answersRaw = (string) ($_POST['answers'] ?? '');
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($idProyecto <= 0) {
+            echo json_encode(['ok' => false, 'error' => 'Proyecto inválido.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $decoded = json_decode($answersRaw, true);
+        if (!is_array($decoded)) {
+            echo json_encode(['ok' => false, 'error' => 'Respuestas inválidas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $answers = [];
+        foreach ($decoded as $qid => $value) {
+            $qid = (int) $qid;
+            $value = (int) $value;
+            if ($qid <= 0 || $value < 0 || $value > 4) {
+                echo json_encode(['ok' => false, 'error' => 'Respuestas inválidas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+            $answers[$qid] = $value;
+        }
+
+        try {
+            $supabase = new SupabaseClient();
+            $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
+            if ($proyecto === null) {
+                echo json_encode(['ok' => false, 'error' => 'No tienes acceso a este proyecto.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            Pest::ensureSeeded($supabase);
+            $preguntas = Pest::listPreguntas($supabase);
+            if (empty($preguntas)) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudieron cargar las preguntas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $ids = [];
+            foreach ($preguntas as $p) {
+                if (!is_array($p)) {
+                    continue;
+                }
+                $id = (int) ($p['id_pregunta'] ?? 0);
+                if ($id > 0) {
+                    $ids[$id] = true;
+                }
+            }
+
+            $count = count($ids);
+            if ($count <= 0) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudieron cargar las preguntas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            if (count($answers) !== $count) {
+                echo json_encode(['ok' => false, 'error' => 'Debes responder todas las preguntas antes de guardar.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            foreach ($ids as $qid => $_) {
+                if (!array_key_exists($qid, $answers)) {
+                    echo json_encode(['ok' => false, 'error' => 'Debes responder todas las preguntas antes de guardar.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    exit;
+                }
+            }
+
+            $ok = Pest::upsertRespuestasBatch($supabase, $idProyecto, $answers);
+            if (!$ok) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudo guardar la evaluación.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $respuestas = Pest::listRespuestasByProyecto($supabase, $idProyecto);
+            $calc = Pest::compute($preguntas, $respuestas);
+            $pct = is_array($calc['pct'] ?? null) ? (array) $calc['pct'] : [];
+            Pest::upsertResultado($supabase, $idProyecto, $pct);
+
+            echo json_encode(
+                [
+                    'ok' => true,
+                    'calc' => $calc,
+                    'updated_at' => gmdate('c'),
+                ],
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            );
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['ok' => false, 'error' => $this->friendlySupabaseError($e, 'Error al guardar la evaluación.')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             exit;
         }
     }
