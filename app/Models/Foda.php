@@ -60,7 +60,7 @@ final class Foda
             $descripcion = trim((string) ($item['descripcion'] ?? ''));
             $updatedAt = (string) ($item['updated_at'] ?? '');
 
-            if ($tipo !== 'FORTALEZA' && $tipo !== 'DEBILIDAD') {
+            if ($tipo !== 'FORTALEZA' && $tipo !== 'DEBILIDAD' && $tipo !== 'OPORTUNIDAD' && $tipo !== 'AMENAZA') {
                 continue;
             }
             if ($posicion <= 0 || $descripcion === '') {

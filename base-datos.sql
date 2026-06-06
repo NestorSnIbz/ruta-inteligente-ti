@@ -180,6 +180,61 @@ CREATE TABLE perfil_competitivo_resultado (
         ON DELETE CASCADE
 );
 
+CREATE TABLE pest_pregunta (
+    id_pregunta SERIAL PRIMARY KEY,
+    numero INT UNIQUE NOT NULL,
+    categoria VARCHAR(40) NOT NULL,
+    texto TEXT NOT NULL
+);
+
+CREATE TABLE pest_respuesta (
+    id_respuesta SERIAL PRIMARY KEY,
+    id_proyecto INT NOT NULL,
+    id_pregunta INT NOT NULL,
+    valor INT NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT chk_pest_valor
+        CHECK (valor >= 0 AND valor <= 4),
+
+    CONSTRAINT uq_pest_proyecto_pregunta
+        UNIQUE (id_proyecto, id_pregunta),
+
+    CONSTRAINT fk_pest_resp_proyecto
+        FOREIGN KEY (id_proyecto)
+        REFERENCES proyecto(id_proyecto)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_pest_resp_pregunta
+        FOREIGN KEY (id_pregunta)
+        REFERENCES pest_pregunta(id_pregunta)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE pest_resultado (
+    id_proyecto INT PRIMARY KEY,
+    sociales_pct INT NOT NULL DEFAULT 0,
+    politicos_pct INT NOT NULL DEFAULT 0,
+    economicos_pct INT NOT NULL DEFAULT 0,
+    tecnologicos_pct INT NOT NULL DEFAULT 0,
+    medioambientales_pct INT NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT chk_pest_pct
+        CHECK (
+            sociales_pct >= 0 AND sociales_pct <= 100
+            AND politicos_pct >= 0 AND politicos_pct <= 100
+            AND economicos_pct >= 0 AND economicos_pct <= 100
+            AND tecnologicos_pct >= 0 AND tecnologicos_pct <= 100
+            AND medioambientales_pct >= 0 AND medioambientales_pct <= 100
+        ),
+
+    CONSTRAINT fk_pest_res_proyecto
+        FOREIGN KEY (id_proyecto)
+        REFERENCES proyecto(id_proyecto)
+        ON DELETE CASCADE
+);
+
 CREATE TABLE foda_item (
     id_item SERIAL PRIMARY KEY,
     id_proyecto INT NOT NULL,
@@ -191,7 +246,7 @@ CREATE TABLE foda_item (
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
 
     CONSTRAINT chk_foda_tipo
-        CHECK (tipo IN ('FORTALEZA', 'DEBILIDAD')),
+        CHECK (tipo IN ('FORTALEZA', 'DEBILIDAD', 'OPORTUNIDAD', 'AMENAZA')),
 
     CONSTRAINT uq_foda_proyecto_fuente_tipo_pos
         UNIQUE (id_proyecto, fuente, tipo, posicion),

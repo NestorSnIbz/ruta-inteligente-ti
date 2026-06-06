@@ -154,7 +154,7 @@ final class ProyectoController
         $section = trim((string) ($_GET['section'] ?? 'overview'));
         $export = trim((string) ($_GET['export'] ?? ''));
         $isExportOverviewPdf = $export === 'overview_pdf';
-        $allowedSections = ['overview', 'mision', 'vision', 'valores', 'objetivos', 'cadena', 'perfil_competitivo', 'bgg'];
+        $allowedSections = ['overview', 'mision', 'vision', 'valores', 'objetivos', 'cadena', 'perfil_competitivo', 'pest', 'bgg'];
         $requestedSection = $partial !== '' ? $partial : ($section !== '' ? $section : 'overview');
         if (!in_array($requestedSection, $allowedSections, true)) {
             $requestedSection = 'overview';
@@ -333,8 +333,14 @@ final class ProyectoController
         $fodaDebilidades = [];
         $bcgFortalezas = [];
         $bcgDebilidades = [];
+        $pcOportunidades = [];
+        $pcAmenazas = [];
+        $pestOportunidades = [];
+        $pestAmenazas = [];
         $cadenaOverview = [];
         $bcgOverview = [];
+        $perfilOverview = [];
+        $pestOverview = [];
         $fodaOverview = [];
 
         $shouldLoadObjetivos = ($renderOnlySection === '' || $renderOnlySection === 'overview' || $renderOnlySection === 'objetivos');
@@ -469,9 +475,116 @@ final class ProyectoController
             }
 
             try {
+                $res = $supabase->request(
+                    'GET',
+                    '/rest/v1/perfil_competitivo_resultado',
+                    [
+                        'select' => 'total,conclusion_code,conclusion_text,updated_at',
+                        'id_proyecto' => 'eq.' . $idProyecto,
+                        'limit' => 1,
+                    ],
+                    $headers
+                );
+
+                $row = null;
+                if (($res['status'] ?? 500) < 400 && is_array($res['data'] ?? null) && !empty($res['data'])) {
+                    $row = is_array($res['data'][0] ?? null) ? $res['data'][0] : null;
+                }
+
+                $total = is_array($row) ? (int) ($row['total'] ?? 0) : null;
+                $code = is_array($row) ? (int) ($row['conclusion_code'] ?? 0) : 0;
+                $text = is_array($row) ? trim((string) ($row['conclusion_text'] ?? '')) : '';
+                $updatedAt = is_array($row) ? (string) ($row['updated_at'] ?? '') : '';
+
+                $badgeClass = 'bg-neutral-100 text-neutral-700';
+                $statusLabel = 'Sin evaluación';
+                $statusSub = 'Completa el Perfil competitivo para ver resultados.';
+                if ($total !== null && $code >= 1 && $code <= 4) {
+                    if ($code <= 1) {
+                        $badgeClass = 'bg-red-50 text-red-800 border border-red-200';
+                        $statusLabel = 'Entorno hostil';
+                    } elseif ($code === 2) {
+                        $badgeClass = 'bg-amber-50 text-amber-900 border border-amber-200';
+                        $statusLabel = 'Entorno moderado';
+                    } elseif ($code === 3) {
+                        $badgeClass = 'bg-emerald-50 text-emerald-800 border border-emerald-200';
+                        $statusLabel = 'Entorno favorable';
+                    } else {
+                        $badgeClass = 'bg-emerald-50 text-emerald-800 border border-emerald-200';
+                        $statusLabel = 'Entorno muy favorable';
+                    }
+                    $statusSub = $text !== '' ? $text : 'Conclusión calculada.';
+                }
+
+                $perfilOverview = [
+                    'total' => $total,
+                    'conclusion_code' => $code,
+                    'conclusion_text' => $text,
+                    'updated_at' => $updatedAt,
+                    'status_label' => $statusLabel,
+                    'status_sub' => $statusSub,
+                    'badge_class' => $badgeClass,
+                ];
+            } catch (Throwable $e) {
+                $perfilOverview = [];
+            }
+
+            try {
+                $res = $supabase->request(
+                    'GET',
+                    '/rest/v1/pest_resultado',
+                    [
+                        'select' => 'sociales_pct,medioambientales_pct,politicos_pct,economicos_pct,tecnologicos_pct,updated_at',
+                        'id_proyecto' => 'eq.' . $idProyecto,
+                        'limit' => 1,
+                    ],
+                    $headers
+                );
+
+                $row = null;
+                if (($res['status'] ?? 500) < 400 && is_array($res['data'] ?? null) && !empty($res['data'])) {
+                    $row = is_array($res['data'][0] ?? null) ? $res['data'][0] : null;
+                }
+
+                $pct = null;
+                if (is_array($row)) {
+                    $pct = [
+                        'SOCIALES' => (int) ($row['sociales_pct'] ?? 0),
+                        'MEDIOAMBIENTALES' => (int) ($row['medioambientales_pct'] ?? 0),
+                        'POLITICOS' => (int) ($row['politicos_pct'] ?? 0),
+                        'ECONOMICOS' => (int) ($row['economicos_pct'] ?? 0),
+                        'TECNOLOGICOS' => (int) ($row['tecnologicos_pct'] ?? 0),
+                    ];
+                }
+                $updatedAt = is_array($row) ? (string) ($row['updated_at'] ?? '') : '';
+
+                $badgeClass = 'bg-neutral-100 text-neutral-700';
+                $statusLabel = 'Sin evaluación';
+                $statusSub = 'Completa el P.E.S.T. para ver resultados.';
+                if (is_array($pct)) {
+                    $badgeClass = 'bg-emerald-50 text-emerald-800 border border-emerald-200';
+                    $statusLabel = 'Calculado';
+                    $avg = (int) round(((int) $pct['SOCIALES'] + (int) $pct['MEDIOAMBIENTALES'] + (int) $pct['POLITICOS'] + (int) $pct['ECONOMICOS'] + (int) $pct['TECNOLOGICOS']) / 5);
+                    $statusSub = 'Promedio de impacto: ' . (string) $avg . '%.';
+                }
+
+                $pestOverview = [
+                    'pct' => $pct,
+                    'updated_at' => $updatedAt,
+                    'status_label' => $statusLabel,
+                    'status_sub' => $statusSub,
+                    'badge_class' => $badgeClass,
+                ];
+            } catch (Throwable $e) {
+                $pestOverview = [];
+            }
+
+            try {
                 $fuentes = [
                     'CADENA_VALOR_INTERNA' => 'Cadena de valor',
                     'AUTODIAGNOSTICO_BCG' => 'Matriz BCG',
+                    'PERFIL_COMPETITIVO' => 'Perfil competitivo',
+                    'PEST' => 'P.E.S.T.',
                 ];
                 $out = [];
                 foreach ($fuentes as $fuente => $label) {
@@ -543,6 +656,56 @@ final class ProyectoController
                 $perfilCalc = PerfilCompetitivo::compute($perfilFactores, $perfilRespuestas);
             } catch (Throwable $e) {
             }
+
+            try {
+                $rows = Foda::listByProyectoFuente($supabase, $idProyecto, 'PERFIL_COMPETITIVO');
+                foreach ($rows as $r) {
+                    if (!is_array($r)) {
+                        continue;
+                    }
+                    $tipo = (string) ($r['tipo'] ?? '');
+                    $desc = trim((string) ($r['descripcion'] ?? ''));
+                    if ($desc === '') {
+                        continue;
+                    }
+                    if ($tipo === 'OPORTUNIDAD') {
+                        $pcOportunidades[] = $desc;
+                    } elseif ($tipo === 'AMENAZA') {
+                        $pcAmenazas[] = $desc;
+                    }
+                }
+            } catch (Throwable $e) {
+            }
+        }
+
+        if ($renderOnlySection === 'pest') {
+            try {
+                Pest::ensureSeeded($supabase);
+                $pestPreguntas = Pest::listPreguntas($supabase);
+                $pestRespuestas = Pest::listRespuestasByProyecto($supabase, $idProyecto);
+                $pestCalc = Pest::compute($pestPreguntas, $pestRespuestas);
+            } catch (Throwable $e) {
+            }
+
+            try {
+                $rows = Foda::listByProyectoFuente($supabase, $idProyecto, 'PEST');
+                foreach ($rows as $r) {
+                    if (!is_array($r)) {
+                        continue;
+                    }
+                    $tipo = (string) ($r['tipo'] ?? '');
+                    $desc = trim((string) ($r['descripcion'] ?? ''));
+                    if ($desc === '') {
+                        continue;
+                    }
+                    if ($tipo === 'OPORTUNIDAD') {
+                        $pestOportunidades[] = $desc;
+                    } elseif ($tipo === 'AMENAZA') {
+                        $pestAmenazas[] = $desc;
+                    }
+                }
+            } catch (Throwable $e) {
+            }
         }
 
         if ($renderOnlySection === 'bgg') {
@@ -606,6 +769,8 @@ final class ProyectoController
                 is_array($objetivosEspecificosByEstrategico ?? null) ? $objetivosEspecificosByEstrategico : [],
                 is_array($cadenaOverview ?? null) ? $cadenaOverview : [],
                 is_array($bcgOverview ?? null) ? $bcgOverview : [],
+                is_array($perfilOverview ?? null) ? $perfilOverview : [],
+                is_array($pestOverview ?? null) ? $pestOverview : [],
                 is_array($fodaOverview ?? null) ? $fodaOverview : []
             );
 
@@ -649,6 +814,8 @@ final class ProyectoController
         array $objetivosEspecificosByEstrategico,
         array $cadenaOverview,
         array $bcgOverview,
+        array $perfilOverview,
+        array $pestOverview,
         array $fodaOverview
     ): string {
         $lines = [];
@@ -666,21 +833,32 @@ final class ProyectoController
             $txt = trim((string) ($v['descripcion'] ?? ''));
             if ($txt !== '') $valoresList[] = $txt;
         }
-        $lines = array_merge($lines, $this->pdfSectionList('Valores', $valoresList));
+        $valRows = [];
+        foreach ($valoresList as $i => $txt) {
+            $valRows[] = [(string) ($i + 1), (string) $txt];
+        }
+        $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'Valores'];
+        $lines[] = ['spacer' => 4];
+        $lines[] = [
+            'table' => true,
+            'columns' => [
+                ['header' => '#', 'width' => 36, 'align' => 'C'],
+                ['header' => 'Valor', 'width' => 468, 'align' => 'L'],
+            ],
+            'rows' => $valRows,
+        ];
+        $lines[] = ['spacer' => 8];
 
         $lines[] = ['spacer' => 6];
         $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'Objetivos'];
-        if (empty($objetivosEstrategicos)) {
-            $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Sin registros.'];
-        } else {
+        $lines[] = ['spacer' => 4];
+        $objRows = [];
+        if (!empty($objetivosEstrategicos)) {
             foreach ($objetivosEstrategicos as $obj) {
                 if (!is_array($obj)) continue;
                 $idObjEst = (int) ($obj['id_objetivo_est'] ?? 0);
                 $descEst = trim((string) ($obj['descripcion'] ?? ''));
                 if ($descEst === '') continue;
-
-                $lines[] = ['spacer' => 4];
-                $lines[] = ['font' => 'F2', 'size' => 11, 'text' => '• ' . $descEst];
 
                 $esps = $objetivosEspecificosByEstrategico[$idObjEst] ?? [];
                 $esps = is_array($esps) ? $esps : [];
@@ -690,15 +868,19 @@ final class ProyectoController
                     $t = trim((string) ($esp['descripcion'] ?? ''));
                     if ($t !== '') $espList[] = $t;
                 }
-                if (empty($espList)) {
-                    $lines[] = ['font' => 'F1', 'size' => 11, 'indent' => 18, 'text' => '- Sin objetivos específicos.'];
-                } else {
-                    foreach ($espList as $t) {
-                        $lines[] = ['font' => 'F1', 'size' => 11, 'indent' => 18, 'text' => '- ' . $t];
-                    }
-                }
+                $espText = empty($espList) ? 'Sin objetivos específicos.' : implode("\n", array_map(fn ($t) => '- ' . (string) $t, $espList));
+                $objRows[] = [$descEst, $espText];
             }
         }
+        $lines[] = [
+            'table' => true,
+            'columns' => [
+                ['header' => 'Objetivo estratégico', 'width' => 252, 'align' => 'L'],
+                ['header' => 'Objetivos específicos', 'width' => 252, 'align' => 'L'],
+            ],
+            'rows' => $objRows,
+        ];
+        $lines[] = ['spacer' => 8];
 
         $lines[] = ['spacer' => 10];
         $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'Cadena de Valor (resumen)'];
@@ -735,29 +917,73 @@ final class ProyectoController
         }
 
         $lines[] = ['spacer' => 10];
+        $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'Perfil Competitivo (resumen)'];
+        $pcTotal = $perfilOverview['total'] ?? null;
+        $pcCode = (int) ($perfilOverview['conclusion_code'] ?? 0);
+        $pcText = trim((string) ($perfilOverview['conclusion_text'] ?? ''));
+        $pcStatus = (string) ($perfilOverview['status_label'] ?? 'Sin evaluación');
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Total: ' . (($pcTotal === null) ? '—' : (string) ((int) $pcTotal))];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Conclusión (' . ($pcCode > 0 ? (string) $pcCode : '—') . '): ' . ($pcText !== '' ? $pcText : $pcStatus)];
+
+        $lines[] = ['spacer' => 10];
+        $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'P.E.S.T. (resumen)'];
+        $pPct = is_array($pestOverview['pct'] ?? null) ? (array) $pestOverview['pct'] : null;
+        if (!is_array($pPct)) {
+            $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Sin evaluación.'];
+        } else {
+            $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Sociales: ' . (string) ((int) ($pPct['SOCIALES'] ?? 0)) . '% | Medioambientales: ' . (string) ((int) ($pPct['MEDIOAMBIENTALES'] ?? 0)) . '%'];
+            $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Políticos: ' . (string) ((int) ($pPct['POLITICOS'] ?? 0)) . '% | Económicos: ' . (string) ((int) ($pPct['ECONOMICOS'] ?? 0)) . '% | Tecnológicos: ' . (string) ((int) ($pPct['TECNOLOGICOS'] ?? 0)) . '%'];
+        }
+
+        $lines[] = ['spacer' => 10];
         $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'FODA (resumen)'];
         $fuentes = [
             'CADENA_VALOR_INTERNA' => 'Cadena de valor',
             'AUTODIAGNOSTICO_BCG' => 'Matriz BCG',
+            'PERFIL_COMPETITIVO' => 'Perfil competitivo',
+            'PEST' => 'P.E.S.T.',
         ];
         foreach ($fuentes as $fuente => $label) {
             $block = is_array($fodaOverview[$fuente] ?? null) ? (array) $fodaOverview[$fuente] : [];
             $fort = is_array($block['FORTALEZA'] ?? null) ? (array) $block['FORTALEZA'] : [];
             $deb = is_array($block['DEBILIDAD'] ?? null) ? (array) $block['DEBILIDAD'] : [];
-            $lines[] = ['spacer' => 4];
+            $opp = is_array($block['OPORTUNIDAD'] ?? null) ? (array) $block['OPORTUNIDAD'] : [];
+            $ame = is_array($block['AMENAZA'] ?? null) ? (array) $block['AMENAZA'] : [];
+            $lines[] = ['spacer' => 6];
             $lines[] = ['font' => 'F2', 'size' => 11, 'text' => $label];
-            $lines[] = ['font' => 'F2', 'size' => 11, 'indent' => 14, 'text' => 'Fortalezas'];
-            $lines = array_merge($lines, $this->pdfBulletLines($fort, 28));
-            $lines[] = ['font' => 'F2', 'size' => 11, 'indent' => 14, 'text' => 'Debilidades'];
-            $lines = array_merge($lines, $this->pdfBulletLines($deb, 28));
+            $rows = [];
+            $rows = array_merge($rows, $this->fodaRowsForTable('Fortalezas', $fort));
+            $rows = array_merge($rows, $this->fodaRowsForTable('Debilidades', $deb));
+            $rows = array_merge($rows, $this->fodaRowsForTable('Oportunidades', $opp));
+            $rows = array_merge($rows, $this->fodaRowsForTable('Amenazas', $ame));
+            $lines[] = [
+                'table' => true,
+                'columns' => [
+                    ['header' => 'Tipo', 'width' => 132, 'align' => 'L'],
+                    ['header' => 'Descripción', 'width' => 372, 'align' => 'L'],
+                ],
+                'rows' => $rows,
+            ];
         }
-        $lines[] = ['spacer' => 4];
-        $lines[] = ['font' => 'F2', 'size' => 11, 'text' => 'Oportunidades'];
-        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Sin registros.'];
-        $lines[] = ['font' => 'F2', 'size' => 11, 'text' => 'Amenazas'];
-        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Sin registros.'];
 
         return $this->simplePdfFromLines($lines);
+    }
+
+    private function fodaRowsForTable(string $tipoLabel, array $items): array
+    {
+        $clean = [];
+        foreach ($items as $t) {
+            $t = trim((string) $t);
+            if ($t !== '') $clean[] = $t;
+        }
+        if (empty($clean)) {
+            return [[$tipoLabel, 'Sin registros.']];
+        }
+        $rows = [];
+        foreach ($clean as $txt) {
+            $rows[] = [$tipoLabel, $txt];
+        }
+        return $rows;
     }
 
     private function pdfSection(string $title, string $body): array
@@ -859,6 +1085,14 @@ final class ProyectoController
 
         $lineHeight = 14;
         foreach ($lines as $row) {
+            if (is_array($row) && array_key_exists('table', $row) && $row['table'] === true) {
+                $columns = is_array($row['columns'] ?? null) ? (array) $row['columns'] : [];
+                $rows = is_array($row['rows'] ?? null) ? (array) $row['rows'] : [];
+                if (!empty($columns)) {
+                    [$current, $y, $pages] = $this->pdfRenderTable($current, $y, $pages, $columns, $rows, $pageWidth, $pageHeight, $marginX, $marginTop, $marginBottom);
+                }
+                continue;
+            }
             if (is_array($row) && array_key_exists('spacer', $row)) {
                 $y -= (int) $row['spacer'];
                 if ($y <= $marginBottom) {
@@ -893,8 +1127,8 @@ final class ProyectoController
         $nextId = 5;
 
         $objs = [];
-        $objs[$fontRegularId] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
-        $objs[$fontBoldId] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>";
+        $objs[$fontRegularId] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";
+        $objs[$fontBoldId] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>";
 
         $pageIds = [];
         foreach ($pages as $content) {
@@ -962,6 +1196,154 @@ final class ProyectoController
             }
         }
         return utf8_decode($s);
+    }
+
+    private function pdfRenderTable(
+        string $current,
+        int $y,
+        array $pages,
+        array $columns,
+        array $rows,
+        int $pageWidth,
+        int $pageHeight,
+        int $marginX,
+        int $marginTop,
+        int $marginBottom
+    ): array {
+        $x0 = $marginX;
+
+        $fontHeader = 'F2';
+        $fontBody = 'F1';
+        $sizeHeader = 10;
+        $sizeBody = 10;
+        $pad = 3;
+        $lh = 12;
+        $stroke = "0 G 0.7 w\n";
+        $fillHeader = "0.95 g\n";
+        $resetGray = "0 g\n";
+
+        $wrapCell = function (string $text, int $width, int $size) use ($pad): array {
+            $text = (string) $text;
+            $parts = preg_split("/\r\n|\n|\r/u", $text) ?: [];
+            $out = [];
+            $maxChars = max(8, (int) floor(($width - ($pad * 2)) / max(1, (int) round($size * 0.55))));
+            foreach ($parts as $p) {
+                $p = trim((string) $p);
+                if ($p === '') {
+                    $out[] = '';
+                    continue;
+                }
+                foreach ($this->wrapPdfText($p, $maxChars) as $line) {
+                    $out[] = $line;
+                }
+            }
+            if (empty($out)) $out[] = '';
+            return $out;
+        };
+
+        $renderRow = function (array $cells, string $font, int $size, bool $isHeader) use (
+            &$current,
+            &$y,
+            &$pages,
+            $columns,
+            $x0,
+            $pad,
+            $lh,
+            $marginBottom,
+            $pageHeight,
+            $marginTop,
+            $stroke,
+            $fillHeader,
+            $resetGray,
+            $wrapCell
+        ) {
+            $wrapped = [];
+            $maxLines = 1;
+            foreach ($columns as $idx => $c) {
+                $w = (int) ($c['width'] ?? 0);
+                $t = (string) ($cells[$idx] ?? '');
+                $lines = $wrapCell($t, $w, $size);
+                $wrapped[$idx] = $lines;
+                $maxLines = max($maxLines, count($lines));
+            }
+            $rowHeight = ($maxLines * $lh) + ($pad * 2);
+
+            if (($y - $rowHeight) <= $marginBottom) {
+                $pages[] = $current;
+                $current = '';
+                $y = $pageHeight - $marginTop;
+            }
+
+            $yTop = $y;
+            $yBottom = $yTop - $rowHeight;
+
+            $x = $x0;
+            $current .= $stroke;
+            foreach ($columns as $idx => $c) {
+                $w = (int) ($c['width'] ?? 0);
+                if ($isHeader) {
+                    $current .= $fillHeader;
+                    $current .= $this->pdfRectCmd($x, (int) $yBottom, $w, (int) $rowHeight, true);
+                    $current .= $resetGray;
+                    $current .= $this->pdfRectCmd($x, (int) $yBottom, $w, (int) $rowHeight, false);
+                } else {
+                    $current .= $this->pdfRectCmd($x, (int) $yBottom, $w, (int) $rowHeight, false);
+                }
+
+                $align = strtoupper(trim((string) ($c['align'] ?? 'L')));
+                $lines = $wrapped[$idx] ?? [''];
+                $textY = (int) round($yTop - $pad - $size);
+                foreach ($lines as $line) {
+                    $line = (string) $line;
+                    $tx = $x + $pad;
+                    if ($align === 'C') {
+                        $tx = $x + (int) floor($w / 2) - (int) floor((min(40, strlen($line)) * (int) round($size * 0.28)));
+                    } elseif ($align === 'R') {
+                        $tx = $x + $w - $pad - (int) floor((min(60, strlen($line)) * (int) round($size * 0.55)));
+                    }
+                    $current .= $this->pdfTextCmd((int) $tx, (int) $textY, $font, $size, $line);
+                    $textY -= $lh;
+                }
+
+                $x += $w;
+            }
+
+            $y = (int) $yBottom;
+        };
+
+        $headerCells = [];
+        foreach ($columns as $c) {
+            $headerCells[] = (string) ($c['header'] ?? '');
+        }
+        $renderRow($headerCells, $fontHeader, $sizeHeader, true);
+
+        if (empty($rows)) {
+            $empty = array_fill(0, count($columns), '');
+            if (count($empty) >= 2) {
+                $empty[1] = 'Sin registros.';
+            } elseif (count($empty) === 1) {
+                $empty[0] = 'Sin registros.';
+            }
+            $renderRow($empty, $fontBody, $sizeBody, false);
+            return [$current, $y, $pages];
+        }
+
+        foreach ($rows as $r) {
+            if (!is_array($r)) continue;
+            $cells = [];
+            foreach ($columns as $idx => $_c) {
+                $cells[] = (string) ($r[$idx] ?? '');
+            }
+            $renderRow($cells, $fontBody, $sizeBody, false);
+        }
+
+        return [$current, $y, $pages];
+    }
+
+    private function pdfRectCmd(int $x, int $y, int $w, int $h, bool $fill): string
+    {
+        $op = $fill ? 'f' : 'S';
+        return "{$x} {$y} {$w} {$h} re {$op}\n";
     }
 
     private function safePdfFilename(string $name): string
@@ -1125,6 +1507,152 @@ final class ProyectoController
             }
 
             $ok = Foda::replaceByProyectoFuente($supabase, $idProyecto, 'AUTODIAGNOSTICO_BCG', $items);
+            if (!$ok) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudo guardar el apartado.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            echo json_encode(['ok' => true, 'updated_at' => gmdate('c')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['ok' => false, 'error' => 'No se pudo guardar el apartado.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+    }
+
+    public function saveFodaPerfilCompetitivo(): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $payloadRaw = (string) ($_POST['payload'] ?? '');
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($idProyecto <= 0) {
+            echo json_encode(['ok' => false, 'error' => 'Proyecto inválido.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $decoded = json_decode($payloadRaw, true);
+        if (!is_array($decoded)) {
+            echo json_encode(['ok' => false, 'error' => 'Datos inválidos.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $oportunidades = $decoded['oportunidades'] ?? [];
+        $amenazas = $decoded['amenazas'] ?? [];
+        if (!is_array($oportunidades) || !is_array($amenazas)) {
+            echo json_encode(['ok' => false, 'error' => 'Datos inválidos.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $max = 50;
+        $items = [];
+        $now = gmdate('Y-m-d H:i:s');
+
+        $i = 0;
+        foreach ($oportunidades as $txt) {
+            $txt = trim((string) $txt);
+            if ($txt === '') continue;
+            $i++;
+            if ($i > $max) break;
+            $items[] = ['tipo' => 'OPORTUNIDAD', 'posicion' => $i, 'descripcion' => $txt, 'updated_at' => $now];
+        }
+
+        $j = 0;
+        foreach ($amenazas as $txt) {
+            $txt = trim((string) $txt);
+            if ($txt === '') continue;
+            $j++;
+            if ($j > $max) break;
+            $items[] = ['tipo' => 'AMENAZA', 'posicion' => $j, 'descripcion' => $txt, 'updated_at' => $now];
+        }
+
+        try {
+            $supabase = new SupabaseClient();
+            $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
+            if ($proyecto === null) {
+                echo json_encode(['ok' => false, 'error' => 'No tienes acceso a este proyecto.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $ok = Foda::replaceByProyectoFuente($supabase, $idProyecto, 'PERFIL_COMPETITIVO', $items);
+            if (!$ok) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudo guardar el apartado.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            echo json_encode(['ok' => true, 'updated_at' => gmdate('c')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['ok' => false, 'error' => 'No se pudo guardar el apartado.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+    }
+
+    public function saveFodaPest(): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $payloadRaw = (string) ($_POST['payload'] ?? '');
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($idProyecto <= 0) {
+            echo json_encode(['ok' => false, 'error' => 'Proyecto inválido.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $decoded = json_decode($payloadRaw, true);
+        if (!is_array($decoded)) {
+            echo json_encode(['ok' => false, 'error' => 'Datos inválidos.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $oportunidades = $decoded['oportunidades'] ?? [];
+        $amenazas = $decoded['amenazas'] ?? [];
+        if (!is_array($oportunidades) || !is_array($amenazas)) {
+            echo json_encode(['ok' => false, 'error' => 'Datos inválidos.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $max = 50;
+        $items = [];
+        $now = gmdate('Y-m-d H:i:s');
+
+        $i = 0;
+        foreach ($oportunidades as $txt) {
+            $txt = trim((string) $txt);
+            if ($txt === '') continue;
+            $i++;
+            if ($i > $max) break;
+            $items[] = ['tipo' => 'OPORTUNIDAD', 'posicion' => $i, 'descripcion' => $txt, 'updated_at' => $now];
+        }
+
+        $j = 0;
+        foreach ($amenazas as $txt) {
+            $txt = trim((string) $txt);
+            if ($txt === '') continue;
+            $j++;
+            if ($j > $max) break;
+            $items[] = ['tipo' => 'AMENAZA', 'posicion' => $j, 'descripcion' => $txt, 'updated_at' => $now];
+        }
+
+        try {
+            $supabase = new SupabaseClient();
+            $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
+            if ($proyecto === null) {
+                echo json_encode(['ok' => false, 'error' => 'No tienes acceso a este proyecto.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $ok = Foda::replaceByProyectoFuente($supabase, $idProyecto, 'PEST', $items);
             if (!$ok) {
                 echo json_encode(['ok' => false, 'error' => 'No se pudo guardar el apartado.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 exit;
@@ -1794,6 +2322,181 @@ final class ProyectoController
             exit;
         } catch (Throwable $e) {
             echo json_encode(['ok' => false, 'error' => $this->friendlySupabaseError($e, 'Error al guardar automáticamente.')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+    }
+
+    public function savePestAutosaveBatch(): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $answersRaw = (string) ($_POST['answers'] ?? '');
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($idProyecto <= 0) {
+            echo json_encode(['ok' => false, 'error' => 'Proyecto inválido.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $decoded = json_decode($answersRaw, true);
+        if (!is_array($decoded) || empty($decoded)) {
+            echo json_encode(['ok' => false, 'error' => 'Respuestas inválidas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $answers = [];
+        foreach ($decoded as $qid => $value) {
+            $qid = (int) $qid;
+            $value = (int) $value;
+            if ($qid <= 0 || $value < 0 || $value > 4) {
+                echo json_encode(['ok' => false, 'error' => 'Respuestas inválidas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+            $answers[$qid] = $value;
+        }
+
+        try {
+            $supabase = new SupabaseClient();
+            $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
+            if ($proyecto === null) {
+                echo json_encode(['ok' => false, 'error' => 'No tienes acceso a este proyecto.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            Pest::ensureSeeded($supabase);
+            $ok = Pest::upsertRespuestasBatch($supabase, $idProyecto, $answers);
+            if (!$ok) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudo guardar automáticamente.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $preguntas = Pest::listPreguntas($supabase);
+            $respuestas = Pest::listRespuestasByProyecto($supabase, $idProyecto);
+            $calc = Pest::compute($preguntas, $respuestas);
+
+            if (($calc['missing'] ?? 0) === 0) {
+                $pct = is_array($calc['pct'] ?? null) ? (array) $calc['pct'] : [];
+                Pest::upsertResultado($supabase, $idProyecto, $pct);
+            }
+
+            echo json_encode(
+                [
+                    'ok' => true,
+                    'calc' => $calc,
+                    'updated_at' => gmdate('c'),
+                ],
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            );
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['ok' => false, 'error' => $this->friendlySupabaseError($e, 'Error al guardar automáticamente.')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+    }
+
+    public function savePestBatch(): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $answersRaw = (string) ($_POST['answers'] ?? '');
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($idProyecto <= 0) {
+            echo json_encode(['ok' => false, 'error' => 'Proyecto inválido.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $decoded = json_decode($answersRaw, true);
+        if (!is_array($decoded)) {
+            echo json_encode(['ok' => false, 'error' => 'Respuestas inválidas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $answers = [];
+        foreach ($decoded as $qid => $value) {
+            $qid = (int) $qid;
+            $value = (int) $value;
+            if ($qid <= 0 || $value < 0 || $value > 4) {
+                echo json_encode(['ok' => false, 'error' => 'Respuestas inválidas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+            $answers[$qid] = $value;
+        }
+
+        try {
+            $supabase = new SupabaseClient();
+            $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
+            if ($proyecto === null) {
+                echo json_encode(['ok' => false, 'error' => 'No tienes acceso a este proyecto.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            Pest::ensureSeeded($supabase);
+            $preguntas = Pest::listPreguntas($supabase);
+            if (empty($preguntas)) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudieron cargar las preguntas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $ids = [];
+            foreach ($preguntas as $p) {
+                if (!is_array($p)) {
+                    continue;
+                }
+                $id = (int) ($p['id_pregunta'] ?? 0);
+                if ($id > 0) {
+                    $ids[$id] = true;
+                }
+            }
+
+            $count = count($ids);
+            if ($count <= 0) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudieron cargar las preguntas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            if (count($answers) !== $count) {
+                echo json_encode(['ok' => false, 'error' => 'Debes responder todas las preguntas antes de guardar.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            foreach ($ids as $qid => $_) {
+                if (!array_key_exists($qid, $answers)) {
+                    echo json_encode(['ok' => false, 'error' => 'Debes responder todas las preguntas antes de guardar.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    exit;
+                }
+            }
+
+            $ok = Pest::upsertRespuestasBatch($supabase, $idProyecto, $answers);
+            if (!$ok) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudo guardar la evaluación.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $respuestas = Pest::listRespuestasByProyecto($supabase, $idProyecto);
+            $calc = Pest::compute($preguntas, $respuestas);
+            $pct = is_array($calc['pct'] ?? null) ? (array) $calc['pct'] : [];
+            Pest::upsertResultado($supabase, $idProyecto, $pct);
+
+            echo json_encode(
+                [
+                    'ok' => true,
+                    'calc' => $calc,
+                    'updated_at' => gmdate('c'),
+                ],
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            );
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['ok' => false, 'error' => $this->friendlySupabaseError($e, 'Error al guardar la evaluación.')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             exit;
         }
     }

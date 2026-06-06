@@ -265,6 +265,19 @@
       saveBtn.addEventListener("click", () => saveBatch());
     }
 
+    if (window.RI && typeof window.RI.initFodaOa === "function") {
+      window.RI.initFodaOa({
+        panel,
+        action: "save_foda_perfil_competitivo",
+        saveButtonId: "pc-foda-save",
+        addOportunidadId: "pc-foda-add-oportunidad",
+        addAmenazaId: "pc-foda-add-amenaza",
+        oportunidadesBodyId: "pc-foda-oportunidades-body",
+        amenazasBodyId: "pc-foda-amenazas-body",
+        showToast: (type, title, message) => showToast(type, title, message),
+      });
+    }
+
     recalcFromDom();
   };
 })();
