@@ -34,6 +34,8 @@
   $fodaDebilidades = is_array($fodaDebilidades ?? null) ? $fodaDebilidades : [];
   $cadenaOverview = is_array($cadenaOverview ?? null) ? $cadenaOverview : [];
   $bcgOverview = is_array($bcgOverview ?? null) ? $bcgOverview : [];
+  $perfilOverview = is_array($perfilOverview ?? null) ? $perfilOverview : [];
+  $pestOverview = is_array($pestOverview ?? null) ? $pestOverview : [];
   $fodaOverview = is_array($fodaOverview ?? null) ? $fodaOverview : [];
 ?>
 
@@ -339,21 +341,41 @@
               $bCounts = is_array($bcgOverview['counts'] ?? null) ? (array) $bcgOverview['counts'] : [];
               $bTop = is_array($bcgOverview['top'] ?? null) ? (array) $bcgOverview['top'] : [];
 
+              $pcBadge = (string) ($perfilOverview['badge_class'] ?? 'bg-neutral-100 text-neutral-700');
+              $pcStatus = (string) ($perfilOverview['status_label'] ?? 'Sin evaluación');
+              $pcSub = (string) ($perfilOverview['status_sub'] ?? '');
+              $pcTotal = $perfilOverview['total'] ?? null;
+              $pcConclusion = trim((string) ($perfilOverview['conclusion_text'] ?? ''));
+
+              $pBadge = (string) ($pestOverview['badge_class'] ?? 'bg-neutral-100 text-neutral-700');
+              $pStatus = (string) ($pestOverview['status_label'] ?? 'Sin evaluación');
+              $pSub = (string) ($pestOverview['status_sub'] ?? '');
+              $pPct = is_array($pestOverview['pct'] ?? null) ? (array) $pestOverview['pct'] : null;
+              $pAvg = is_array($pPct) ? (int) round((((int) ($pPct['SOCIALES'] ?? 0)) + ((int) ($pPct['MEDIOAMBIENTALES'] ?? 0)) + ((int) ($pPct['POLITICOS'] ?? 0)) + ((int) ($pPct['ECONOMICOS'] ?? 0)) + ((int) ($pPct['TECNOLOGICOS'] ?? 0))) / 5) : null;
+
               $fCadena = is_array($fodaOverview['CADENA_VALOR_INTERNA'] ?? null) ? (array) $fodaOverview['CADENA_VALOR_INTERNA'] : [];
               $fBcg = is_array($fodaOverview['AUTODIAGNOSTICO_BCG'] ?? null) ? (array) $fodaOverview['AUTODIAGNOSTICO_BCG'] : [];
+              $fPerfil = is_array($fodaOverview['PERFIL_COMPETITIVO'] ?? null) ? (array) $fodaOverview['PERFIL_COMPETITIVO'] : [];
+              $fPest = is_array($fodaOverview['PEST'] ?? null) ? (array) $fodaOverview['PEST'] : [];
               $fCadenaLabel = (string) ($fCadena['label'] ?? 'Cadena de valor');
               $fBcgLabel = (string) ($fBcg['label'] ?? 'Matriz BCG');
+              $fPerfilLabel = (string) ($fPerfil['label'] ?? 'Perfil competitivo');
+              $fPestLabel = (string) ($fPest['label'] ?? 'P.E.S.T.');
               $fFortCadena = is_array($fCadena['FORTALEZA'] ?? null) ? (array) $fCadena['FORTALEZA'] : [];
               $fDebCadena = is_array($fCadena['DEBILIDAD'] ?? null) ? (array) $fCadena['DEBILIDAD'] : [];
               $fFortBcg = is_array($fBcg['FORTALEZA'] ?? null) ? (array) $fBcg['FORTALEZA'] : [];
               $fDebBcg = is_array($fBcg['DEBILIDAD'] ?? null) ? (array) $fBcg['DEBILIDAD'] : [];
+              $fOppPerfil = is_array($fPerfil['OPORTUNIDAD'] ?? null) ? (array) $fPerfil['OPORTUNIDAD'] : [];
+              $fAmePerfil = is_array($fPerfil['AMENAZA'] ?? null) ? (array) $fPerfil['AMENAZA'] : [];
+              $fOppPest = is_array($fPest['OPORTUNIDAD'] ?? null) ? (array) $fPest['OPORTUNIDAD'] : [];
+              $fAmePest = is_array($fPest['AMENAZA'] ?? null) ? (array) $fPest['AMENAZA'] : [];
             ?>
 
             <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
               <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div class="text-sm font-semibold text-neutral-900">Análisis Estratégico</div>
-                  <div class="mt-1 text-sm text-neutral-600">Resumen ejecutivo de Cadena de valor y Matriz BCG.</div>
+                  <div class="mt-1 text-sm text-neutral-600">Resumen ejecutivo de Cadena de valor, Matriz BCG, Perfil competitivo y P.E.S.T.</div>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                   <button type="button" data-open-panel="cadena" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
@@ -361,6 +383,12 @@
                   </button>
                   <button type="button" data-open-panel="bgg" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
                     Ver BCG
+                  </button>
+                  <button type="button" data-open-panel="perfil_competitivo" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                    Ver Perfil
+                  </button>
+                  <button type="button" data-open-panel="pest" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                    Ver P.E.S.T.
                   </button>
                 </div>
               </div>
@@ -482,6 +510,69 @@
                     </div>
                   </div>
                 </div>
+
+                <div class="rounded-2xl border border-neutral-200 bg-white p-5">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <div class="text-sm font-semibold text-neutral-900">Perfil competitivo</div>
+                      <div class="mt-1 text-sm text-neutral-600">Total y conclusión del entorno próximo.</div>
+                    </div>
+                    <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold <?php echo htmlspecialchars($pcBadge, ENT_QUOTES, 'UTF-8'); ?>">
+                      <?php echo htmlspecialchars($pcStatus, ENT_QUOTES, 'UTF-8'); ?>
+                    </span>
+                  </div>
+                  <?php if ($pcSub !== '') : ?>
+                    <div class="mt-2 text-xs text-neutral-600"><?php echo htmlspecialchars($pcSub, ENT_QUOTES, 'UTF-8'); ?></div>
+                  <?php endif; ?>
+                  <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                      <div class="text-xs font-medium text-neutral-600">Total</div>
+                      <div class="mt-1 text-2xl font-semibold text-neutral-900"><?php echo ($pcTotal === null) ? '—' : (int) $pcTotal; ?></div>
+                      <div class="mt-1 text-xs text-neutral-500">Suma de puntajes (0–4 por fila).</div>
+                    </div>
+                    <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                      <div class="text-xs font-medium text-neutral-600">Conclusión</div>
+                      <div class="mt-1 text-sm font-semibold text-neutral-900"><?php echo htmlspecialchars($pcConclusion !== '' ? $pcConclusion : '—', ENT_QUOTES, 'UTF-8'); ?></div>
+                      <div class="mt-1 text-xs text-neutral-500">Basado en rangos Excel.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="rounded-2xl border border-neutral-200 bg-white p-5">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <div class="text-sm font-semibold text-neutral-900">P.E.S.T.</div>
+                      <div class="mt-1 text-sm text-neutral-600">Impacto de factores generales externos.</div>
+                    </div>
+                    <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold <?php echo htmlspecialchars($pBadge, ENT_QUOTES, 'UTF-8'); ?>">
+                      <?php echo htmlspecialchars($pStatus, ENT_QUOTES, 'UTF-8'); ?>
+                    </span>
+                  </div>
+                  <?php if ($pSub !== '') : ?>
+                    <div class="mt-2 text-xs text-neutral-600"><?php echo htmlspecialchars($pSub, ENT_QUOTES, 'UTF-8'); ?></div>
+                  <?php endif; ?>
+                  <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                      <div class="text-xs font-medium text-neutral-600">Promedio</div>
+                      <div class="mt-1 text-2xl font-semibold text-brand-900"><?php echo ($pAvg === null) ? '—' : (int) $pAvg; ?><?php echo ($pAvg === null) ? '' : '%'; ?></div>
+                      <div class="mt-1 text-xs text-neutral-500">Promedio simple de 5 categorías.</div>
+                    </div>
+                    <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                      <div class="text-xs font-medium text-neutral-600">Categorías</div>
+                      <?php if (!is_array($pPct)) : ?>
+                        <div class="mt-2 text-sm text-neutral-600">Sin evaluación.</div>
+                      <?php else : ?>
+                        <div class="mt-2 grid grid-cols-2 gap-2 text-xs text-neutral-700">
+                          <div class="rounded-lg border border-neutral-200 bg-white px-2 py-1">Sociales: <?php echo (int) ($pPct['SOCIALES'] ?? 0); ?>%</div>
+                          <div class="rounded-lg border border-neutral-200 bg-white px-2 py-1">Medioamb.: <?php echo (int) ($pPct['MEDIOAMBIENTALES'] ?? 0); ?>%</div>
+                          <div class="rounded-lg border border-neutral-200 bg-white px-2 py-1">Políticos: <?php echo (int) ($pPct['POLITICOS'] ?? 0); ?>%</div>
+                          <div class="rounded-lg border border-neutral-200 bg-white px-2 py-1">Económicos: <?php echo (int) ($pPct['ECONOMICOS'] ?? 0); ?>%</div>
+                          <div class="rounded-lg border border-neutral-200 bg-white px-2 py-1">Tecnol.: <?php echo (int) ($pPct['TECNOLOGICOS'] ?? 0); ?>%</div>
+                        </div>
+                      <?php endif; ?>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -489,7 +580,7 @@
               <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div class="text-sm font-semibold text-neutral-900">Análisis FODA</div>
-                  <div class="mt-1 text-sm text-neutral-600">Fortalezas y debilidades derivadas de Cadena de valor y BCG.</div>
+                  <div class="mt-1 text-sm text-neutral-600">Fortalezas y debilidades (Cadena/BCG) y oportunidades/amenazas (Perfil/P.E.S.T.).</div>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                   <button type="button" data-open-panel="cadena" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
@@ -497,6 +588,12 @@
                   </button>
                   <button type="button" data-open-panel="bgg" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
                     Editar (BCG)
+                  </button>
+                  <button type="button" data-open-panel="perfil_competitivo" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                    Editar (Perfil)
+                  </button>
+                  <button type="button" data-open-panel="pest" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                    Editar (P.E.S.T.)
                   </button>
                 </div>
               </div>
@@ -576,11 +673,73 @@
 
                 <div class="rounded-2xl border border-neutral-200 bg-white p-4">
                   <div class="text-sm font-semibold text-neutral-900">Oportunidades</div>
-                  <div class="mt-2 text-sm text-neutral-600">Aún no hay una fuente registrada para oportunidades en este módulo.</div>
+                  <div class="mt-2 space-y-3 text-sm text-neutral-800">
+                    <div>
+                      <div class="text-xs font-semibold text-neutral-600"><?php echo htmlspecialchars($fPerfilLabel, ENT_QUOTES, 'UTF-8'); ?></div>
+                      <?php if (empty($fOppPerfil)) : ?>
+                        <div class="mt-1 text-sm text-neutral-600">Sin registros.</div>
+                      <?php else : ?>
+                        <ul class="mt-2 space-y-1">
+                          <?php foreach ($fOppPerfil as $txt) : ?>
+                            <li class="flex gap-2">
+                              <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500"></span>
+                              <span class="leading-relaxed"><?php echo htmlspecialchars((string) $txt, ENT_QUOTES, 'UTF-8'); ?></span>
+                            </li>
+                          <?php endforeach; ?>
+                        </ul>
+                      <?php endif; ?>
+                    </div>
+                    <div>
+                      <div class="text-xs font-semibold text-neutral-600"><?php echo htmlspecialchars($fPestLabel, ENT_QUOTES, 'UTF-8'); ?></div>
+                      <?php if (empty($fOppPest)) : ?>
+                        <div class="mt-1 text-sm text-neutral-600">Sin registros.</div>
+                      <?php else : ?>
+                        <ul class="mt-2 space-y-1">
+                          <?php foreach ($fOppPest as $txt) : ?>
+                            <li class="flex gap-2">
+                              <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500"></span>
+                              <span class="leading-relaxed"><?php echo htmlspecialchars((string) $txt, ENT_QUOTES, 'UTF-8'); ?></span>
+                            </li>
+                          <?php endforeach; ?>
+                        </ul>
+                      <?php endif; ?>
+                    </div>
+                  </div>
                 </div>
                 <div class="rounded-2xl border border-neutral-200 bg-white p-4">
                   <div class="text-sm font-semibold text-neutral-900">Amenazas</div>
-                  <div class="mt-2 text-sm text-neutral-600">Aún no hay una fuente registrada para amenazas en este módulo.</div>
+                  <div class="mt-2 space-y-3 text-sm text-neutral-800">
+                    <div>
+                      <div class="text-xs font-semibold text-neutral-600"><?php echo htmlspecialchars($fPerfilLabel, ENT_QUOTES, 'UTF-8'); ?></div>
+                      <?php if (empty($fAmePerfil)) : ?>
+                        <div class="mt-1 text-sm text-neutral-600">Sin registros.</div>
+                      <?php else : ?>
+                        <ul class="mt-2 space-y-1">
+                          <?php foreach ($fAmePerfil as $txt) : ?>
+                            <li class="flex gap-2">
+                              <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-orange-500"></span>
+                              <span class="leading-relaxed"><?php echo htmlspecialchars((string) $txt, ENT_QUOTES, 'UTF-8'); ?></span>
+                            </li>
+                          <?php endforeach; ?>
+                        </ul>
+                      <?php endif; ?>
+                    </div>
+                    <div>
+                      <div class="text-xs font-semibold text-neutral-600"><?php echo htmlspecialchars($fPestLabel, ENT_QUOTES, 'UTF-8'); ?></div>
+                      <?php if (empty($fAmePest)) : ?>
+                        <div class="mt-1 text-sm text-neutral-600">Sin registros.</div>
+                      <?php else : ?>
+                        <ul class="mt-2 space-y-1">
+                          <?php foreach ($fAmePest as $txt) : ?>
+                            <li class="flex gap-2">
+                              <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-orange-500"></span>
+                              <span class="leading-relaxed"><?php echo htmlspecialchars((string) $txt, ENT_QUOTES, 'UTF-8'); ?></span>
+                            </li>
+                          <?php endforeach; ?>
+                        </ul>
+                      <?php endif; ?>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
