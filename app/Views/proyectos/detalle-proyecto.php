@@ -103,7 +103,7 @@
           aria-modal="true"
           aria-labelledby="flash-modal-title"
         >
-          <div id="flash-backdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+          <div id="flash-backdrop" class="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm"></div>
 
           <div class="relative w-full max-w-md rounded-3xl border border-neutral-200 bg-white p-6 text-center shadow-xl">
             <?php if (!empty($success)) : ?>

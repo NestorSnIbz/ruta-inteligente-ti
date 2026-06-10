@@ -8,9 +8,9 @@
   </head>
   <body class="min-h-screen bg-brand-900 text-neutral-900">
     <main class="min-h-screen grid grid-cols-1 md:grid-cols-2">
-      <section class="relative bg-black h-44 md:h-auto overflow-hidden">
-        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-600/35 via-black to-black"></div>
-        <div class="absolute inset-0 bg-[linear-gradient(135deg,_rgba(6,182,212,0.18),_rgba(37,99,235,0.08),_rgba(0,0,0,0))]"></div>
+      <section class="relative bg-neutral-900 h-44 md:h-auto overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-600/35 via-neutral-900 to-neutral-900"></div>
+        <div class="absolute inset-0 bg-[linear-gradient(135deg,_rgba(214,104,11,0.20),_rgba(0,84,220,0.12),_rgba(66,66,66,0))]"></div>
         <div class="relative h-full w-full p-8 text-white hidden md:flex items-end">
           <div>
             <p class="text-sm text-white/70">Ruta Inteligente TI</p>

@@ -473,6 +473,12 @@ final class ProyectoController
                     'INTERROGANTE' => 0,
                     'PERRO' => 0,
                 ];
+                $byClass = [
+                    'ESTRELLA' => [],
+                    'VACA' => [],
+                    'INTERROGANTE' => [],
+                    'PERRO' => [],
+                ];
 
                 $top = [];
                 foreach ($productos as $p) {
@@ -484,6 +490,10 @@ final class ProyectoController
                         $c = 'PERRO';
                     }
                     $counts[$c] += 1;
+                    $pn = trim((string) ($p['nombre'] ?? ''));
+                    if ($pn !== '') {
+                        $byClass[$c][] = $pn;
+                    }
                     if (count($top) < 3) {
                         $top[] = [
                             'nombre' => (string) ($p['nombre'] ?? ''),
@@ -503,6 +513,7 @@ final class ProyectoController
                 $bcgOverview = [
                     'total' => $total,
                     'counts' => $counts,
+                    'by_class' => $byClass,
                     'top' => $top,
                     'status_label' => $statusLabel,
                     'status_sub' => $statusSub,
@@ -890,7 +901,8 @@ final class ProyectoController
         $lines[] = ['spacer' => 6];
         $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'Objetivos'];
         $lines[] = ['spacer' => 4];
-        $objRows = [];
+        $misionLabel = trim($mision) !== '' ? trim($mision) : 'Sin misión registrada.';
+        $objectiveGroups = [];
         if (!empty($objetivosEstrategicos)) {
             foreach ($objetivosEstrategicos as $obj) {
                 if (!is_array($obj)) continue;
@@ -906,17 +918,16 @@ final class ProyectoController
                     $t = trim((string) ($esp['descripcion'] ?? ''));
                     if ($t !== '') $espList[] = $t;
                 }
-                $espText = empty($espList) ? 'Sin objetivos específicos.' : implode("\n", array_map(fn ($t) => '- ' . (string) $t, $espList));
-                $objRows[] = [$descEst, $espText];
+                $objectiveGroups[] = [
+                    'estrategico' => $descEst,
+                    'especificos' => empty($espList) ? ['Sin objetivos específicos.'] : $espList,
+                ];
             }
         }
         $lines[] = [
-            'table' => true,
-            'columns' => [
-                ['header' => 'Objetivo estratégico', 'width' => 252, 'align' => 'L'],
-                ['header' => 'Objetivos específicos', 'width' => 252, 'align' => 'L'],
-            ],
-            'rows' => $objRows,
+            'objectives_table' => true,
+            'mission' => $misionLabel,
+            'groups' => $objectiveGroups,
         ];
         $lines[] = ['spacer' => 8];
 
@@ -935,8 +946,28 @@ final class ProyectoController
         $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'Matriz BCG (resumen)'];
         $bTotal = (int) ($bcgOverview['total'] ?? 0);
         $bCounts = is_array($bcgOverview['counts'] ?? null) ? (array) $bcgOverview['counts'] : [];
+        $bByClass = is_array($bcgOverview['by_class'] ?? null) ? (array) $bcgOverview['by_class'] : [];
         $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Productos: ' . (string) $bTotal];
         $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Estrella: ' . (string) ((int) ($bCounts['ESTRELLA'] ?? 0)) . ' | Vaca: ' . (string) ((int) ($bCounts['VACA'] ?? 0)) . ' | Interrogante: ' . (string) ((int) ($bCounts['INTERROGANTE'] ?? 0)) . ' | Perro: ' . (string) ((int) ($bCounts['PERRO'] ?? 0))];
+        $lines[] = ['spacer' => 4];
+        $bcgRows = [];
+        foreach (['ESTRELLA' => 'Estrella', 'VACA' => 'Vaca', 'INTERROGANTE' => 'Interrogante', 'PERRO' => 'Perro'] as $key => $label) {
+            $names = is_array($bByClass[$key] ?? null) ? array_values(array_filter(array_map('trim', (array) $bByClass[$key]))) : [];
+            $bcgRows[] = [
+                $label,
+                (string) ((int) ($bCounts[$key] ?? 0)),
+                empty($names) ? 'Sin productos clasificados.' : implode("\n", $names),
+            ];
+        }
+        $lines[] = [
+            'table' => true,
+            'columns' => [
+                ['header' => 'Clasificación', 'width' => 120, 'align' => 'L'],
+                ['header' => 'Cantidad', 'width' => 72, 'align' => 'C'],
+                ['header' => 'Productos', 'width' => 312, 'align' => 'L'],
+            ],
+            'rows' => $bcgRows,
+        ];
 
         $bTop = is_array($bcgOverview['top'] ?? null) ? (array) $bcgOverview['top'] : [];
         $lines[] = ['spacer' => 4];
@@ -981,33 +1012,40 @@ final class ProyectoController
             'PERFIL_COMPETITIVO' => 'Perfil competitivo',
             'PEST' => 'P.E.S.T.',
         ];
+        $fodaGroups = [];
         foreach ($fuentes as $fuente => $label) {
             $block = is_array($fodaOverview[$fuente] ?? null) ? (array) $fodaOverview[$fuente] : [];
             $fort = is_array($block['FORTALEZA'] ?? null) ? (array) $block['FORTALEZA'] : [];
             $deb = is_array($block['DEBILIDAD'] ?? null) ? (array) $block['DEBILIDAD'] : [];
             $opp = is_array($block['OPORTUNIDAD'] ?? null) ? (array) $block['OPORTUNIDAD'] : [];
             $ame = is_array($block['AMENAZA'] ?? null) ? (array) $block['AMENAZA'] : [];
-            $lines[] = ['spacer' => 6];
-            $lines[] = ['font' => 'F2', 'size' => 11, 'text' => $label];
-            $rows = [];
-            $rows = array_merge($rows, $this->fodaRowsForTable('Fortalezas', $fort));
-            $rows = array_merge($rows, $this->fodaRowsForTable('Debilidades', $deb));
-            $rows = array_merge($rows, $this->fodaRowsForTable('Oportunidades', $opp));
-            $rows = array_merge($rows, $this->fodaRowsForTable('Amenazas', $ame));
-            $lines[] = [
-                'table' => true,
-                'columns' => [
-                    ['header' => 'Tipo', 'width' => 132, 'align' => 'L'],
-                    ['header' => 'Descripción', 'width' => 372, 'align' => 'L'],
+            if ($fuente === 'CADENA_VALOR_INTERNA' || $fuente === 'AUTODIAGNOSTICO_BCG') {
+                $fodaGroups[] = [
+                    'source' => $label,
+                    'types' => [
+                        ['label' => 'Fortalezas', 'items' => $fort],
+                        ['label' => 'Debilidades', 'items' => $deb],
+                    ],
+                ];
+                continue;
+            }
+            $fodaGroups[] = [
+                'source' => $label,
+                'types' => [
+                    ['label' => 'Oportunidades', 'items' => $opp],
+                    ['label' => 'Amenazas', 'items' => $ame],
                 ],
-                'rows' => $rows,
             ];
         }
+        $lines[] = [
+            'foda_table' => true,
+            'groups' => $fodaGroups,
+        ];
 
         return $this->simplePdfFromLines($lines);
     }
 
-    private function fodaRowsForTable(string $tipoLabel, array $items): array
+    private function fodaRowsForTable(string $sourceLabel, string $tipoLabel, array $items): array
     {
         $clean = [];
         foreach ($items as $t) {
@@ -1015,11 +1053,11 @@ final class ProyectoController
             if ($t !== '') $clean[] = $t;
         }
         if (empty($clean)) {
-            return [[$tipoLabel, 'Sin registros.']];
+            return [[$sourceLabel, $tipoLabel, 'Sin registros.']];
         }
         $rows = [];
         foreach ($clean as $txt) {
-            $rows[] = [$tipoLabel, $txt];
+            $rows[] = [$sourceLabel, $tipoLabel, $txt];
         }
         return $rows;
     }
@@ -1123,6 +1161,17 @@ final class ProyectoController
 
         $lineHeight = 14;
         foreach ($lines as $row) {
+            if (is_array($row) && array_key_exists('objectives_table', $row) && $row['objectives_table'] === true) {
+                $mission = (string) ($row['mission'] ?? '');
+                $groups = is_array($row['groups'] ?? null) ? (array) $row['groups'] : [];
+                [$current, $y, $pages] = $this->pdfRenderObjectivesTable($current, $y, $pages, $mission, $groups, $pageWidth, $pageHeight, $marginX, $marginTop, $marginBottom);
+                continue;
+            }
+            if (is_array($row) && array_key_exists('foda_table', $row) && $row['foda_table'] === true) {
+                $groups = is_array($row['groups'] ?? null) ? (array) $row['groups'] : [];
+                [$current, $y, $pages] = $this->pdfRenderFodaTable($current, $y, $pages, $groups, $pageWidth, $pageHeight, $marginX, $marginTop, $marginBottom);
+                continue;
+            }
             if (is_array($row) && array_key_exists('table', $row) && $row['table'] === true) {
                 $columns = is_array($row['columns'] ?? null) ? (array) $row['columns'] : [];
                 $rows = is_array($row['rows'] ?? null) ? (array) $row['rows'] : [];
@@ -1382,6 +1431,600 @@ final class ProyectoController
     {
         $op = $fill ? 'f' : 'S';
         return "{$x} {$y} {$w} {$h} re {$op}\n";
+    }
+
+    private function pdfRenderObjectivesTable(
+        string $current,
+        int $y,
+        array $pages,
+        string $mission,
+        array $groups,
+        int $pageWidth,
+        int $pageHeight,
+        int $marginX,
+        int $marginTop,
+        int $marginBottom
+    ): array {
+        $columns = [
+            ['header' => 'Misión', 'width' => 168],
+            ['header' => 'Objetivo estratégico', 'width' => 168],
+            ['header' => 'Objetivo específico', 'width' => 168],
+        ];
+
+        $segments = [];
+        foreach ($groups as $group) {
+            if (!is_array($group)) {
+                continue;
+            }
+            $estrategico = trim((string) ($group['estrategico'] ?? ''));
+            if ($estrategico === '') {
+                continue;
+            }
+            $especificos = is_array($group['especificos'] ?? null) ? (array) $group['especificos'] : [];
+            $clean = [];
+            foreach ($especificos as $item) {
+                $item = trim((string) $item);
+                if ($item !== '') {
+                    $clean[] = $item;
+                }
+            }
+            if (empty($clean)) {
+                $clean[] = 'Sin objetivos específicos.';
+            }
+            $segments[] = [
+                'estrategico' => $estrategico,
+                'especificos' => $clean,
+            ];
+        }
+
+        if (empty($segments)) {
+            return $this->pdfRenderTable(
+                $current,
+                $y,
+                $pages,
+                $columns,
+                [['Sin misión registrada.', 'Sin objetivos estratégicos.', 'Sin objetivos específicos.']],
+                $pageWidth,
+                $pageHeight,
+                $marginX,
+                $marginTop,
+                $marginBottom
+            );
+        }
+
+        $fontHeader = 'F2';
+        $fontBody = 'F1';
+        $sizeHeader = 10;
+        $sizeBody = 10;
+        $pad = 3;
+        $lh = 12;
+        $stroke = "0 G 0.7 w\n";
+        $fillHeader = "0.95 g\n";
+        $resetGray = "0 g\n";
+        $colWidths = array_map(fn ($c) => (int) $c['width'], $columns);
+        $totalWidth = array_sum($colWidths);
+
+        $wrapForWidth = function (string $text, int $width, int $size) use ($pad): array {
+            $text = trim((string) $text);
+            if ($text === '') {
+                return [''];
+            }
+            $parts = preg_split("/\r\n|\n|\r/u", $text) ?: [];
+            $out = [];
+            $maxChars = max(8, (int) floor(($width - ($pad * 2)) / max(1, (int) round($size * 0.55))));
+            foreach ($parts as $part) {
+                $part = trim((string) $part);
+                if ($part === '') {
+                    $out[] = '';
+                    continue;
+                }
+                foreach ($this->wrapPdfText($part, $maxChars) as $line) {
+                    $out[] = $line;
+                }
+            }
+            return empty($out) ? [''] : $out;
+        };
+
+        $renderHeader = function () use (&$current, &$y, &$pages, $columns, $marginX, $pageHeight, $marginTop, $marginBottom, $pad, $lh, $fontHeader, $sizeHeader, $stroke, $fillHeader, $resetGray, $wrapForWidth) {
+            $wrapped = [];
+            $maxLines = 1;
+            foreach ($columns as $idx => $c) {
+                $lines = $wrapForWidth((string) ($c['header'] ?? ''), (int) $c['width'], $sizeHeader);
+                $wrapped[$idx] = $lines;
+                $maxLines = max($maxLines, count($lines));
+            }
+            $rowHeight = ($maxLines * $lh) + ($pad * 2);
+            if (($y - $rowHeight) <= $marginBottom) {
+                $pages[] = $current;
+                $current = '';
+                $y = $pageHeight - $marginTop;
+            }
+            $yTop = $y;
+            $yBottom = $yTop - $rowHeight;
+            $x = $marginX;
+            $current .= $stroke;
+            foreach ($columns as $idx => $c) {
+                $w = (int) $c['width'];
+                $current .= $fillHeader;
+                $current .= $this->pdfRectCmd($x, (int) $yBottom, $w, (int) $rowHeight, true);
+                $current .= $resetGray;
+                $current .= $this->pdfRectCmd($x, (int) $yBottom, $w, (int) $rowHeight, false);
+                $textY = (int) round($yTop - $pad - $sizeHeader);
+                foreach ($wrapped[$idx] as $line) {
+                    $current .= $this->pdfTextCmd($x + $pad, $textY, $fontHeader, $sizeHeader, (string) $line);
+                    $textY -= $lh;
+                }
+                $x += $w;
+            }
+            $y = (int) $yBottom;
+        };
+
+        $fitTextBlock = function (array $lines, int $availableHeight) use ($lh, $pad): int {
+            $needed = (count($lines) * $lh) + ($pad * 2);
+            return max($availableHeight, $needed);
+        };
+
+        $drawTextBlock = function (int $x, int $yTop, int $width, int $height, string $text, bool $centerVertically = false) use (&$current, $pad, $lh, $fontBody, $sizeBody, $wrapForWidth) {
+            $lines = $wrapForWidth($text, $width, $sizeBody);
+            $contentHeight = (count($lines) * $lh);
+            $textY = $yTop - $pad - $sizeBody;
+            if ($centerVertically) {
+                $free = max(0, $height - ($contentHeight + ($pad * 2)));
+                $textY = $yTop - $pad - $sizeBody - (int) floor($free / 2);
+            }
+            foreach ($lines as $line) {
+                $current .= $this->pdfTextCmd($x + $pad, $textY, $fontBody, $sizeBody, (string) $line);
+                $textY -= $lh;
+            }
+        };
+
+        $groupIndex = 0;
+        $specificIndex = 0;
+
+        while ($groupIndex < count($segments)) {
+            $renderHeader();
+            $rowsOnPage = [];
+            $pageTopY = $y;
+            $remainingHeight = $y - $marginBottom;
+
+            while ($groupIndex < count($segments)) {
+                $group = $segments[$groupIndex];
+                $specifics = $group['especificos'];
+                $addedAnyForGroup = false;
+
+                while ($specificIndex < count($specifics)) {
+                    $specificText = (string) $specifics[$specificIndex];
+                    $specificLines = $wrapForWidth($specificText, $colWidths[2], $sizeBody);
+                    $rowHeight = (count($specificLines) * $lh) + ($pad * 2);
+                    if (($remainingHeight - $rowHeight) < 0 && !empty($rowsOnPage)) {
+                        break 2;
+                    }
+                    if (($remainingHeight - $rowHeight) < 0 && empty($rowsOnPage)) {
+                        $rowHeight = max(24, min($remainingHeight, $rowHeight));
+                    }
+                    $rowsOnPage[] = [
+                        'group_index' => $groupIndex,
+                        'estrategico' => (string) $group['estrategico'],
+                        'specifico' => $specificText,
+                        'height' => $rowHeight,
+                    ];
+                    $remainingHeight -= $rowHeight;
+                    $specificIndex++;
+                    $addedAnyForGroup = true;
+                }
+
+                if ($specificIndex >= count($specifics)) {
+                    $groupIndex++;
+                    $specificIndex = 0;
+                    continue;
+                }
+
+                if (!$addedAnyForGroup) {
+                    break;
+                }
+            }
+
+            if (empty($rowsOnPage)) {
+                break;
+            }
+
+            $rowsByGroup = [];
+            foreach ($rowsOnPage as $idx => $rowInfo) {
+                $g = (int) $rowInfo['group_index'];
+                if (!isset($rowsByGroup[$g])) {
+                    $rowsByGroup[$g] = [];
+                }
+                $rowsByGroup[$g][] = $idx;
+            }
+
+            foreach ($rowsByGroup as $g => $rowIndexes) {
+                $groupHeight = 0;
+                foreach ($rowIndexes as $rowIdx) {
+                    $groupHeight += (int) $rowsOnPage[$rowIdx]['height'];
+                }
+                $needed = $fitTextBlock($wrapForWidth((string) $rowsOnPage[$rowIndexes[0]]['estrategico'], $colWidths[1], $sizeBody), $groupHeight);
+                if ($needed > $groupHeight) {
+                    $extra = $needed - $groupHeight;
+                    $last = $rowIndexes[count($rowIndexes) - 1];
+                    $rowsOnPage[$last]['height'] += $extra;
+                }
+            }
+
+            $pageBodyHeight = 0;
+            foreach ($rowsOnPage as $rowInfo) {
+                $pageBodyHeight += (int) $rowInfo['height'];
+            }
+            $neededMission = $fitTextBlock($wrapForWidth($mission, $colWidths[0], $sizeBody), $pageBodyHeight);
+            if ($neededMission > $pageBodyHeight) {
+                $extra = $neededMission - $pageBodyHeight;
+                $last = count($rowsOnPage) - 1;
+                $rowsOnPage[$last]['height'] += $extra;
+                $pageBodyHeight += $extra;
+            }
+
+            $bodyTopY = $y;
+            $current .= $stroke;
+            $current .= $this->pdfRectCmd($marginX, (int) ($bodyTopY - $pageBodyHeight), $colWidths[0], (int) $pageBodyHeight, false);
+            $drawTextBlock($marginX, $bodyTopY, $colWidths[0], (int) $pageBodyHeight, $mission, true);
+
+            $xStrategic = $marginX + $colWidths[0];
+            $xSpecific = $xStrategic + $colWidths[1];
+            $groupStartY = $bodyTopY;
+            foreach ($rowsByGroup as $g => $rowIndexes) {
+                $groupHeight = 0;
+                foreach ($rowIndexes as $rowIdx) {
+                    $groupHeight += (int) $rowsOnPage[$rowIdx]['height'];
+                }
+                $current .= $this->pdfRectCmd($xStrategic, (int) ($groupStartY - $groupHeight), $colWidths[1], (int) $groupHeight, false);
+                $drawTextBlock($xStrategic, $groupStartY, $colWidths[1], (int) $groupHeight, (string) $rowsOnPage[$rowIndexes[0]]['estrategico'], true);
+
+                $rowY = $groupStartY;
+                foreach ($rowIndexes as $rowIdx) {
+                    $rowHeight = (int) $rowsOnPage[$rowIdx]['height'];
+                    $current .= $this->pdfRectCmd($xSpecific, (int) ($rowY - $rowHeight), $colWidths[2], $rowHeight, false);
+                    $drawTextBlock($xSpecific, $rowY, $colWidths[2], $rowHeight, (string) $rowsOnPage[$rowIdx]['specifico'], false);
+                    $rowY -= $rowHeight;
+                }
+
+                $groupStartY -= $groupHeight;
+            }
+
+            $current .= $this->pdfRectCmd($marginX, (int) ($bodyTopY - $pageBodyHeight), $totalWidth, (int) $pageBodyHeight, false);
+            $y = (int) ($bodyTopY - $pageBodyHeight);
+
+            if ($groupIndex < count($segments)) {
+                $pages[] = $current;
+                $current = '';
+                $y = $pageHeight - $marginTop;
+            }
+        }
+
+        return [$current, $y, $pages];
+    }
+
+    private function pdfRenderFodaTable(
+        string $current,
+        int $y,
+        array $pages,
+        array $groups,
+        int $pageWidth,
+        int $pageHeight,
+        int $marginX,
+        int $marginTop,
+        int $marginBottom
+    ): array {
+        $columns = [
+            ['header' => 'Procedencia', 'width' => 132],
+            ['header' => 'Tipo', 'width' => 120],
+            ['header' => 'Descripción', 'width' => 252],
+        ];
+
+        $segments = [];
+        foreach ($groups as $group) {
+            if (!is_array($group)) {
+                continue;
+            }
+            $source = trim((string) ($group['source'] ?? ''));
+            if ($source === '') {
+                continue;
+            }
+            $types = is_array($group['types'] ?? null) ? (array) $group['types'] : [];
+            $typeSegments = [];
+            foreach ($types as $type) {
+                if (!is_array($type)) {
+                    continue;
+                }
+                $label = trim((string) ($type['label'] ?? ''));
+                if ($label === '') {
+                    continue;
+                }
+                $items = is_array($type['items'] ?? null) ? (array) $type['items'] : [];
+                $clean = [];
+                foreach ($items as $item) {
+                    $item = trim((string) $item);
+                    if ($item !== '') {
+                        $clean[] = $item;
+                    }
+                }
+                if (empty($clean)) {
+                    $clean[] = 'Sin registros.';
+                }
+                $typeSegments[] = [
+                    'label' => $label,
+                    'items' => $clean,
+                ];
+            }
+            if (!empty($typeSegments)) {
+                $segments[] = [
+                    'source' => $source,
+                    'types' => $typeSegments,
+                ];
+            }
+        }
+
+        if (empty($segments)) {
+            return $this->pdfRenderTable(
+                $current,
+                $y,
+                $pages,
+                $columns,
+                [['Sin registros.', '', '']],
+                $pageWidth,
+                $pageHeight,
+                $marginX,
+                $marginTop,
+                $marginBottom
+            );
+        }
+
+        $fontHeader = 'F2';
+        $fontBody = 'F1';
+        $sizeHeader = 10;
+        $sizeBody = 10;
+        $pad = 3;
+        $lh = 12;
+        $stroke = "0 G 0.7 w\n";
+        $fillHeader = "0.95 g\n";
+        $resetGray = "0 g\n";
+        $colWidths = array_map(fn ($c) => (int) $c['width'], $columns);
+
+        $wrapForWidth = function (string $text, int $width, int $size) use ($pad): array {
+            $text = trim((string) $text);
+            if ($text === '') {
+                return [''];
+            }
+            $parts = preg_split("/\r\n|\n|\r/u", $text) ?: [];
+            $out = [];
+            $maxChars = max(8, (int) floor(($width - ($pad * 2)) / max(1, (int) round($size * 0.55))));
+            foreach ($parts as $part) {
+                $part = trim((string) $part);
+                if ($part === '') {
+                    $out[] = '';
+                    continue;
+                }
+                foreach ($this->wrapPdfText($part, $maxChars) as $line) {
+                    $out[] = $line;
+                }
+            }
+            return empty($out) ? [''] : $out;
+        };
+
+        $renderHeader = function () use (&$current, &$y, &$pages, $columns, $marginX, $pageHeight, $marginTop, $marginBottom, $pad, $lh, $fontHeader, $sizeHeader, $stroke, $fillHeader, $resetGray, $wrapForWidth) {
+            $wrapped = [];
+            $maxLines = 1;
+            foreach ($columns as $idx => $c) {
+                $lines = $wrapForWidth((string) ($c['header'] ?? ''), (int) $c['width'], $sizeHeader);
+                $wrapped[$idx] = $lines;
+                $maxLines = max($maxLines, count($lines));
+            }
+            $rowHeight = ($maxLines * $lh) + ($pad * 2);
+            if (($y - $rowHeight) <= $marginBottom) {
+                $pages[] = $current;
+                $current = '';
+                $y = $pageHeight - $marginTop;
+            }
+            $yTop = $y;
+            $yBottom = $yTop - $rowHeight;
+            $x = $marginX;
+            $current .= $stroke;
+            foreach ($columns as $idx => $c) {
+                $w = (int) $c['width'];
+                $current .= $fillHeader;
+                $current .= $this->pdfRectCmd($x, (int) $yBottom, $w, (int) $rowHeight, true);
+                $current .= $resetGray;
+                $current .= $this->pdfRectCmd($x, (int) $yBottom, $w, (int) $rowHeight, false);
+                $textY = (int) round($yTop - $pad - $sizeHeader);
+                foreach ($wrapped[$idx] as $line) {
+                    $current .= $this->pdfTextCmd($x + $pad, $textY, $fontHeader, $sizeHeader, (string) $line);
+                    $textY -= $lh;
+                }
+                $x += $w;
+            }
+            $y = (int) $yBottom;
+        };
+
+        $drawTextBlock = function (int $x, int $yTop, int $width, int $height, string $text, bool $centerVertically = false) use (&$current, $pad, $lh, $fontBody, $sizeBody, $wrapForWidth) {
+            $lines = $wrapForWidth($text, $width, $sizeBody);
+            $contentHeight = count($lines) * $lh;
+            $textY = $yTop - $pad - $sizeBody;
+            if ($centerVertically) {
+                $free = max(0, $height - ($contentHeight + ($pad * 2)));
+                $textY = $yTop - $pad - $sizeBody - (int) floor($free / 2);
+            }
+            foreach ($lines as $line) {
+                $current .= $this->pdfTextCmd($x + $pad, $textY, $fontBody, $sizeBody, (string) $line);
+                $textY -= $lh;
+            }
+        };
+
+        $sourceIndex = 0;
+        $typeIndex = 0;
+        $itemIndex = 0;
+
+        while ($sourceIndex < count($segments)) {
+            $renderHeader();
+            $rowsOnPage = [];
+            $remainingHeight = $y - $marginBottom;
+
+            while ($sourceIndex < count($segments)) {
+                $source = $segments[$sourceIndex];
+                $types = $source['types'];
+                $addedAnyForSource = false;
+
+                while ($typeIndex < count($types)) {
+                    $type = $types[$typeIndex];
+                    $items = $type['items'];
+                    $addedAnyForType = false;
+
+                    while ($itemIndex < count($items)) {
+                        $itemText = (string) $items[$itemIndex];
+                        $itemLines = $wrapForWidth($itemText, $colWidths[2], $sizeBody);
+                        $rowHeight = (count($itemLines) * $lh) + ($pad * 2);
+
+                        if (($remainingHeight - $rowHeight) < 0 && !empty($rowsOnPage)) {
+                            break 3;
+                        }
+                        if (($remainingHeight - $rowHeight) < 0 && empty($rowsOnPage)) {
+                            $rowHeight = max(24, min($remainingHeight, $rowHeight));
+                        }
+
+                        $rowsOnPage[] = [
+                            'source_index' => $sourceIndex,
+                            'source' => (string) $source['source'],
+                            'type_index' => $typeIndex,
+                            'type' => (string) $type['label'],
+                            'description' => $itemText,
+                            'height' => $rowHeight,
+                        ];
+                        $remainingHeight -= $rowHeight;
+                        $itemIndex++;
+                        $addedAnyForType = true;
+                        $addedAnyForSource = true;
+                    }
+
+                    if ($itemIndex >= count($items)) {
+                        $typeIndex++;
+                        $itemIndex = 0;
+                        continue;
+                    }
+
+                    if (!$addedAnyForType) {
+                        break 2;
+                    }
+                }
+
+                if ($typeIndex >= count($types)) {
+                    $sourceIndex++;
+                    $typeIndex = 0;
+                    $itemIndex = 0;
+                    continue;
+                }
+
+                if (!$addedAnyForSource) {
+                    break;
+                }
+            }
+
+            if (empty($rowsOnPage)) {
+                break;
+            }
+
+            $rowsBySource = [];
+            $rowsBySourceType = [];
+            foreach ($rowsOnPage as $idx => $rowInfo) {
+                $s = (int) $rowInfo['source_index'];
+                $t = (int) $rowInfo['type_index'];
+                $rowsBySource[$s][] = $idx;
+                $rowsBySourceType[$s . ':' . $t][] = $idx;
+            }
+
+            foreach ($rowsBySourceType as $key => $rowIndexes) {
+                $typeHeight = 0;
+                foreach ($rowIndexes as $rowIdx) {
+                    $typeHeight += (int) $rowsOnPage[$rowIdx]['height'];
+                }
+                $typeLabel = (string) $rowsOnPage[$rowIndexes[0]]['type'];
+                $needed = max($typeHeight, (count($wrapForWidth($typeLabel, $colWidths[1], $sizeBody)) * $lh) + ($pad * 2));
+                if ($needed > $typeHeight) {
+                    $extra = $needed - $typeHeight;
+                    $last = $rowIndexes[count($rowIndexes) - 1];
+                    $rowsOnPage[$last]['height'] += $extra;
+                }
+            }
+
+            foreach ($rowsBySource as $s => $rowIndexes) {
+                $sourceHeight = 0;
+                foreach ($rowIndexes as $rowIdx) {
+                    $sourceHeight += (int) $rowsOnPage[$rowIdx]['height'];
+                }
+                $sourceLabel = (string) $rowsOnPage[$rowIndexes[0]]['source'];
+                $needed = max($sourceHeight, (count($wrapForWidth($sourceLabel, $colWidths[0], $sizeBody)) * $lh) + ($pad * 2));
+                if ($needed > $sourceHeight) {
+                    $extra = $needed - $sourceHeight;
+                    $last = $rowIndexes[count($rowIndexes) - 1];
+                    $rowsOnPage[$last]['height'] += $extra;
+                }
+            }
+
+            $bodyTopY = $y;
+            $xSource = $marginX;
+            $xType = $xSource + $colWidths[0];
+            $xDesc = $xType + $colWidths[1];
+            $current .= $stroke;
+
+            $sourceStartY = $bodyTopY;
+            foreach ($rowsBySource as $s => $rowIndexes) {
+                $sourceHeight = 0;
+                foreach ($rowIndexes as $rowIdx) {
+                    $sourceHeight += (int) $rowsOnPage[$rowIdx]['height'];
+                }
+                $current .= $this->pdfRectCmd($xSource, (int) ($sourceStartY - $sourceHeight), $colWidths[0], (int) $sourceHeight, false);
+                $drawTextBlock($xSource, $sourceStartY, $colWidths[0], (int) $sourceHeight, (string) $rowsOnPage[$rowIndexes[0]]['source'], true);
+
+                $typeStartY = $sourceStartY;
+                $typeGroupsForSource = [];
+                foreach ($rowIndexes as $rowIdx) {
+                    $typeKey = $rowsOnPage[$rowIdx]['source_index'] . ':' . $rowsOnPage[$rowIdx]['type_index'];
+                    $typeGroupsForSource[$typeKey][] = $rowIdx;
+                }
+
+                foreach ($typeGroupsForSource as $typeRows) {
+                    $typeHeight = 0;
+                    foreach ($typeRows as $rowIdx) {
+                        $typeHeight += (int) $rowsOnPage[$rowIdx]['height'];
+                    }
+                    $current .= $this->pdfRectCmd($xType, (int) ($typeStartY - $typeHeight), $colWidths[1], (int) $typeHeight, false);
+                    $drawTextBlock($xType, $typeStartY, $colWidths[1], (int) $typeHeight, (string) $rowsOnPage[$typeRows[0]]['type'], true);
+
+                    $rowY = $typeStartY;
+                    foreach ($typeRows as $rowIdx) {
+                        $rowHeight = (int) $rowsOnPage[$rowIdx]['height'];
+                        $current .= $this->pdfRectCmd($xDesc, (int) ($rowY - $rowHeight), $colWidths[2], $rowHeight, false);
+                        $drawTextBlock($xDesc, $rowY, $colWidths[2], $rowHeight, (string) $rowsOnPage[$rowIdx]['description'], false);
+                        $rowY -= $rowHeight;
+                    }
+
+                    $typeStartY -= $typeHeight;
+                }
+
+                $sourceStartY -= $sourceHeight;
+            }
+
+            $totalBodyHeight = 0;
+            foreach ($rowsOnPage as $rowInfo) {
+                $totalBodyHeight += (int) $rowInfo['height'];
+            }
+            $current .= $this->pdfRectCmd($marginX, (int) ($bodyTopY - $totalBodyHeight), array_sum($colWidths), (int) $totalBodyHeight, false);
+            $y = (int) ($bodyTopY - $totalBodyHeight);
+
+            if ($sourceIndex < count($segments)) {
+                $pages[] = $current;
+                $current = '';
+                $y = $pageHeight - $marginTop;
+            }
+        }
+
+        return [$current, $y, $pages];
     }
 
     private function safePdfFilename(string $name): string
