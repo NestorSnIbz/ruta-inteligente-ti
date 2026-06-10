@@ -105,6 +105,29 @@ final class ProyectoController
 
         $error = Session::getFlash('error');
         $success = Session::getFlash('success');
+        $proyectos = [];
+
+        try {
+            $supabase = new SupabaseClient();
+            $memberRows = ProyectoMiembro::listProyectoIdsByPersona($supabase, (int) ($authUser['id_persona'] ?? 0));
+            $idList = [];
+            foreach ($memberRows as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $id = (int) ($row['id_proyecto'] ?? 0);
+                if ($id > 0) {
+                    $idList[] = $id;
+                }
+            }
+            $idList = array_values(array_unique($idList));
+            if (!empty($idList)) {
+                $proyectos = Proyecto::listByIdsPaged($supabase, $idList, 10, 0, 'recent', '');
+                $proyectos = $this->attachProjectTokens($proyectos);
+            }
+        } catch (Throwable $e) {
+            $proyectos = [];
+        }
 
         require dirname(__DIR__) . '/Views/proyectos/nuevo-proyecto.php';
     }
@@ -265,9 +288,6 @@ final class ProyectoController
                             $personas[] = ['id_persona' => $pid, 'nombre' => $p['nombre'] ?? null, 'email' => $p['email'] ?? null];
                         }
                     }
-                    if (empty($personas)) {
-                        $personas = Persona::listByIds($supabase, array_keys($ids));
-                    }
                     $byId = [];
                     foreach ($personas as $p) {
                         if (!is_array($p)) {
@@ -276,6 +296,24 @@ final class ProyectoController
                         $pid = (int) ($p['id_persona'] ?? 0);
                         if ($pid > 0) {
                             $byId[$pid] = $p;
+                        }
+                    }
+                    $missingIds = [];
+                    foreach (array_keys($ids) as $pid) {
+                        if (!isset($byId[$pid])) {
+                            $missingIds[] = (int) $pid;
+                        }
+                    }
+                    if (!empty($missingIds)) {
+                        $personasExtra = Persona::listByIds($supabase, $missingIds);
+                        foreach ($personasExtra as $p) {
+                            if (!is_array($p)) {
+                                continue;
+                            }
+                            $pid = (int) ($p['id_persona'] ?? 0);
+                            if ($pid > 0) {
+                                $byId[$pid] = $p;
+                            }
                         }
                     }
 

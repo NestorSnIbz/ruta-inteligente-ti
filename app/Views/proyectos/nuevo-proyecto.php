@@ -8,44 +8,15 @@
 </head>
 
 <body class="min-h-screen bg-neutral-50 text-neutral-900">
+<?php
+  $proyectos = is_array($proyectos ?? null) ? $proyectos : [];
+?>
 <div class="min-h-screen grid grid-cols-1 md:grid-cols-[16rem_1fr]">
-
-  <!-- SIDEBAR -->
-  <aside class="bg-brand-900 text-white">
-    <div class="px-6 py-6">
-      <div class="flex items-center gap-3">
-        <div class="h-10 w-10 rounded-xl bg-white/10 grid place-items-center">
-          <span class="text-sm font-semibold">RI</span>
-        </div>
-
-        <div>
-          <div class="text-sm font-semibold leading-tight">
-            Ruta Inteligente TI
-          </div>
-          <div class="text-xs text-white/70 leading-tight">
-            Panel de control
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <nav class="px-3 pb-6">
-      <a href="dashboard.php"
-         class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white">
-        Dashboard
-      </a>
-
-      <a href="proyectos.php"
-         class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium bg-white/10">
-        Proyectos
-      </a>
-
-      <a href="configuracion.php"
-         class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white">
-        Configuración
-      </a>
-    </nav>
-  </aside>
+  <?php
+    $sidebarActive = 'proyectos';
+    $sidebarSeedProjects = $proyectos;
+    include __DIR__ . '/../layouts/sidebar.php';
+  ?>
 
   <!-- MAIN -->
   <div class="flex flex-col">
