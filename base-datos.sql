@@ -257,6 +257,58 @@ CREATE TABLE foda_item (
         ON DELETE CASCADE
 );
 
+CREATE TABLE foda_cruzada_evaluacion (
+    id_evaluacion SERIAL PRIMARY KEY,
+    id_proyecto INT NOT NULL,
+    relacion VARCHAR(2) NOT NULL,
+    fila_key VARCHAR(120) NOT NULL,
+    columna_key VARCHAR(120) NOT NULL,
+    valor INT NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT chk_foda_cruzada_relacion
+        CHECK (relacion IN ('FO', 'FA', 'DO', 'DA')),
+
+    CONSTRAINT chk_foda_cruzada_valor
+        CHECK (valor >= 0 AND valor <= 4),
+
+    CONSTRAINT uq_foda_cruzada_celda
+        UNIQUE (id_proyecto, relacion, fila_key, columna_key),
+
+    CONSTRAINT fk_foda_cruzada_eval_proyecto
+        FOREIGN KEY (id_proyecto)
+        REFERENCES proyecto(id_proyecto)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE foda_cruzada_resultado (
+    id_proyecto INT PRIMARY KEY,
+    fo_total INT NOT NULL DEFAULT 0,
+    fa_total INT NOT NULL DEFAULT 0,
+    do_total INT NOT NULL DEFAULT 0,
+    da_total INT NOT NULL DEFAULT 0,
+    estrategia_predominante VARCHAR(2) NOT NULL,
+    estrategia_label VARCHAR(80) NOT NULL,
+    conclusion_text TEXT NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT chk_foda_cruzada_resultado_totales
+        CHECK (
+            fo_total >= 0
+            AND fa_total >= 0
+            AND do_total >= 0
+            AND da_total >= 0
+        ),
+
+    CONSTRAINT chk_foda_cruzada_resultado_relacion
+        CHECK (estrategia_predominante IN ('FO', 'FA', 'DO', 'DA')),
+
+    CONSTRAINT fk_foda_cruzada_res_proyecto
+        FOREIGN KEY (id_proyecto)
+        REFERENCES proyecto(id_proyecto)
+        ON DELETE CASCADE
+);
+
 CREATE TABLE bcg_producto (
     id_producto_bcg SERIAL PRIMARY KEY,
     id_proyecto INT NOT NULL,
@@ -355,6 +407,8 @@ CREATE INDEX idx_bcg_periodo_producto ON bcg_mercado_periodo(id_producto_bcg);
 CREATE INDEX idx_bcg_sector_producto ON bcg_demanda_sector_periodo(id_producto_bcg);
 CREATE INDEX idx_bcg_competidor_producto ON bcg_competidor(id_producto_bcg);
 CREATE INDEX idx_bcg_resultado_proyecto ON bcg_resultado(id_proyecto);
+CREATE INDEX idx_foda_item_proyecto_fuente_tipo ON foda_item(id_proyecto, fuente, tipo);
+CREATE INDEX idx_foda_cruzada_eval_proyecto_relacion ON foda_cruzada_evaluacion(id_proyecto, relacion);
 
 INSERT INTO cadena_valor_pregunta (numero, texto) VALUES
 (1, 'La empresa tiene una política sistematizada de cero defectos en la producción de productos/servicios.'),

@@ -1,6 +1,6 @@
 <?php
   $panel = (string) ($panel ?? '');
-  $allowed = ['overview', 'mision', 'vision', 'valores', 'objetivos', 'cadena', 'perfil_competitivo', 'pest', 'bgg'];
+  $allowed = ['overview', 'mision', 'vision', 'valores', 'objetivos', 'cadena', 'perfil_competitivo', 'pest', 'estrategias', 'bgg'];
   if (!in_array($panel, $allowed, true)) {
     http_response_code(400);
     header('Content-Type: text/plain; charset=utf-8');
@@ -823,6 +823,8 @@
   <?php require dirname(__DIR__) . '/proyectos/panel-perfil-competitivo.php'; ?>
 <?php elseif ($panel === 'pest') : ?>
   <?php require dirname(__DIR__) . '/proyectos/panel-pest.php'; ?>
+<?php elseif ($panel === 'estrategias') : ?>
+  <?php require dirname(__DIR__) . '/proyectos/panel-foda-cruzada.php'; ?>
 <?php elseif ($panel === 'bgg') : ?>
   <section id="panel-bgg" class="project-panel bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

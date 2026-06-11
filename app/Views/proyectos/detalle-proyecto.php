@@ -170,6 +170,9 @@
           <button type="button" data-panel="pest" class="project-tab rounded-xl px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-brand-50">
             P.E.S.T.
           </button>
+          <button type="button" data-panel="estrategias" class="project-tab rounded-xl px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-brand-50">
+            Estrategias
+          </button>
           
         </div>
       </div>
@@ -942,6 +945,21 @@
           </div>
         </section>
 
+        <section id="panel-estrategias" class="project-panel hidden bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm" data-lazy-panel="estrategias">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-lg font-semibold">Identificación de estrategias</h2>
+          </div>
+          <div class="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+            <div class="flex items-center gap-2 text-sm text-neutral-600">
+              <svg class="h-4 w-4 animate-spin text-neutral-500" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+              </svg>
+              <span>Cargando…</span>
+            </div>
+          </div>
+        </section>
+
         <section id="panel-bgg" class="project-panel hidden bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm" data-lazy-panel="bgg">
           <div class="flex items-center justify-between gap-3">
             <h2 class="text-lg font-semibold">Autodiagnóstico BCG</h2>
@@ -965,6 +983,7 @@
 <script src="foda-oa.js"></script>
 <script src="perfil-competitivo.js"></script>
 <script src="pest.js"></script>
+<script src="foda-cruzada.js"></script>
 <script>
   const projectToken = <?php echo json_encode((string) $projectToken, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
   const projectId = <?php echo (int) $idProyecto; ?>;
@@ -1082,7 +1101,7 @@
     }
   });
 
-  const allowedPanels = new Set(["overview", "mision", "vision", "valores", "objetivos", "cadena", "perfil_competitivo", "pest", "bgg"]);
+  const allowedPanels = new Set(["overview", "mision", "vision", "valores", "objetivos", "cadena", "perfil_competitivo", "pest", "estrategias", "bgg"]);
   const panelStorageKey = projectToken ? `ri:detalle-proyecto:section:${projectToken}` : "ri:detalle-proyecto:section";
 
   const projectTabs = Array.from(document.querySelectorAll(".project-tab"));
@@ -3662,6 +3681,7 @@
     if (panelId === "cadena") initCadenaPanel();
     if (panelId === "perfil_competitivo") window.RI && typeof window.RI.initPerfilCompetitivoPanel === "function" && window.RI.initPerfilCompetitivoPanel();
     if (panelId === "pest") window.RI && typeof window.RI.initPestPanel === "function" && window.RI.initPestPanel();
+    if (panelId === "estrategias") window.RI && typeof window.RI.initFodaCruzadaPanel === "function" && window.RI.initFodaCruzadaPanel();
     if (panelId === "bgg") initBcgPanel();
   }
 

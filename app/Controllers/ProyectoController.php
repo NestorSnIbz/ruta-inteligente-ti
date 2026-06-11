@@ -177,7 +177,7 @@ final class ProyectoController
         $section = trim((string) ($_GET['section'] ?? 'overview'));
         $export = trim((string) ($_GET['export'] ?? ''));
         $isExportOverviewPdf = $export === 'overview_pdf';
-        $allowedSections = ['overview', 'mision', 'vision', 'valores', 'objetivos', 'cadena', 'perfil_competitivo', 'pest', 'bgg'];
+        $allowedSections = ['overview', 'mision', 'vision', 'valores', 'objetivos', 'cadena', 'perfil_competitivo', 'pest', 'estrategias', 'bgg'];
         $requestedSection = $partial !== '' ? $partial : ($section !== '' ? $section : 'overview');
         if (!in_array($requestedSection, $allowedSections, true)) {
             $requestedSection = 'overview';
@@ -375,6 +375,25 @@ final class ProyectoController
         $pcAmenazas = [];
         $pestOportunidades = [];
         $pestAmenazas = [];
+        $fodaCruzadaFactors = [];
+        $fodaCruzadaAnswers = [];
+        $fodaCruzadaCalc = [
+            'ready' => false,
+            'counts' => [
+                'fortalezas' => 0,
+                'debilidades' => 0,
+                'oportunidades' => 0,
+                'amenazas' => 0,
+            ],
+            'total_cells' => 0,
+            'answered' => 0,
+            'missing' => 0,
+            'complete' => false,
+            'matrices' => [],
+            'summary' => [],
+            'predominant' => null,
+            'executive_conclusion' => null,
+        ];
         $cadenaOverview = [];
         $bcgOverview = [];
         $perfilOverview = [];
@@ -753,6 +772,16 @@ final class ProyectoController
                         $pestAmenazas[] = $desc;
                     }
                 }
+            } catch (Throwable $e) {
+            }
+        }
+
+        if ($renderOnlySection === 'estrategias') {
+            try {
+                $fodaFactorRows = FodaCruzada::listFactorRows($supabase, $idProyecto);
+                $fodaCruzadaFactors = FodaCruzada::buildFactorSet($fodaFactorRows);
+                $fodaCruzadaAnswers = FodaCruzada::listEvaluacionesByProyecto($supabase, $idProyecto);
+                $fodaCruzadaCalc = FodaCruzada::compute($fodaCruzadaFactors, $fodaCruzadaAnswers);
             } catch (Throwable $e) {
             }
         }
@@ -3178,6 +3207,157 @@ final class ProyectoController
             exit;
         } catch (Throwable $e) {
             echo json_encode(['ok' => false, 'error' => $this->friendlySupabaseError($e, 'Error al guardar la evaluación.')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+    }
+
+    public function saveFodaCruzadaAutosaveBatch(): void
+    {
+        $this->saveFodaCruzadaInternal(false);
+    }
+
+    public function saveFodaCruzadaBatch(): void
+    {
+        $this->saveFodaCruzadaInternal(true);
+    }
+
+    private function saveFodaCruzadaInternal(bool $requireComplete): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $answersRaw = (string) ($_POST['answers'] ?? '');
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($idProyecto <= 0) {
+            echo json_encode(['ok' => false, 'error' => 'Proyecto inválido.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $decoded = json_decode($answersRaw, true);
+        if (!is_array($decoded)) {
+            echo json_encode(['ok' => false, 'error' => 'Respuestas inválidas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        try {
+            $supabase = new SupabaseClient();
+            $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
+            if ($proyecto === null) {
+                echo json_encode(['ok' => false, 'error' => 'No tienes acceso a este proyecto.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $factorRows = FodaCruzada::listFactorRows($supabase, $idProyecto);
+            $factorSet = FodaCruzada::buildFactorSet($factorRows);
+            if (empty($factorSet['ready'])) {
+                echo json_encode(
+                    [
+                        'ok' => false,
+                        'error' => 'Debes registrar al menos una fortaleza, una debilidad, una oportunidad y una amenaza en los módulos previos antes de evaluar la matriz cruzada.',
+                    ],
+                    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                );
+                exit;
+            }
+
+            $relations = is_array($factorSet['relations'] ?? null) ? (array) $factorSet['relations'] : [];
+            $validCells = [];
+            foreach (FodaCruzada::relationOrder() as $relation) {
+                $meta = is_array($relations[$relation] ?? null) ? (array) $relations[$relation] : ['rows' => [], 'cols' => []];
+                $rows = is_array($meta['rows'] ?? null) ? (array) $meta['rows'] : [];
+                $cols = is_array($meta['cols'] ?? null) ? (array) $meta['cols'] : [];
+                foreach ($rows as $row) {
+                    if (!is_array($row)) {
+                        continue;
+                    }
+                    $rowKey = trim((string) ($row['key'] ?? ''));
+                    if ($rowKey === '') {
+                        continue;
+                    }
+                    foreach ($cols as $col) {
+                        if (!is_array($col)) {
+                            continue;
+                        }
+                        $colKey = trim((string) ($col['key'] ?? ''));
+                        if ($colKey === '') {
+                            continue;
+                        }
+                        $composite = $relation . '|' . $rowKey . '|' . $colKey;
+                        $validCells[$composite] = [
+                            'relacion' => $relation,
+                            'fila_key' => $rowKey,
+                            'columna_key' => $colKey,
+                        ];
+                    }
+                }
+            }
+
+            $answerMap = [];
+            $persistRows = [];
+            foreach ($decoded as $item) {
+                if (!is_array($item)) {
+                    echo json_encode(['ok' => false, 'error' => 'Respuestas inválidas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    exit;
+                }
+                $relation = strtoupper(trim((string) ($item['relation'] ?? '')));
+                $rowKey = trim((string) ($item['row_key'] ?? ''));
+                $colKey = trim((string) ($item['col_key'] ?? ''));
+                $value = (int) ($item['value'] ?? -1);
+                $composite = $relation . '|' . $rowKey . '|' . $colKey;
+
+                if (!isset($validCells[$composite]) || $value < 0 || $value > 4) {
+                    echo json_encode(['ok' => false, 'error' => 'Respuestas inválidas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    exit;
+                }
+                if (isset($answerMap[$composite])) {
+                    echo json_encode(['ok' => false, 'error' => 'No se permiten duplicados en la misma relación.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    exit;
+                }
+
+                $answerMap[$composite] = $value;
+                $persistRows[] = [
+                    'id_proyecto' => $idProyecto,
+                    'relacion' => $relation,
+                    'fila_key' => $rowKey,
+                    'columna_key' => $colKey,
+                    'valor' => $value,
+                    'updated_at' => gmdate('Y-m-d H:i:s'),
+                ];
+            }
+
+            if ($requireComplete && count($answerMap) !== count($validCells)) {
+                echo json_encode(['ok' => false, 'error' => 'Debes valorar todas las relaciones de la matriz antes de guardar.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $ok = FodaCruzada::replaceEvaluaciones($supabase, $idProyecto, $persistRows);
+            if (!$ok) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudo guardar la matriz cruzada.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $calc = FodaCruzada::compute($factorSet, $answerMap);
+            if (!empty($calc['complete'])) {
+                FodaCruzada::upsertResultado($supabase, $idProyecto, $calc);
+            } else {
+                FodaCruzada::deleteResultado($supabase, $idProyecto);
+            }
+
+            echo json_encode(
+                [
+                    'ok' => true,
+                    'calc' => $calc,
+                    'updated_at' => gmdate('c'),
+                ],
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            );
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['ok' => false, 'error' => $this->friendlySupabaseError($e, 'Error al guardar la matriz cruzada.')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             exit;
         }
     }
