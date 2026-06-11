@@ -156,6 +156,7 @@
     const toastTitle = panel.querySelector("#swot-toast-title");
     const toastMsg = panel.querySelector("#swot-toast-msg");
     const toastClose = panel.querySelector("#swot-toast-close");
+    const factorToggles = Array.from(panel.querySelectorAll("[data-swot-factor-toggle='1']"));
 
     let validationActive = false;
     let autosaveTimer = null;
@@ -188,6 +189,42 @@
     }
 
     if (toastClose) toastClose.addEventListener("click", () => closeToast());
+
+    function closeAllFactorPopovers(exceptBtn = null) {
+      for (const currentBtn of factorToggles) {
+        if (exceptBtn && currentBtn === exceptBtn) continue;
+        const currentDetail = currentBtn.parentElement ? currentBtn.parentElement.querySelector("[data-swot-factor-detail]") : null;
+        if (!currentDetail) continue;
+        currentDetail.classList.add("hidden");
+        currentBtn.setAttribute("aria-expanded", "false");
+      }
+    }
+
+    for (const btn of factorToggles) {
+      btn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const detail = btn.parentElement ? btn.parentElement.querySelector("[data-swot-factor-detail]") : null;
+        if (!detail) return;
+        const open = !detail.classList.contains("hidden");
+        closeAllFactorPopovers(btn);
+        detail.classList.toggle("hidden", open);
+        btn.setAttribute("aria-expanded", open ? "false" : "true");
+      });
+    }
+
+    document.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        closeAllFactorPopovers();
+        return;
+      }
+      if (target.closest("[data-swot-factor-detail]") || target.closest("[data-swot-factor-toggle='1']")) {
+        return;
+      }
+      closeAllFactorPopovers();
+    });
+
+    panel.addEventListener("scroll", () => closeAllFactorPopovers(), true);
 
     function buildState() {
       const state = {
@@ -236,8 +273,8 @@
         if (valueRaw === "") {
           select.className =
             validationActive
-              ? "swot-select h-10 w-full rounded-lg border border-red-300 bg-red-50 px-2 text-center text-sm font-semibold text-red-800 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-200"
-              : "swot-select h-10 w-full rounded-lg border border-neutral-300 bg-white px-2 text-center text-sm font-semibold text-neutral-800 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200";
+              ? "swot-select h-10 w-full rounded-lg border border-amber-300 bg-amber-50 px-2 text-center text-sm font-semibold text-amber-800 outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-100"
+              : "swot-select h-10 w-full rounded-lg border border-neutral-200 bg-white px-2 text-center text-sm font-semibold text-neutral-800 outline-none focus:border-neutral-300 focus:ring-2 focus:ring-brand-100";
           if (ref) {
             if (validationActive) ref.classList.remove("hidden");
             else ref.classList.add("hidden");
@@ -275,7 +312,7 @@
         });
 
         select.className =
-          "swot-select h-10 w-full rounded-lg border border-brand-300 bg-brand-50 px-2 text-center text-sm font-semibold text-brand-800 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200";
+          "swot-select h-10 w-full rounded-lg border border-neutral-200 bg-white px-2 text-center text-sm font-semibold text-brand-800 outline-none focus:border-neutral-300 focus:ring-2 focus:ring-brand-100";
         if (ref) ref.classList.add("hidden");
       }
 

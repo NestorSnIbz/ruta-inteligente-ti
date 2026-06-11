@@ -111,7 +111,10 @@
 
       if (missing > 0) {
         if (conclusionEl) {
-          conclusionEl.textContent = validationActive ? "#¡REF!" : "—";
+          conclusionEl.textContent = validationActive
+            ? `Incompleto. Faltan ${missing} fila${missing === 1 ? "" : "s"} por responder para guardar la evaluación.`
+            : "Incompleto. Completa todas las filas para generar la conclusión.";
+          conclusionEl.className = "mt-1 text-sm font-semibold text-amber-700 leading-relaxed";
         }
         return;
       }
@@ -119,7 +122,10 @@
       const cText = calc && typeof calc.conclusion_text === "string" && calc.conclusion_text.trim() !== ""
         ? calc.conclusion_text
         : conclusionForTotal(total).text;
-      if (conclusionEl) conclusionEl.textContent = String(cText);
+      if (conclusionEl) {
+        conclusionEl.textContent = String(cText);
+        conclusionEl.className = "mt-1 text-sm font-semibold text-neutral-900 leading-relaxed";
+      }
     }
 
     function recalcFromDom() {

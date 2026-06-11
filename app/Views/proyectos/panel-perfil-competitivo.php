@@ -31,7 +31,9 @@
   $calcCount = (int) ($perfilCalc['count'] ?? 0);
   $calcMissing = (int) ($perfilCalc['missing'] ?? 0);
   $calcConclusion = $perfilCalc['conclusion_text'] ?? null;
-  $calcConclusionText = ($calcMissing > 0 || $calcConclusion === null) ? '—' : (string) $calcConclusion;
+  $calcConclusionText = ($calcMissing > 0 || $calcConclusion === null)
+    ? 'Incompleto. Completa todas las filas para generar la conclusión.'
+    : (string) $calcConclusion;
 
   $pcOportunidades = array_values(array_filter(array_map('trim', array_map('strval', $pcOportunidades ?? []))));
   $pcAmenazas = array_values(array_filter(array_map('trim', array_map('strval', $pcAmenazas ?? []))));
@@ -88,7 +90,7 @@
                 <td class="border-b border-neutral-200 px-4 py-3 text-sm text-neutral-800">
                   <div class="flex items-start justify-between gap-3">
                     <div class="leading-relaxed"><?php echo htmlspecialchars($nombre, ENT_QUOTES, 'UTF-8'); ?></div>
-                    <span data-pc-ref class="hidden rounded-lg bg-red-50 px-2 py-1 text-xs font-semibold text-red-700">#¡REF!</span>
+                    <span data-pc-ref class="hidden rounded-lg bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">Incompleto</span>
                   </div>
                 </td>
                 <td class="border-b border-l border-neutral-200 px-4 py-3 text-center text-sm font-semibold text-red-700">

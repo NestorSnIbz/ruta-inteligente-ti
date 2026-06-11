@@ -631,7 +631,7 @@
                     <div class="leading-relaxed">
                       <?php echo htmlspecialchars($qText, ENT_QUOTES, 'UTF-8'); ?>
                     </div>
-                    <span data-cvi-ref class="hidden rounded-lg bg-red-50 px-2 py-1 text-xs font-semibold text-red-700">#¡REF!</span>
+                    <span data-cvi-ref class="hidden rounded-lg bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">Incompleto</span>
                   </div>
                 </td>
                 <?php for ($v = 0; $v <= 4; $v++) : ?>
@@ -667,6 +667,9 @@
       if ($calcPotential !== null && is_numeric($calcPotential)) {
         $calcPotentialText = number_format((float) $calcPotential, 2, '.', '');
         $calcPotentialSub = ((string) round(((float) $calcPotential) * 100)) . '%';
+      } elseif ($calcCount > 0 && $calcValid < $calcCount) {
+        $calcPotentialText = 'Incompleto';
+        $calcPotentialSub = 'Completa todas las preguntas para calcular el potencial de mejora.';
       }
     ?>
     <div class="mt-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
@@ -908,6 +911,11 @@
                   <div class="text-xs font-medium text-neutral-600">Último cálculo</div>
                   <div id="bcg-fecha-calculo" class="mt-1 text-sm font-semibold text-neutral-900">—</div>
                 </div>
+            <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+              <div class="text-xs font-medium text-neutral-600">Estado del diagnóstico</div>
+              <div id="bcg-completeness-status" class="mt-1 text-sm font-semibold text-amber-700">Incompleto</div>
+              <div id="bcg-completeness-msg" class="mt-1 text-xs text-neutral-500">Completa los datos del análisis BCG para validar la evaluación.</div>
+            </div>
               </div>
             </div>
           </div>

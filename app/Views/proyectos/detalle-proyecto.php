@@ -2089,24 +2089,32 @@
       if (cviValidEl) cviValidEl.textContent = `${valid}/${count}`;
 
       if (missing > 0 || potential === null || potential === undefined) {
-        if (!cviValidationActive) {
-          if (cviResultEl) cviResultEl.textContent = "—";
-          if (cviResultSubEl) cviResultSubEl.textContent = "";
-          return;
+        if (cviResultEl) {
+          cviResultEl.textContent = "Incompleto";
+          cviResultEl.className = "mt-1 text-2xl font-semibold text-amber-700";
         }
-        if (cviResultEl) cviResultEl.textContent = "#¡REF!";
-        if (cviResultSubEl) cviResultSubEl.textContent = "";
+        if (cviResultSubEl) {
+          cviResultSubEl.textContent = cviValidationActive
+            ? `Faltan ${missing} respuesta${missing === 1 ? "" : "s"} para guardar la evaluación.`
+            : "Completa todas las preguntas para calcular el potencial de mejora.";
+        }
         return;
       }
 
       const p = Number(potential);
       if (Number.isNaN(p)) {
-        if (cviResultEl) cviResultEl.textContent = "#¡REF!";
-        if (cviResultSubEl) cviResultSubEl.textContent = "";
+        if (cviResultEl) {
+          cviResultEl.textContent = "Incompleto";
+          cviResultEl.className = "mt-1 text-2xl font-semibold text-amber-700";
+        }
+        if (cviResultSubEl) cviResultSubEl.textContent = "No se pudo calcular el potencial de mejora porque la evaluación está incompleta.";
         return;
       }
 
-      if (cviResultEl) cviResultEl.textContent = p.toFixed(2);
+      if (cviResultEl) {
+        cviResultEl.textContent = p.toFixed(2);
+        cviResultEl.className = "mt-1 text-2xl font-semibold text-brand-900";
+      }
       if (cviResultSubEl) cviResultSubEl.textContent = `${Math.round(p * 100)}%`;
     }
 
@@ -2410,6 +2418,8 @@
 
     const competitorsGrid = panel.querySelector("#bcg-competitors-grid");
     const competitorsSaveAll = panel.querySelector("#bcg-competitors-save-all");
+    const completenessStatusEl = panel.querySelector("#bcg-completeness-status");
+    const completenessMsgEl = panel.querySelector("#bcg-completeness-msg");
 
     const bcgFodaSave = panel.querySelector("#bcg-foda-save");
     const bcgFodaAddFort = panel.querySelector("#bcg-foda-add-fortaleza");
@@ -3394,6 +3404,99 @@
 
     let lastPayload = null;
 
+    function computeBcgCompleteness(payload) {
+      const products = payload && Array.isArray(payload.products) ? payload.products : [];
+      if (products.length === 0) {
+        return {
+          complete: false,
+          title: "Incompleto",
+          message: "Agrega al menos un producto para construir la evaluación BCG.",
+        };
+      }
+
+      const issues = [];
+      const globalYears = new Set();
+      for (const p of products) {
+        const periods = Array.isArray(p.market_periods) ? p.market_periods : [];
+        for (const row of periods) {
+          const year = Number(row && row.anio);
+          if (Number.isFinite(year) && year > 0) globalYears.add(year);
+        }
+      }
+      const years = Array.from(globalYears).sort((a, b) => a - b);
+
+      for (const p of products) {
+        const name = String(p && p.nombre ? p.nombre : "Producto").trim() || "Producto";
+        const periods = Array.isArray(p && p.market_periods) ? p.market_periods : [];
+        const sectorPeriods = Array.isArray(p && p.sector_demand_periods) ? p.sector_demand_periods : [];
+        const competitors = Array.isArray(p && p.competitors) ? p.competitors : [];
+        const periodYears = new Set();
+        const sectorYears = new Set();
+
+        for (const row of periods) {
+          const year = Number(row && row.anio);
+          if (Number.isFinite(year) && year > 0) periodYears.add(year);
+        }
+        for (const row of sectorPeriods) {
+          const year = Number(row && row.anio);
+          if (Number.isFinite(year) && year > 0) sectorYears.add(year);
+        }
+
+        if (periods.length < 2) {
+          issues.push(`${name}: registra al menos 2 periodos de mercado.`);
+        }
+        if (competitors.length < 1) {
+          issues.push(`${name}: registra al menos 1 competidor.`);
+        }
+        if (years.length === 0) {
+          issues.push(`${name}: registra periodos de mercado para calcular la TCM.`);
+        } else {
+          for (const year of years) {
+            if (!periodYears.has(year)) {
+              issues.push(`${name}: falta la tasa del periodo ${year}-${year + 1}.`);
+              break;
+            }
+          }
+          for (const year of years) {
+            if (!sectorYears.has(year)) {
+              issues.push(`${name}: falta la demanda del sector para ${year}.`);
+              break;
+            }
+          }
+        }
+      }
+
+      if (issues.length === 0) {
+        return {
+          complete: true,
+          title: "Completo",
+          message: "La información mínima del análisis BCG está completa y lista para evaluarse.",
+        };
+      }
+
+      const visible = issues.slice(0, 2).join(" ");
+      const extra = issues.length > 2 ? ` Hay ${issues.length - 2} aspecto(s) adicional(es) pendiente(s).` : "";
+      return {
+        complete: false,
+        title: "Incompleto",
+        message: `${visible}${extra}`,
+      };
+    }
+
+    function renderBcgCompleteness(payload) {
+      const info = computeBcgCompleteness(payload);
+      if (completenessStatusEl) {
+        completenessStatusEl.textContent = info.title;
+        completenessStatusEl.className = info.complete
+          ? "mt-1 text-sm font-semibold text-emerald-700"
+          : "mt-1 text-sm font-semibold text-amber-700";
+      }
+      if (completenessMsgEl) {
+        completenessMsgEl.textContent = info.message;
+      }
+      return info;
+    }
+
     function applyState(payload) {
       lastPayload = payload;
       const products = payload && Array.isArray(payload.products) ? payload.products : [];
@@ -3407,6 +3510,7 @@
       if (totalVentasEl) totalVentasEl.textContent = formatMoney(payload.totalVentas ?? 0);
       if (totalVentasInlineEl) totalVentasInlineEl.textContent = formatMoney(payload.totalVentas ?? 0);
       if (fechaCalculoEl) fechaCalculoEl.textContent = String(payload.fechaCalculo || "—");
+      renderBcgCompleteness(payload);
       renderChartFromState(payload);
     }
 
@@ -3436,6 +3540,14 @@
     if (recalcBtn) {
       recalcBtn.addEventListener("click", async () => {
         clearError();
+        if (lastPayload) {
+          const info = renderBcgCompleteness(lastPayload);
+          if (!info.complete) {
+            showError(info.message);
+            showToast("BCG incompleto", "Completa la información pendiente antes de recalcular la evaluación.");
+            return;
+          }
+        }
         const { ok, json } = await postAction("bcg_recalculate", {});
         if (!ok || !json || json.ok !== true) {
           showError((json && json.error) ? json.error : "No se pudo recalcular.");
@@ -4114,24 +4226,32 @@
     if (cviValidEl) cviValidEl.textContent = `${valid}/${count}`;
 
     if (missing > 0 || potential === null || potential === undefined) {
-      if (!cviValidationActive) {
-        if (cviResultEl) cviResultEl.textContent = "—";
-        if (cviResultSubEl) cviResultSubEl.textContent = "";
-        return;
+      if (cviResultEl) {
+        cviResultEl.textContent = "Incompleto";
+        cviResultEl.className = "mt-1 text-2xl font-semibold text-amber-700";
       }
-      if (cviResultEl) cviResultEl.textContent = "#¡REF!";
-      if (cviResultSubEl) cviResultSubEl.textContent = "";
+      if (cviResultSubEl) {
+        cviResultSubEl.textContent = cviValidationActive
+          ? `Faltan ${missing} respuesta${missing === 1 ? "" : "s"} para guardar la evaluación.`
+          : "Completa todas las preguntas para calcular el potencial de mejora.";
+      }
       return;
     }
 
     const p = Number(potential);
     if (Number.isNaN(p)) {
-      if (cviResultEl) cviResultEl.textContent = "#¡REF!";
-      if (cviResultSubEl) cviResultSubEl.textContent = "";
+      if (cviResultEl) {
+        cviResultEl.textContent = "Incompleto";
+        cviResultEl.className = "mt-1 text-2xl font-semibold text-amber-700";
+      }
+      if (cviResultSubEl) cviResultSubEl.textContent = "No se pudo calcular el potencial de mejora porque la evaluación está incompleta.";
       return;
     }
 
-    if (cviResultEl) cviResultEl.textContent = p.toFixed(2);
+    if (cviResultEl) {
+      cviResultEl.textContent = p.toFixed(2);
+      cviResultEl.className = "mt-1 text-2xl font-semibold text-brand-900";
+    }
     if (cviResultSubEl) cviResultSubEl.textContent = `${Math.round(p * 100)}%`;
   }
 

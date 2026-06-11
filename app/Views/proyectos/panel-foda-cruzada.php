@@ -57,45 +57,15 @@
   data-swot-ready="<?php echo $ready ? '1' : '0'; ?>"
   data-swot-complete="<?php echo $complete ? '1' : '0'; ?>"
 >
-  <div class="rounded-2xl border border-brand-200 bg-brand-600 px-5 py-4 text-white shadow-sm">
-    <h2 class="text-2xl font-semibold tracking-tight">10. IDENTIFICACIÓN DE ESTRATEGIAS</h2>
+  <div class="flex items-center justify-between gap-3">
+    <h2 class="text-lg font-semibold">Identificación de estrategias</h2>
   </div>
 
-  <div class="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
-    <div class="space-y-3 text-sm leading-relaxed text-neutral-700">
-      <p>
-        Tras el análisis realizado habiéndose identificado las oportunidades, amenazas, fortalezas y debilidades, es momento de identificar la estrategia que debe seguir su empresa para el logro de sus objetivos empresariales.
-      </p>
-      <p>
-        Se trata de realizar una Matriz Cruzada tal y como se refleja en el siguiente dibujo para identificar la estrategia más conveniente a llevar a cabo.
-      </p>
+  <div class="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+    <div class="text-sm text-neutral-700 leading-relaxed">
+      Evalúa cada relación de la matriz FODA cruzada con una escala de 0 a 4 para identificar la estrategia predominante recomendada para la empresa.
     </div>
-  </div>
-
-  <div class="mt-5 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
-    <div class="grid grid-cols-1 gap-4 lg:grid-cols-[180px_1fr_1fr] lg:items-center">
-      <div class="flex items-center justify-center">
-        <div class="inline-flex min-h-[74px] min-w-[150px] items-center justify-center rounded-full border-2 border-brand-700 bg-brand-500 px-6 text-center text-base font-semibold text-white shadow-sm">
-          Matriz DAFO
-        </div>
-      </div>
-      <div class="space-y-4">
-        <div class="rounded-xl border-2 border-accent-300 bg-accent-50 px-4 py-3 text-center text-sm font-semibold text-neutral-900">OPORTUNIDADES</div>
-        <div class="grid grid-cols-[180px_1fr] gap-4">
-          <div class="rounded-xl border-2 border-brand-200 bg-brand-50 px-4 py-3 text-center text-sm font-semibold text-neutral-900">FORTALEZAS</div>
-          <div class="rounded-xl border-2 border-brand-200 bg-brand-100 px-4 py-3 text-center text-sm font-semibold text-neutral-900">ESTRATEGIAS OFENSIVAS</div>
-        </div>
-        <div class="grid grid-cols-[180px_1fr] gap-4">
-          <div class="rounded-xl border-2 border-neutral-300 bg-neutral-100 px-4 py-3 text-center text-sm font-semibold text-neutral-900">DEBILIDADES</div>
-          <div class="rounded-xl border-2 border-brand-200 bg-brand-100 px-4 py-3 text-center text-sm font-semibold text-neutral-900">ESTRATEGIAS DE REORIENTACIÓN</div>
-        </div>
-      </div>
-      <div class="space-y-4">
-        <div class="rounded-xl border-2 border-brand-200 bg-brand-50 px-4 py-3 text-center text-sm font-semibold text-neutral-900">AMENAZAS</div>
-        <div class="rounded-xl border-2 border-brand-200 bg-brand-100 px-4 py-3 text-center text-sm font-semibold text-neutral-900">ESTRATEGIAS DEFENSIVAS</div>
-        <div class="rounded-xl border-2 border-brand-200 bg-brand-100 px-4 py-3 text-center text-sm font-semibold text-neutral-900">ESTRATEGIAS DE SUPERVIVENCIA</div>
-      </div>
-    </div>
+    <div class="mt-2 text-xs text-neutral-500">Opciones: 0 = En total desacuerdo · 1 = No está de acuerdo · 2 = Está de acuerdo · 3 = Bastante de acuerdo · 4 = Totalmente de acuerdo</div>
   </div>
 
   <div class="mt-5 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
@@ -195,27 +165,46 @@
             No hay factores suficientes para construir esta matriz todavía.
           </div>
         <?php else : ?>
-          <div class="mt-4 overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
+          <div class="mt-4 overflow-x-auto overflow-y-visible rounded-2xl border border-neutral-200 bg-white">
             <table class="min-w-[920px] w-full border-separate border-spacing-0 text-sm">
               <thead>
                 <tr class="bg-accent-50">
-                  <th colspan="2" class="border-b border-neutral-200 px-4 py-3 text-left text-sm font-semibold text-neutral-900"></th>
+                  <th class="border-b border-neutral-200 px-4 py-3 text-left text-sm font-semibold text-neutral-900"></th>
                   <th colspan="<?php echo count($cols); ?>" class="border-b border-l border-neutral-200 px-4 py-3 text-center text-base font-semibold text-neutral-900">
                     <?php echo htmlspecialchars((string) strtoupper($meta['columns']), ENT_QUOTES, 'UTF-8'); ?>
                   </th>
                   <th class="border-b border-l border-neutral-200 px-4 py-3 text-center text-sm font-semibold text-neutral-900">Total</th>
                 </tr>
                 <tr class="bg-neutral-50">
-                  <th class="border-b border-neutral-200 px-4 py-3 text-left text-sm font-semibold text-neutral-900"><?php echo htmlspecialchars((string) $meta['rows'], ENT_QUOTES, 'UTF-8'); ?></th>
-                  <th class="border-b border-l border-neutral-200 px-4 py-3 text-left text-sm font-semibold text-neutral-900">Código</th>
+                  <th class="border-b border-neutral-200 px-4 py-3 text-left text-sm font-semibold text-neutral-900">Código</th>
                   <?php foreach ($cols as $col) : ?>
+                    <?php
+                      $colKey = (string) ($col['key'] ?? '');
+                      $colCode = (string) ($col['code'] ?? '');
+                      $colDesc = (string) ($col['description'] ?? '');
+                      $colSource = (string) ($col['source_label'] ?? '');
+                    ?>
                     <th
                       class="border-b border-l border-neutral-200 px-3 py-3 text-center text-sm font-semibold text-neutral-900"
-                      data-swot-col-header="<?php echo htmlspecialchars((string) ($col['key'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                      data-swot-col-code="<?php echo htmlspecialchars((string) ($col['code'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                      data-swot-col-desc="<?php echo htmlspecialchars((string) ($col['description'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                      data-swot-col-header="<?php echo htmlspecialchars($colKey, ENT_QUOTES, 'UTF-8'); ?>"
+                      data-swot-col-code="<?php echo htmlspecialchars($colCode, ENT_QUOTES, 'UTF-8'); ?>"
+                      data-swot-col-desc="<?php echo htmlspecialchars($colDesc, ENT_QUOTES, 'UTF-8'); ?>"
                     >
-                      <div><?php echo htmlspecialchars((string) ($col['code'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div>
+                      <div class="relative inline-flex">
+                        <button
+                          type="button"
+                          class="mx-auto flex min-h-[2.5rem] min-w-[4.25rem] items-center justify-center rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-brand-800 transition hover:border-neutral-300 hover:bg-neutral-50"
+                          data-swot-factor-toggle="1"
+                          aria-expanded="false"
+                        >
+                          <?php echo htmlspecialchars($colCode, ENT_QUOTES, 'UTF-8'); ?>
+                        </button>
+                        <div data-swot-factor-detail class="absolute bottom-full left-1/2 z-30 mb-2 hidden w-64 -translate-x-1/2 rounded-xl border border-neutral-200 bg-white px-3 py-3 text-left text-xs font-medium leading-relaxed text-neutral-700 shadow-lg">
+                          <div class="absolute left-1/2 top-full h-3 w-3 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-r border-neutral-200 bg-white"></div>
+                          <div class="relative"><?php echo htmlspecialchars($colDesc, ENT_QUOTES, 'UTF-8'); ?></div>
+                          <div class="relative mt-1 text-[11px] text-neutral-500"><?php echo htmlspecialchars($colSource, ENT_QUOTES, 'UTF-8'); ?></div>
+                        </div>
+                      </div>
                     </th>
                   <?php endforeach; ?>
                   <th class="border-b border-l border-neutral-200 px-3 py-3 text-center text-sm font-semibold text-neutral-900">Fila</th>
@@ -230,11 +219,23 @@
                     $rowSource = (string) ($row['source_label'] ?? '');
                   ?>
                   <tr data-swot-row="<?php echo htmlspecialchars($rowKey, ENT_QUOTES, 'UTF-8'); ?>">
-                    <td class="border-b border-neutral-200 px-4 py-3 text-sm text-neutral-800 leading-relaxed">
-                      <div><?php echo htmlspecialchars($rowDesc, ENT_QUOTES, 'UTF-8'); ?></div>
-                      <div class="mt-1 text-xs text-neutral-500"><?php echo htmlspecialchars($rowSource, ENT_QUOTES, 'UTF-8'); ?></div>
+                    <td class="border-b border-neutral-200 px-4 py-3 text-sm font-semibold text-neutral-900">
+                      <div class="relative inline-flex">
+                        <button
+                          type="button"
+                          class="flex min-h-[2.5rem] min-w-[4.25rem] items-center justify-center rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-brand-800 transition hover:border-neutral-300 hover:bg-neutral-50"
+                          data-swot-factor-toggle="1"
+                          aria-expanded="false"
+                        >
+                          <?php echo htmlspecialchars($rowCode, ENT_QUOTES, 'UTF-8'); ?>
+                        </button>
+                        <div data-swot-factor-detail class="absolute bottom-full left-0 z-30 mb-2 hidden w-64 rounded-xl border border-neutral-200 bg-white px-3 py-3 text-left text-xs font-medium leading-relaxed text-neutral-700 shadow-lg">
+                          <div class="absolute left-6 top-full h-3 w-3 -translate-y-1/2 rotate-45 border-b border-r border-neutral-200 bg-white"></div>
+                          <div class="relative"><?php echo htmlspecialchars($rowDesc, ENT_QUOTES, 'UTF-8'); ?></div>
+                          <div class="relative mt-1 text-[11px] text-neutral-500"><?php echo htmlspecialchars($rowSource, ENT_QUOTES, 'UTF-8'); ?></div>
+                        </div>
+                      </div>
                     </td>
-                    <td class="border-b border-l border-neutral-200 px-4 py-3 text-sm font-semibold text-neutral-900"><?php echo htmlspecialchars($rowCode, ENT_QUOTES, 'UTF-8'); ?></td>
                     <?php foreach ($cols as $col) : ?>
                       <?php
                         $colKey = (string) ($col['key'] ?? '');
@@ -243,7 +244,7 @@
                       <td class="border-b border-l border-neutral-200 px-2 py-2 text-center">
                         <div class="space-y-1">
                           <select
-                            class="swot-select h-10 w-full rounded-lg border border-neutral-300 bg-white px-2 text-center text-sm font-semibold text-neutral-800 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200"
+                            class="swot-select h-10 w-full rounded-lg border border-neutral-200 bg-white px-2 text-center text-sm font-semibold text-neutral-800 outline-none focus:border-neutral-300 focus:ring-2 focus:ring-brand-100"
                             data-swot-select="1"
                             data-relation="<?php echo htmlspecialchars($relation, ENT_QUOTES, 'UTF-8'); ?>"
                             data-row-key="<?php echo htmlspecialchars($rowKey, ENT_QUOTES, 'UTF-8'); ?>"
@@ -258,7 +259,7 @@
                               <option value="<?php echo $v; ?>" <?php echo ($value !== null && (int) $value === $v) ? 'selected' : ''; ?>><?php echo $v; ?></option>
                             <?php endfor; ?>
                           </select>
-                          <div data-swot-ref class="hidden rounded-lg bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-700">#¡REF!</div>
+                          <div data-swot-ref class="hidden rounded-lg bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700">Incompleto</div>
                         </div>
                       </td>
                     <?php endforeach; ?>
@@ -270,7 +271,7 @@
               </tbody>
               <tfoot class="bg-accent-50">
                 <tr>
-                  <th colspan="2" class="border-l border-neutral-200 px-4 py-3 text-left text-sm font-semibold text-neutral-900">Total</th>
+                  <th class="border-l border-neutral-200 px-4 py-3 text-left text-sm font-semibold text-neutral-900">Total</th>
                   <?php foreach ($cols as $col) : ?>
                     <?php $colKey = (string) ($col['key'] ?? ''); ?>
                     <th class="border-l border-neutral-200 px-3 py-3 text-center text-sm font-semibold text-neutral-900" data-matrix-col-total="<?php echo htmlspecialchars($relation . '|' . $colKey, ENT_QUOTES, 'UTF-8'); ?>">
@@ -285,26 +286,6 @@
             </table>
           </div>
 
-          <div class="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-            <div class="text-sm font-semibold text-neutral-900">Justificación automática de puntuaciones</div>
-            <div class="mt-1 text-xs text-neutral-500">Se genera en función de la relación evaluada y el puntaje asignado.</div>
-            <div class="mt-3 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
-              <table class="min-w-full text-left text-sm">
-                <thead class="bg-neutral-50 text-xs font-semibold text-neutral-600">
-                  <tr>
-                    <th class="w-24 px-4 py-3">Relación</th>
-                    <th class="w-20 px-4 py-3">Puntaje</th>
-                    <th class="px-4 py-3">Razonamiento</th>
-                  </tr>
-                </thead>
-                <tbody data-justification-body="<?php echo htmlspecialchars($relation, ENT_QUOTES, 'UTF-8'); ?>" class="divide-y divide-neutral-200">
-                  <tr>
-                    <td colspan="3" class="px-4 py-4 text-sm text-neutral-500">Aún no hay relaciones valoradas.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
         <?php endif; ?>
       </div>
     <?php endforeach; ?>
@@ -364,7 +345,7 @@
       </table>
     </div>
 
-    <div class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[320px_1fr]">
+    <div class="mt-4 hidden grid-cols-1 gap-4 xl:grid-cols-[320px_1fr]">
       <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
         <div class="text-sm font-semibold text-neutral-900">Estrategia predominante</div>
         <div id="swot-predominant-label" class="mt-2 text-lg font-semibold text-brand-700">
