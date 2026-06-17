@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Ruta Inteligente TI - Dashboard</title>
     <link href="dist/output.css" rel="stylesheet" />
+    <link href="/app-shell.css" rel="stylesheet" />
   </head>
-  <body class="min-h-screen bg-neutral-50 text-neutral-900">
+  <body class="ri-dashboard-shell min-h-screen text-neutral-900">
     <?php
       $nombre = is_array($authUser ?? null) ? (string) ($authUser['nombre'] ?? '') : '';
       $correo = is_array($authUser ?? null) ? (string) ($authUser['email'] ?? '') : '';
@@ -32,13 +33,13 @@
       ?>
 
       <div class="min-h-screen flex flex-col">
-        <header class="bg-white border-b border-neutral-200">
+        <header class="ri-dashboard-header">
           <div class="px-6 py-4 flex items-center justify-between gap-4">
             <div class="flex-1 max-w-xl">
               <label class="block">
                 <span class="sr-only">Buscar</span>
                 <div class="relative">
-                  <span class="absolute inset-y-0 left-3 flex items-center text-neutral-500">
+                  <span class="absolute inset-y-0 left-3 flex items-center text-slate-400">
                     <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.3-4.3m1.8-5.2a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
@@ -47,7 +48,7 @@
                     id="dashboard-search"
                     type="search"
                     placeholder="Buscar planes estratégicos…"
-                    class="w-full rounded-xl border border-neutral-300 bg-white py-2 pl-10 pr-3 text-sm outline-none transition focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
+                    class="ri-dashboard-search w-full rounded-2xl py-2.5 pl-10 pr-3 text-sm outline-none transition"
                   />
                 </div>
               </label>
@@ -69,59 +70,59 @@
             <div class="flex items-center gap-3">
               <a
                 href="nuevo-proyecto.php"
-                class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600/25"
+                class="ri-dashboard-primary-btn inline-flex items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-semibold focus:outline-none"
               >
                 Nuevo plan estratégico
               </a>
             </div>
           </div>
 
-          <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
-            <span class="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 border border-neutral-200">
+          <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <span class="ri-dashboard-chip inline-flex items-center gap-2 rounded-full px-3 py-1.5">
               <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
               <span id="dashboard-updated-label">Actualizado</span>
             </span>
             <?php if ($dashboardError !== '') : ?>
-              <span class="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 border border-red-100 text-red-700">
+              <span class="ri-dashboard-chip-danger inline-flex items-center gap-2 rounded-full px-3 py-1.5">
                 <?php echo htmlspecialchars($dashboardError, ENT_QUOTES, 'UTF-8'); ?>
               </span>
             <?php endif; ?>
           </div>
 
           <section class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
-              <div class="text-sm font-medium text-neutral-600">Total planes estratégicos</div>
-              <div id="metric-total-planes" class="mt-2 text-3xl font-semibold text-brand-900"><?php echo (int) ($metrics['total_rutas'] ?? 0); ?></div>
-              <div class="mt-2 text-xs text-neutral-500">Planes creados por tu cuenta.</div>
+            <div class="ri-dashboard-card rounded-[24px] p-5">
+              <div class="ri-dashboard-card-title text-sm font-medium">Total planes estratégicos</div>
+              <div id="metric-total-planes" class="ri-dashboard-card-value mt-2 text-3xl font-semibold"><?php echo (int) ($metrics['total_rutas'] ?? 0); ?></div>
+              <div class="ri-dashboard-card-note mt-2 text-xs">Planes creados por tu cuenta.</div>
             </div>
-            <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
-              <div class="text-sm font-medium text-neutral-600">Usuarios activos</div>
-              <div id="metric-usuarios-activos" class="mt-2 text-3xl font-semibold text-brand-900"><?php echo (int) ($metrics['usuarios_activos'] ?? 0); ?></div>
-              <div class="mt-2 text-xs text-neutral-500">Usuarios con actividad reciente (según datos disponibles).</div>
+            <div class="ri-dashboard-card rounded-[24px] p-5">
+              <div class="ri-dashboard-card-title text-sm font-medium">Usuarios activos</div>
+              <div id="metric-usuarios-activos" class="ri-dashboard-card-value mt-2 text-3xl font-semibold"><?php echo (int) ($metrics['usuarios_activos'] ?? 0); ?></div>
+              <div class="ri-dashboard-card-note mt-2 text-xs">Usuarios con actividad reciente (según datos disponibles).</div>
             </div>
           </section>
 
-          <section class="mt-6 rounded-2xl border border-neutral-200 bg-white shadow-sm">
-            <div class="px-6 py-4 border-b border-neutral-200 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <section class="ri-dashboard-table mt-6 rounded-[24px]">
+            <div class="ri-dashboard-table-head px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div class="flex items-center justify-between gap-3">
-                <h2 class="text-sm font-semibold text-neutral-900">Planes estratégicos</h2>
-                <span id="dashboard-table-count" class="text-xs text-neutral-500"></span>
+                <h2 class="text-sm font-semibold text-slate-900">Planes estratégicos</h2>
+                <span id="dashboard-table-count" class="text-xs text-slate-500"></span>
               </div>
-              <div class="text-xs text-neutral-500">Listado general</div>
+              <div class="text-xs text-slate-500">Listado general</div>
             </div>
 
-            <div class="px-6 py-4 border-b border-neutral-200 bg-neutral-50">
+            <div class="ri-dashboard-table-subhead px-6 py-4">
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div class="text-xs font-medium text-neutral-600">Plan estratégico</div>
-                <div class="hidden sm:block text-xs font-medium text-neutral-600 text-right">Acciones</div>
+                <div class="text-xs font-medium text-slate-600">Plan estratégico</div>
+                <div class="hidden sm:block text-xs font-medium text-slate-600 text-right">Acciones</div>
               </div>
             </div>
 
-            <div id="dashboard-table-empty" class="hidden px-6 py-10 text-center text-sm text-neutral-600">
+            <div id="dashboard-table-empty" class="ri-dashboard-table-empty hidden px-6 py-10 text-center text-sm">
               No hay planes estratégicos para mostrar.
             </div>
 
-            <div id="dashboard-table" class="divide-y divide-neutral-200"></div>
+            <div id="dashboard-table" class="divide-y divide-slate-200/80"></div>
           </section>
         </main>
       </div>
@@ -172,16 +173,16 @@
 
       function buildRow(project) {
         const row = document.createElement("div");
-        row.className = "px-6 py-4";
+        row.className = "ri-dashboard-row px-6 py-4";
         row.dataset.projectName = String(project.nombre ?? "").toLowerCase();
 
         const grid = document.createElement("div");
         grid.className = "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:items-center";
 
         const name = document.createElement("div");
-        name.className = "text-sm font-medium text-neutral-900";
+        name.className = "text-sm font-medium text-slate-900";
         const link = document.createElement("a");
-        link.className = "hover:underline";
+        link.className = "ri-dashboard-link transition-colors hover:underline";
         link.href = project && project.token ? `detalle-proyecto.php?t=${encodeURIComponent(String(project.token))}` : "proyectos.php";
         link.textContent = String(project.nombre ?? "—");
         link.addEventListener("click", () => pushRecentProject(project));
@@ -191,7 +192,7 @@
         actions.className = "hidden sm:flex justify-end";
         const viewBtn = document.createElement("a");
         viewBtn.href = project && project.token ? `detalle-proyecto.php?t=${encodeURIComponent(String(project.token))}` : "proyectos.php";
-        viewBtn.className = "inline-flex items-center justify-center rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-semibold text-neutral-800 hover:bg-brand-50";
+        viewBtn.className = "ri-dashboard-outline-btn inline-flex items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold";
         viewBtn.textContent = "Ver detalle";
         viewBtn.addEventListener("click", () => pushRecentProject(project));
         actions.appendChild(viewBtn);
@@ -203,7 +204,7 @@
         mobileMeta.className = "sm:hidden flex items-center justify-end";
         const mobileLink = document.createElement("a");
         mobileLink.href = project && project.token ? `detalle-proyecto.php?t=${encodeURIComponent(String(project.token))}` : "proyectos.php";
-        mobileLink.className = "text-xs font-semibold text-brand-700 hover:underline";
+        mobileLink.className = "ri-dashboard-mobile-link text-xs font-semibold hover:underline";
         mobileLink.textContent = "Ver";
         mobileLink.addEventListener("click", () => pushRecentProject(project));
         mobileMeta.appendChild(mobileLink);

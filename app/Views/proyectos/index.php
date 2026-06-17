@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Planes Estratégicos - Ruta Inteligente TI</title>
     <link href="dist/output.css" rel="stylesheet" />
+    <link href="/app-shell.css" rel="stylesheet" />
 </head>
 
-<body class="min-h-screen bg-neutral-50 text-neutral-900">
+<body class="ri-page-shell min-h-screen text-neutral-900">
 <?php
   $proyectos = is_array($proyectos ?? null) ? $proyectos : [];
 ?>
@@ -21,12 +22,15 @@
     <div class="min-h-screen flex flex-col">
 
         <!-- HEADER -->
-        <header class="bg-white border-b border-neutral-200">
+        <header class="ri-dashboard-header">
             <div class="px-6 py-4 flex items-center justify-between">
-                <h1 class="text-xl font-semibold">Planes Estratégicos</h1>
+                <div>
+                    <h1 class="ri-page-title text-xl font-semibold">Planes Estratégicos</h1>
+                    <p class="ri-page-subtitle mt-1 text-sm">Consulta, busca y gestiona todos los planes estratégicos registrados.</p>
+                </div>
 
                 <a href="nuevo-proyecto.php"
-                   class="bg-brand-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-brand-700">
+                   class="ri-project-primary-btn inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-semibold">
                     + Nuevo plan estratégico
                 </a>
             </div>
@@ -34,12 +38,12 @@
 
         <main class="flex-1 px-6 py-8">
             <?php if (!empty($error)) : ?>
-                <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-800">
+                <div class="ri-app-alert-danger mb-6 rounded-[24px] px-6 py-4 text-sm">
                     <?php echo htmlspecialchars((string) $error, ENT_QUOTES, 'UTF-8'); ?>
                 </div>
             <?php endif; ?>
             <?php if (!empty($success)) : ?>
-                <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-4 text-sm text-emerald-900">
+                <div class="ri-app-alert-success mb-6 rounded-[24px] px-6 py-4 text-sm">
                     <?php echo htmlspecialchars((string) $success, ENT_QUOTES, 'UTF-8'); ?>
                 </div>
             <?php endif; ?>
@@ -57,14 +61,14 @@
                         name="q"
                         value="<?php echo htmlspecialchars($search, ENT_QUOTES, 'UTF-8'); ?>"
                         placeholder="Buscar planes estratégicos..."
-                        class="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15 outline-none"
+                        class="ri-project-search w-full rounded-2xl px-4 py-2.5 text-sm outline-none transition"
                     />
                 </div>
 
                 <div class="flex gap-2">
                     <select
                         name="sort"
-                        class="rounded-xl border border-neutral-300 px-3 py-2 text-sm"
+                        class="ri-project-sort rounded-2xl px-4 py-2.5 text-sm outline-none transition"
                         onchange="this.form.submit()"
                     >
                         <option value="recent" <?php echo $sort === 'recent' ? 'selected' : ''; ?>>Más recientes</option>
@@ -75,7 +79,7 @@
 
                     <button
                         type="submit"
-                        class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+                        class="ri-project-primary-btn rounded-2xl px-4 py-2 text-sm font-semibold"
                     >
                         Buscar
                     </button>
@@ -83,7 +87,7 @@
                     <?php if ($search !== '' || $sort !== 'recent') : ?>
                         <a
                             href="proyectos.php"
-                            class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-100"
+                            class="ri-project-ghost-btn rounded-2xl px-4 py-2 text-sm font-semibold"
                         >
                             Limpiar
                         </a>
@@ -92,7 +96,7 @@
             </form>
 
             <!-- LISTA -->
-            <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm">
+            <div class="ri-project-list-card rounded-[24px]">
 
                 <div class="divide-y divide-neutral-200">
                     <?php if (empty($proyectos)) : ?>
@@ -102,7 +106,7 @@
                     <?php else : ?>
                         <?php foreach ($proyectos as $proyecto) : ?>
                             <div
-                                class="px-6 py-4 flex justify-between items-center hover:bg-neutral-50 transition"
+                                class="ri-project-list-row px-6 py-4 flex justify-between items-center"
                                 data-project-row="1"
                                 data-project-name="<?php echo htmlspecialchars((string) ($proyecto['nombre'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                 data-project-id="<?php echo (int) ($proyecto['id_proyecto'] ?? 0); ?>"
@@ -117,7 +121,7 @@
                                 <div class="flex items-center gap-3">
                                     <a
                                         href="detalle-proyecto.php?t=<?php echo urlencode((string) ($proyecto['token'] ?? '')); ?>"
-                                        class="text-sm text-brand-700 font-medium hover:underline"
+                                        class="ri-project-link text-sm font-medium hover:underline"
                                     >
                                         Ver detalle
                                     </a>
@@ -150,10 +154,10 @@
                   Página <?php echo (int) $page; ?> de <?php echo (int) $totalPages; ?> · <?php echo (int) $totalProyectos; ?> planes estratégicos
                 </div>
 
-                <nav class="inline-flex items-center gap-1" aria-label="Paginación">
+                <nav class="ri-project-pagination inline-flex items-center gap-1" aria-label="Paginación">
                   <a
                     href="<?php echo htmlspecialchars($buildUrl(max(1, $page - 1)), ENT_QUOTES, 'UTF-8'); ?>"
-                    class="<?php echo $page <= 1 ? 'pointer-events-none opacity-50' : ''; ?> inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
+                    class="<?php echo $page <= 1 ? 'pointer-events-none opacity-50' : ''; ?> ri-project-ghost-btn inline-flex h-10 items-center justify-center rounded-xl px-3 text-sm font-semibold"
                   >
                     Anterior
                   </a>
@@ -161,7 +165,7 @@
                   <?php for ($p = $start; $p <= $end; $p++) : ?>
                     <a
                       href="<?php echo htmlspecialchars($buildUrl($p), ENT_QUOTES, 'UTF-8'); ?>"
-                      class="<?php echo $p === $page ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-neutral-800 border-neutral-200 hover:bg-neutral-50'; ?> inline-flex h-10 w-10 items-center justify-center rounded-xl border text-sm font-semibold"
+                      class="<?php echo $p === $page ? 'text-white' : 'ri-project-ghost-btn'; ?> inline-flex h-10 w-10 items-center justify-center rounded-xl border text-sm font-semibold"
                       aria-current="<?php echo $p === $page ? 'page' : 'false'; ?>"
                     >
                       <?php echo (int) $p; ?>
@@ -170,7 +174,7 @@
 
                   <a
                     href="<?php echo htmlspecialchars($buildUrl(min($totalPages, $page + 1)), ENT_QUOTES, 'UTF-8'); ?>"
-                    class="<?php echo $page >= $totalPages ? 'pointer-events-none opacity-50' : ''; ?> inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
+                    class="<?php echo $page >= $totalPages ? 'pointer-events-none opacity-50' : ''; ?> ri-project-ghost-btn inline-flex h-10 items-center justify-center rounded-xl px-3 text-sm font-semibold"
                   >
                     Siguiente
                   </a>

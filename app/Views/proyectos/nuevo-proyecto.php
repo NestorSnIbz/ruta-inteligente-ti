@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Nuevo Plan Estratégico - Ruta Inteligente TI</title>
   <link href="/dist/output.css" rel="stylesheet" />
+  <link href="/app-shell.css" rel="stylesheet" />
 </head>
 
-<body class="min-h-screen bg-neutral-50 text-neutral-900">
+<body class="ri-page-shell min-h-screen text-neutral-900">
 <?php
   $proyectos = is_array($proyectos ?? null) ? $proyectos : [];
 ?>
@@ -22,19 +23,19 @@
   <div class="flex flex-col">
 
     <!-- HEADER -->
-    <header class="bg-white border-b border-neutral-200">
+    <header class="ri-dashboard-header">
       <div class="px-6 py-4 flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-semibold tracking-tight">
+          <h1 class="ri-page-title text-2xl font-semibold tracking-tight">
             Nuevo Plan Estratégico
           </h1>
-          <p class="text-sm text-neutral-600 mt-1">
+          <p class="ri-page-subtitle mt-1 text-sm">
             Registra un nuevo plan estratégico.
           </p>
         </div>
 
         <a href="proyectos.php"
-           class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100">
+           class="ri-project-ghost-btn rounded-2xl px-4 py-2 text-sm font-medium">
           Volver
         </a>
       </div>
@@ -43,21 +44,21 @@
     <!-- CONTENT -->
     <main class="flex-1 p-6">
 
-      <div class="max-w-4xl mx-auto bg-white border border-neutral-200 rounded-2xl shadow-sm p-6">
+      <div class="ri-project-create-card max-w-4xl mx-auto rounded-[24px] p-6">
         <?php if (!empty($error)) : ?>
-          <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-800">
+          <div class="ri-app-alert-danger mb-6 rounded-[24px] px-6 py-4 text-sm">
             <?php echo htmlspecialchars((string) $error, ENT_QUOTES, 'UTF-8'); ?>
           </div>
         <?php endif; ?>
         <?php if (!empty($success)) : ?>
-          <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-4 text-sm text-emerald-900">
+          <div class="ri-app-alert-success mb-6 rounded-[24px] px-6 py-4 text-sm">
             <?php echo htmlspecialchars((string) $success, ENT_QUOTES, 'UTF-8'); ?>
           </div>
         <?php endif; ?>
 
         <form action="nuevo-proyecto.php" method="post">
           <div>
-            <label for="nombre" class="block text-sm font-medium text-neutral-700">
+            <label for="nombre" class="ri-app-label block text-sm font-medium">
               Nombre del plan estratégico
             </label>
 
@@ -67,7 +68,7 @@
               type="text"
               required
               placeholder="Plan Estratégico 2026"
-              class="mt-2 w-full rounded-xl border border-neutral-300 px-4 py-2.5 text-sm outline-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
+              class="ri-app-input mt-2 w-full rounded-2xl px-4 py-3 text-sm outline-none transition"
             />
 
             <p class="mt-2 text-xs text-neutral-500">
@@ -78,14 +79,14 @@
           <div class="mt-8 flex justify-end gap-3">
             <a
               href="proyectos.php"
-              class="rounded-xl border border-neutral-300 px-5 py-2.5 text-sm font-medium hover:bg-neutral-100"
+              class="ri-project-ghost-btn rounded-2xl px-5 py-2.5 text-sm font-medium"
             >
               Cancelar
             </a>
 
             <button
               type="submit"
-              class="rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700"
+              class="ri-project-primary-btn rounded-2xl px-5 py-2.5 text-sm font-semibold"
             >
               Guardar plan estratégico
             </button>
