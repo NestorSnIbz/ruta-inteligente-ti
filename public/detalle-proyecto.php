@@ -15,6 +15,7 @@ require __DIR__ . '/../app/Models/PerfilCompetitivo.php';
 require __DIR__ . '/../app/Models/Pest.php';
 require __DIR__ . '/../app/Models/Foda.php';
 require __DIR__ . '/../app/Models/FodaCruzada.php';
+require __DIR__ . '/../app/Models/Came.php';
 require __DIR__ . '/../app/Controllers/AuthController.php';
 require __DIR__ . '/../app/Controllers/ProyectoController.php';
 require __DIR__ . '/../app/BCG/Entities.php';
@@ -102,6 +103,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             break;
         case 'save_foda_cruzada_batch':
             $controller->saveFodaCruzadaBatch();
+            break;
+        case 'save_came_autosave_batch':
+            $controller->saveCameAutosaveBatch();
+            break;
+        case 'save_came_batch':
+            $controller->saveCameBatch();
             break;
         case 'save_foda_cadena':
             $controller->saveFodaCadena();

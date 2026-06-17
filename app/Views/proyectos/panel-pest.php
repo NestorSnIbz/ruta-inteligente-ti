@@ -27,6 +27,13 @@
   $pestAmenazas = array_values(array_filter(array_map('trim', array_map('strval', $pestAmenazas ?? []))));
 
   $barOrder = ['SOCIALES', 'MEDIOAMBIENTALES', 'POLITICOS', 'ECONOMICOS', 'TECNOLOGICOS'];
+  $barColors = [
+    'SOCIALES' => '#A7D88D',
+    'MEDIOAMBIENTALES' => '#5E9F59',
+    'POLITICOS' => '#B98A5B',
+    'ECONOMICOS' => '#D6680B',
+    'TECNOLOGICOS' => '#7EC9F5',
+  ];
   $groups = [];
   foreach ($pestPreguntas as $q) {
     if (!is_array($q)) continue;
@@ -48,135 +55,22 @@
 
 <section id="panel-pest" class="project-panel bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
   <div class="flex items-center justify-between gap-3">
-    <h2 class="text-lg font-semibold">AUTODIAGNÓSTICO ENTORNO GLOBAL P.E.S.T.</h2>
+    <h2 class="text-lg font-semibold">Autodiagnóstico Entorno Global P.E.S.T.</h2>
   </div>
 
-  <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-    <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
-      <div class="text-sm font-semibold text-neutral-900">Económicos</div>
-      <div class="mt-2 text-sm text-neutral-700 leading-relaxed">
-        Los factores políticos implican efectos económicos. El comportamiento, la confianza del comprador y su nivel adquisitivo están relacionados con el auge, estancamiento, recesión y recuperación de la economía.
-      </div>
-      <div class="mt-3 text-sm font-semibold text-neutral-900">Ejemplos:</div>
-      <ul class="mt-2 list-disc pl-5 text-sm text-neutral-700 space-y-1">
-        <li>Tasas impositivas</li>
-        <li>Tasas de interés</li>
-        <li>Niveles de deuda</li>
-        <li>Niveles de ahorro</li>
-        <li>Tasa de empleo</li>
-        <li>Índices de precio</li>
-      </ul>
-    </div>
+  
 
-    <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
-      <div class="text-sm font-semibold text-neutral-900">Sociales</div>
-      <div class="mt-2 text-sm text-neutral-700 leading-relaxed">
-        Se enfoca a las fuerzas que actúan dentro de la sociedad y afectan las actitudes, opiniones e intereses de las personas.
-      </div>
-      <div class="mt-3 text-sm font-semibold text-neutral-900">Ejemplos:</div>
-      <ul class="mt-2 list-disc pl-5 text-sm text-neutral-700 space-y-1">
-        <li>Estratos demográficos</li>
-        <li>Estilos de vida</li>
-        <li>Distribución del ingreso</li>
-        <li>Ocio</li>
-        <li>Factores étnicos</li>
-        <li>Factores religiosos</li>
-      </ul>
+  <div class="mt-4 w-full">
+  <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+    <div class="text-sm font-semibold text-neutral-900">
+      Escala de valoración
     </div>
-
-    <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
-      <div class="text-sm font-semibold text-neutral-900">Tecnológicos</div>
-      <div class="mt-2 text-sm text-neutral-700 leading-relaxed">
-        La tecnología es una fuerza impulsora de negocios.
-      </div>
-      <div class="mt-3 text-sm text-neutral-700 leading-relaxed">
-        Permite:
-      </div>
-      <ul class="mt-2 list-disc pl-5 text-sm text-neutral-700 space-y-1">
-        <li>Mejorar la calidad</li>
-        <li>Reducir tiempos de comercialización</li>
-        <li>Modernizar procesos</li>
-        <li>Automatizar operaciones</li>
-      </ul>
-      <div class="mt-3 text-sm font-semibold text-neutral-900">Ejemplos:</div>
-      <ul class="mt-2 list-disc pl-5 text-sm text-neutral-700 space-y-1">
-        <li>Obsolescencia tecnológica</li>
-        <li>Automatización</li>
-        <li>Tecnologías de información</li>
-        <li>Incentivos tecnológicos</li>
-      </ul>
+    <div class="mt-3 space-y-1 text-sm leading-relaxed text-neutral-700">
+      <div>A continuación marque con una X para valorar su empresa en función de cada una de las afirmaciones, de tal forma que:</div>
+      <div>0 = En total desacuero, 1 = No está de acuerdo, 2 = Está de acuerdo, 3 = Está bastante de acuerdo, 4 = En total acuerdo</div>
     </div>
   </div>
-
-  <div class="mt-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
-    <div class="flex items-start justify-between gap-3">
-      <div>
-        <div class="text-sm font-semibold text-neutral-900">Gráfico resumen</div>
-        <div class="mt-0.5 text-xs text-neutral-500">Porcentaje = (Puntaje Obtenido / Puntaje Máximo) × 100</div>
-      </div>
-      <div class="text-xs text-neutral-500">Filas válidas: <span id="pest-valid"><?php echo (int) $valid; ?>/<?php echo (int) $count; ?></span></div>
-    </div>
-
-    <div class="mt-4 overflow-x-auto">
-      <div class="min-w-[980px]">
-        <div class="flex items-stretch gap-4">
-          <div class="flex items-center">
-            <div class="whitespace-nowrap text-xs font-semibold text-neutral-600 -rotate-90">
-              Nivel de impacto de factores generales externos
-            </div>
-          </div>
-
-          <div class="flex-1">
-            <div class="rounded-2xl border border-neutral-200 bg-white p-4">
-              <div class="flex items-end justify-between gap-8">
-                <?php foreach ($barOrder as $cat) : ?>
-                  <?php
-                    $p = (int) ($pct[$cat] ?? 0);
-                    $p = max(0, min(100, $p));
-                    $label = $catLabels[$cat] ?? $cat;
-                  ?>
-                  <div class="flex w-full flex-col items-center justify-end">
-                    <div data-pest-bar-label="<?php echo htmlspecialchars($cat, ENT_QUOTES, 'UTF-8'); ?>" class="mb-2 rounded-lg bg-neutral-50 px-2 py-1 text-xs font-semibold text-neutral-800">
-                      <?php echo (int) $p; ?>%
-                    </div>
-                    <div class="h-44 w-10 flex items-end">
-                      <div data-pest-bar="<?php echo htmlspecialchars($cat, ENT_QUOTES, 'UTF-8'); ?>" class="w-full rounded-lg bg-brand-600" style="height: <?php echo (int) $p; ?>%"></div>
-                    </div>
-                    <div class="mt-3 text-[11px] font-semibold text-neutral-700 text-center leading-tight">
-                      <?php echo htmlspecialchars((string) $label, ENT_QUOTES, 'UTF-8'); ?>
-                    </div>
-                  </div>
-                <?php endforeach; ?>
-              </div>
-            </div>
-
-            <div class="mt-3 text-center text-xs font-semibold text-neutral-600">
-              Tipología de factores generales externos
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-    <div class="text-sm text-neutral-700 leading-relaxed">
-      A continuación marque con una X para valorar su empresa en función de cada una de las afirmaciones, de tal forma que:
-      <br />
-      0 = En total desacuerdo
-      <br />
-      1 = No está de acuerdo
-      <br />
-      2 = Está de acuerdo
-      <br />
-      3 = Está bastante de acuerdo
-      <br />
-      4 = En total acuerdo
-      <br />
-      <br />
-      En caso de no cumplimentar una casilla o duplicar su respuesta aparecerá un mensaje de validación.
-    </div>
-  </div>
+</div>
 
   <div class="mt-4 overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
     <form id="pest-form" class="min-w-[1180px]">
@@ -283,6 +177,78 @@
           <div data-pest-conclusion="<?php echo htmlspecialchars($cat, ENT_QUOTES, 'UTF-8'); ?>" class="mt-3 text-xs text-neutral-700 leading-relaxed"><?php echo htmlspecialchars((string) $c['text'], ENT_QUOTES, 'UTF-8'); ?></div>
         </div>
       <?php endforeach; ?>
+    </div>
+  </div>
+
+  <div class="mt-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <div class="text-sm font-semibold text-neutral-900">Gráfico resumen</div>
+        <div class="mt-0.5 text-xs text-neutral-500">Porcentaje = (Puntaje Obtenido / Puntaje Máximo) × 100</div>
+      </div>
+      <div class="text-xs text-neutral-500">Filas válidas: <span id="pest-valid"><?php echo (int) $valid; ?>/<?php echo (int) $count; ?></span></div>
+    </div>
+
+    <div class="mt-4 overflow-x-auto">
+      <div class="min-w-[760px]">
+        <div class="flex items-stretch gap-4">
+          <div class="flex items-center">
+            <div class="whitespace-nowrap text-xs font-semibold text-neutral-600 -rotate-90">
+              Nivel de impacto de factores generales externos
+            </div>
+          </div>
+
+          <div class="flex-1">
+            <div class="rounded-2xl border border-neutral-200 bg-white p-4">
+              <div class="flex gap-5">
+                <div class="relative flex h-56 w-12 flex-none flex-col justify-between text-[11px] font-semibold text-neutral-500">
+                  <span>100</span>
+                  <span>75</span>
+                  <span>50</span>
+                  <span>25</span>
+                  <span>0</span>
+                </div>
+
+                <div class="relative flex-1">
+                  <div class="pointer-events-none absolute inset-0 flex flex-col justify-between">
+                    <div class="border-t border-dashed border-neutral-200"></div>
+                    <div class="border-t border-dashed border-neutral-200"></div>
+                    <div class="border-t border-dashed border-neutral-200"></div>
+                    <div class="border-t border-dashed border-neutral-200"></div>
+                    <div class="border-t border-dashed border-neutral-200"></div>
+                  </div>
+
+                  <div class="relative flex h-56 items-end justify-between gap-8 px-2">
+                    <?php foreach ($barOrder as $cat) : ?>
+                      <?php
+                        $p = (int) ($pct[$cat] ?? 0);
+                        $p = max(0, min(100, $p));
+                        $label = $catLabels[$cat] ?? $cat;
+                        $barColor = $barColors[$cat] ?? '#0054DC';
+                      ?>
+                      <div class="flex w-full flex-col items-center justify-end">
+                        <div data-pest-bar-label="<?php echo htmlspecialchars($cat, ENT_QUOTES, 'UTF-8'); ?>" class="mb-2 rounded-lg bg-neutral-50 px-2 py-1 text-xs font-semibold text-neutral-800">
+                          <?php echo (int) $p; ?>%
+                        </div>
+                        <div class="flex h-44 w-10 items-end">
+                          <div data-pest-bar="<?php echo htmlspecialchars($cat, ENT_QUOTES, 'UTF-8'); ?>" class="w-full rounded-lg" style="height: <?php echo (int) $p; ?>%; background-color: <?php echo htmlspecialchars($barColor, ENT_QUOTES, 'UTF-8'); ?>;"></div>
+                        </div>
+                        <div class="mt-3 text-[11px] font-semibold text-neutral-700 text-center leading-tight">
+                          <?php echo htmlspecialchars((string) $label, ENT_QUOTES, 'UTF-8'); ?>
+                        </div>
+                      </div>
+                    <?php endforeach; ?>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-3 text-center text-xs font-semibold text-neutral-600">
+              Tipología de factores generales externos
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

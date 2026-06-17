@@ -309,6 +309,47 @@ CREATE TABLE foda_cruzada_resultado (
         ON DELETE CASCADE
 );
 
+CREATE TABLE came_accion (
+    id_accion SERIAL PRIMARY KEY,
+    id_proyecto INT NOT NULL,
+    categoria VARCHAR(1) NOT NULL,
+    posicion INT NOT NULL,
+    descripcion TEXT NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT chk_came_categoria
+        CHECK (categoria IN ('C', 'A', 'M', 'E')),
+
+    CONSTRAINT chk_came_posicion
+        CHECK (posicion >= 1),
+
+    CONSTRAINT uq_came_proyecto_categoria_posicion
+        UNIQUE (id_proyecto, categoria, posicion),
+
+    CONSTRAINT fk_came_accion_proyecto
+        FOREIGN KEY (id_proyecto)
+        REFERENCES proyecto(id_proyecto)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE came_resultado (
+    id_proyecto INT PRIMARY KEY,
+    acciones_registradas INT NOT NULL DEFAULT 0,
+    categorias_utilizadas INT NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT chk_came_resultado_counts
+        CHECK (
+            acciones_registradas >= 0
+            AND categorias_utilizadas >= 0 AND categorias_utilizadas <= 4
+        ),
+
+    CONSTRAINT fk_came_res_proyecto
+        FOREIGN KEY (id_proyecto)
+        REFERENCES proyecto(id_proyecto)
+        ON DELETE CASCADE
+);
+
 CREATE TABLE bcg_producto (
     id_producto_bcg SERIAL PRIMARY KEY,
     id_proyecto INT NOT NULL,
@@ -409,6 +450,7 @@ CREATE INDEX idx_bcg_competidor_producto ON bcg_competidor(id_producto_bcg);
 CREATE INDEX idx_bcg_resultado_proyecto ON bcg_resultado(id_proyecto);
 CREATE INDEX idx_foda_item_proyecto_fuente_tipo ON foda_item(id_proyecto, fuente, tipo);
 CREATE INDEX idx_foda_cruzada_eval_proyecto_relacion ON foda_cruzada_evaluacion(id_proyecto, relacion);
+CREATE INDEX idx_came_accion_proyecto_categoria ON came_accion(id_proyecto, categoria);
 
 INSERT INTO cadena_valor_pregunta (numero, texto) VALUES
 (1, 'La empresa tiene una política sistematizada de cero defectos en la producción de productos/servicios.'),
