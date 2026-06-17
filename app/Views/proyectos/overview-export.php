@@ -81,6 +81,10 @@
   $cameCounts = is_array($cameCalc['counts'] ?? null) ? (array) $cameCalc['counts'] : [];
   $cameTotalActions = (int) ($cameCalc['total_actions'] ?? 0);
   $cameCategoriesUsed = (int) ($cameCalc['categories_used'] ?? 0);
+  $overviewConclusion = trim((string) ($overviewConclusionTexto ?? ''));
+  if ($overviewConclusion === '') {
+    $overviewConclusion = 'Aún no hay suficiente información para elaborar una conclusión general del plan estratégico. Complete la matriz FODA, la identificación de estrategia y las acciones competitivas para generar una conclusión más precisa.';
+  }
 ?>
 
 <div class="mx-auto max-w-5xl px-6 py-8">
@@ -501,6 +505,13 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-neutral-200 bg-white p-5">
+        <div class="text-sm font-semibold text-neutral-900">Conclusión</div>
+        <div class="mt-3 text-sm leading-relaxed text-neutral-700">
+          <?php echo nl2br(htmlspecialchars($overviewConclusion, ENT_QUOTES, 'UTF-8')); ?>
         </div>
       </div>
     </div>

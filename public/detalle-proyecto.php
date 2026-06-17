@@ -7,6 +7,7 @@ require __DIR__ . '/../app/Models/Proyecto.php';
 require __DIR__ . '/../app/Models/ProyectoMiembro.php';
 require __DIR__ . '/../app/Models/Mision.php';
 require __DIR__ . '/../app/Models/Vision.php';
+require __DIR__ . '/../app/Models/PlanEstrategicoConclusion.php';
 require __DIR__ . '/../app/Models/Valor.php';
 require __DIR__ . '/../app/Models/ObjetivoEstrategico.php';
 require __DIR__ . '/../app/Models/ObjetivoEspecifico.php';
@@ -40,6 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             break;
         case 'save_vision':
             $controller->saveVision();
+            break;
+        case 'save_overview_conclusion':
+            $controller->saveOverviewConclusion();
             break;
         case 'add_valor':
             $controller->addValor();

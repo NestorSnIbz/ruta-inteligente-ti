@@ -56,6 +56,18 @@ CREATE TABLE mision (
         ON DELETE CASCADE
 );
 
+CREATE TABLE plan_estrategico_conclusion (
+    id_conclusion SERIAL PRIMARY KEY,
+    id_proyecto INT UNIQUE NOT NULL,
+    descripcion TEXT NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_plan_conclusion_proyecto
+        FOREIGN KEY (id_proyecto)
+        REFERENCES proyecto(id_proyecto)
+        ON DELETE CASCADE
+);
+
 CREATE TABLE valor (
     id_valor SERIAL PRIMARY KEY,
     id_proyecto INT NOT NULL,

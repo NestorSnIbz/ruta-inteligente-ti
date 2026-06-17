@@ -1404,6 +1404,8 @@
         $cameCounts = is_array($cameCalc['counts'] ?? null) ? (array) $cameCalc['counts'] : [];
         $cameTotalActions = (int) ($cameCalc['total_actions'] ?? 0);
         $cameCategoriesUsed = (int) ($cameCalc['categories_used'] ?? 0);
+        $overviewConclusion = trim((string) ($overviewConclusionTexto ?? ''));
+        $overviewConclusionPlaceholder = 'Escribe aquí la conclusión general del plan estratégico.';
       ?>
 
       <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
@@ -1867,6 +1869,32 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+        <div class="text-sm font-semibold text-neutral-900">Conclusión</div>
+        <div class="mt-1 text-sm text-neutral-600">Redacta, edita y guarda la conclusión general del plan estratégico.</div>
+        <form class="mt-4 space-y-3" method="post" action="detalle-proyecto.php" data-ajax-save="1">
+          <input type="hidden" name="action" value="save_overview_conclusion" />
+          <input type="hidden" name="t" value="<?php echo htmlspecialchars((string) $projectToken, ENT_QUOTES, 'UTF-8'); ?>" />
+          <textarea
+            name="descripcion"
+            id="overview-conclusion-textarea"
+            rows="7"
+            class="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-4 text-sm leading-relaxed outline-none resize-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
+            placeholder="<?php echo htmlspecialchars($overviewConclusionPlaceholder, ENT_QUOTES, 'UTF-8'); ?>"
+            required
+          ><?php echo htmlspecialchars($overviewConclusion, ENT_QUOTES, 'UTF-8'); ?></textarea>
+          <div class="flex justify-end">
+            <button
+              type="button"
+              data-save-overview-conclusion="1"
+              class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+            >
+              Guardar conclusión
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </section>

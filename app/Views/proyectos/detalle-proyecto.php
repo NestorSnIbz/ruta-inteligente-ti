@@ -191,13 +191,18 @@
               <a
                 href="detalle-proyecto.php?t=<?php echo urlencode((string) $projectToken); ?>&export=overview_pdf"
                 download
+                data-pdf-download="overview"
                 class="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-brand-700"
               >
-                <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <svg data-pdf-icon="download" viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-3-3m3 3l3-3" />
                   <path stroke-linecap="round" stroke-linejoin="round" d="M4 17v3a1 1 0 001 1h14a1 1 0 001-1v-3" />
                 </svg>
-                Descargar PDF
+                <svg data-pdf-icon="spinner" class="hidden h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+                <span data-pdf-text>Descargar PDF</span>
               </a>
               <?php if (!empty($isCreador)) : ?>
               <button
@@ -398,6 +403,8 @@
               $cameCounts = is_array($cameCalc['counts'] ?? null) ? (array) $cameCalc['counts'] : [];
               $cameTotalActions = (int) ($cameCalc['total_actions'] ?? 0);
               $cameCategoriesUsed = (int) ($cameCalc['categories_used'] ?? 0);
+              $overviewConclusion = trim((string) ($overviewConclusionTexto ?? ''));
+              $overviewConclusionPlaceholder = 'Escribe aquí la conclusión general del plan estratégico.';
             ?>
 
             <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
@@ -861,6 +868,32 @@
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+              <div class="text-sm font-semibold text-neutral-900">Conclusión</div>
+              <div class="mt-1 text-sm text-neutral-600">Redacta, edita y guarda la conclusión general del plan estratégico.</div>
+              <form class="mt-4 space-y-3" method="post" action="detalle-proyecto.php" data-ajax-save="1">
+                <input type="hidden" name="action" value="save_overview_conclusion" />
+                <input type="hidden" name="t" value="<?php echo htmlspecialchars((string) $projectToken, ENT_QUOTES, 'UTF-8'); ?>" />
+                <textarea
+                  name="descripcion"
+                  id="overview-conclusion-textarea"
+                  rows="7"
+                  class="w-full rounded-2xl border border-neutral-300 bg-white px-4 py-4 text-sm leading-relaxed outline-none resize-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
+                  placeholder="<?php echo htmlspecialchars($overviewConclusionPlaceholder, ENT_QUOTES, 'UTF-8'); ?>"
+                  required
+                ><?php echo htmlspecialchars($overviewConclusion, ENT_QUOTES, 'UTF-8'); ?></textarea>
+                <div class="flex justify-end">
+                  <button
+                    type="button"
+                    data-save-overview-conclusion="1"
+                    class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+                  >
+                    Guardar conclusión
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </section>
@@ -1350,6 +1383,19 @@
     const task = (async () => {
       const current = document.getElementById(`panel-${panelId}`);
       if (!current) return;
+      const getFocusSnapshot = (root) => {
+        const activeEl = document.activeElement;
+        if (!activeEl) return null;
+        if (!(activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement)) return null;
+        if (!root.contains(activeEl)) return null;
+        return {
+          id: activeEl.id || "",
+          name: activeEl.name || "",
+          selectionStart: typeof activeEl.selectionStart === "number" ? activeEl.selectionStart : null,
+          selectionEnd: typeof activeEl.selectionEnd === "number" ? activeEl.selectionEnd : null,
+        };
+      };
+      let focusSnapshot = getFocusSnapshot(current);
       try {
         const u = new URL("detalle-proyecto.php", window.location.href);
         u.searchParams.set("t", String(projectToken));
@@ -1366,6 +1412,7 @@
         });
         const html = await res.text();
         if (!res.ok) return;
+        focusSnapshot = getFocusSnapshot(current) || focusSnapshot;
         const shouldBeHidden = activePanelId !== panelId;
         current.outerHTML = html;
         const updated = document.getElementById(`panel-${panelId}`);
@@ -1375,6 +1422,19 @@
         }
         loadedPanels.add(panelId);
         initLazyPanel(panelId);
+        if (focusSnapshot && updated) {
+          let next = null;
+          if (focusSnapshot.id) next = updated.querySelector(`#${CSS.escape(focusSnapshot.id)}`);
+          if (!next && focusSnapshot.name) next = updated.querySelector(`[name="${CSS.escape(focusSnapshot.name)}"]`);
+          if (next && (next instanceof HTMLInputElement || next instanceof HTMLTextAreaElement)) {
+            next.focus();
+            if (typeof focusSnapshot.selectionStart === "number" && typeof focusSnapshot.selectionEnd === "number") {
+              try {
+                next.setSelectionRange(focusSnapshot.selectionStart, focusSnapshot.selectionEnd);
+              } catch (e) {}
+            }
+          }
+        }
       } catch (e) {
       } finally {
         inflight.delete(panelId);
@@ -3977,7 +4037,7 @@
     (normalizedSectionParam || normalizedStoredPanel || "overview");
 
   setActiveProjectPanel(initialPanel, { updateUrl: false });
-  if (alwaysRefreshPanels.has(initialPanel)) {
+  if (alwaysRefreshPanels.has(initialPanel) && initialPanel !== "overview") {
     reloadPanel(initialPanel);
   } else {
     ensurePanelLoaded(initialPanel);
@@ -4136,6 +4196,7 @@
     return [
       "save_mision",
       "save_vision",
+      "save_overview_conclusion",
       "save_valores",
       "save_objetivos_batch",
       "create_obj_est",
@@ -4150,6 +4211,7 @@
   function panelForAction(action) {
     if (action === "save_mision") return "mision";
     if (action === "save_vision") return "vision";
+    if (action === "save_overview_conclusion") return "overview";
     if (action === "save_valores") return "valores";
     return "objetivos";
   }
@@ -4161,7 +4223,8 @@
     if (!form.action || !form.action.includes("detalle-proyecto.php")) return;
     const actionEl = form.querySelector('input[name="action"]');
     const action = actionEl ? String(actionEl.value || "") : "";
-    if (!isAjaxSaveAction(action)) return;
+    const shouldAjax = isAjaxSaveAction(action) || form.dataset.ajaxSave === "1";
+    if (!shouldAjax) return;
     e.preventDefault();
 
     const panelId = panelForAction(action);
@@ -4170,6 +4233,11 @@
     setButtonLoading(submitter, true, loadingText);
 
     try {
+      const focusedBefore = document.activeElement;
+      const preserveFocus =
+        action === "save_overview_conclusion" &&
+        focusedBefore &&
+        (focusedBefore instanceof HTMLInputElement || focusedBefore instanceof HTMLTextAreaElement);
       const fd = new FormData(form);
       const res = await fetch("detalle-proyecto.php", {
         method: "POST",
@@ -4202,6 +4270,12 @@
       }
 
       showInlineToast("Guardado", (json && json.message) ? json.message : "Guardado correctamente.");
+      if (action === "save_overview_conclusion") {
+        if (preserveFocus && focusedBefore) {
+          try { focusedBefore.focus(); } catch (e) {}
+        }
+        return;
+      }
       await reloadPanel(panelId);
       setActiveProjectPanel(panelId, { updateUrl: false });
     } catch (err) {
@@ -4210,6 +4284,66 @@
       setButtonLoading(submitter, false);
     }
   });
+
+  document.addEventListener("click", async (e) => {
+    const btn = e.target instanceof Element ? e.target.closest("[data-save-overview-conclusion]") : null;
+    if (!(btn instanceof HTMLButtonElement)) return;
+    const form = btn.closest("form");
+    if (!(form instanceof HTMLFormElement)) return;
+    e.preventDefault();
+    const textarea = form.querySelector("textarea[name=\"descripcion\"]");
+    if (!(textarea instanceof HTMLTextAreaElement)) return;
+    const value = String(textarea.value || "").trim();
+    if (!value) {
+      showInlineToast("Error", "La conclusión es obligatoria.");
+      textarea.focus();
+      return;
+    }
+
+    setButtonLoading(btn, true, "Guardando…");
+    try {
+      const fd = new FormData(form);
+      const res = await fetch("detalle-proyecto.php", {
+        method: "POST",
+        headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+        body: fd,
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json || json.ok !== true) {
+        const msg = (json && json.error) ? json.error : "No se pudo guardar.";
+        showInlineToast("Error", msg);
+        return;
+      }
+      showInlineToast("Guardado", (json && json.message) ? json.message : "Guardado correctamente.");
+      textarea.focus();
+    } catch (err) {
+      showInlineToast("Error", "No se pudo guardar.");
+    } finally {
+      setButtonLoading(btn, false);
+    }
+  });
+
+  const overviewPdfLink = document.querySelector('[data-pdf-download="overview"]');
+  if (overviewPdfLink instanceof HTMLAnchorElement) {
+    overviewPdfLink.addEventListener("click", () => {
+      if (overviewPdfLink.dataset.riBusy === "1") return;
+      overviewPdfLink.dataset.riBusy = "1";
+      overviewPdfLink.classList.add("pointer-events-none", "opacity-80");
+      const iconDownload = overviewPdfLink.querySelector('[data-pdf-icon="download"]');
+      const iconSpinner = overviewPdfLink.querySelector('[data-pdf-icon="spinner"]');
+      const text = overviewPdfLink.querySelector("[data-pdf-text]");
+      if (iconDownload) iconDownload.classList.add("hidden");
+      if (iconSpinner) iconSpinner.classList.remove("hidden");
+      if (text) text.textContent = "Generando PDF…";
+      window.setTimeout(() => {
+        overviewPdfLink.dataset.riBusy = "0";
+        overviewPdfLink.classList.remove("pointer-events-none", "opacity-80");
+        if (iconSpinner) iconSpinner.classList.add("hidden");
+        if (iconDownload) iconDownload.classList.remove("hidden");
+        if (text) text.textContent = "Descargar PDF";
+      }, 12000);
+    });
+  }
 
   document.querySelectorAll("[data-open-panel]").forEach((btn) => {
     btn.addEventListener("click", async () => {

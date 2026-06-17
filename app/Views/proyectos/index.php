@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Proyectos - Ruta Inteligente TI</title>
+    <title>Planes Estratégicos - Ruta Inteligente TI</title>
     <link href="dist/output.css" rel="stylesheet" />
 </head>
 
@@ -23,11 +23,11 @@
         <!-- HEADER -->
         <header class="bg-white border-b border-neutral-200">
             <div class="px-6 py-4 flex items-center justify-between">
-                <h1 class="text-xl font-semibold">Proyectos</h1>
+                <h1 class="text-xl font-semibold">Planes Estratégicos</h1>
 
                 <a href="nuevo-proyecto.php"
                    class="bg-brand-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-brand-700">
-                    + Nuevo proyecto
+                    + Nuevo plan estratégico
                 </a>
             </div>
         </header>
@@ -56,7 +56,7 @@
                         type="text"
                         name="q"
                         value="<?php echo htmlspecialchars($search, ENT_QUOTES, 'UTF-8'); ?>"
-                        placeholder="Buscar proyectos..."
+                        placeholder="Buscar planes estratégicos..."
                         class="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15 outline-none"
                     />
                 </div>
@@ -97,7 +97,7 @@
                 <div class="divide-y divide-neutral-200">
                     <?php if (empty($proyectos)) : ?>
                         <div class="px-6 py-8 text-sm text-neutral-600">
-                            Aún no tienes proyectos registrados. Crea uno con “+ Nuevo proyecto”.
+                            Aún no tienes planes estratégicos registrados. Crea uno con “+ Nuevo plan estratégico”.
                         </div>
                     <?php else : ?>
                         <?php foreach ($proyectos as $proyecto) : ?>
@@ -111,7 +111,7 @@
                                     <p class="font-medium">
                                         <?php echo htmlspecialchars((string) ($proyecto['nombre'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
                                     </p>
-                                    <p class="text-xs text-neutral-500">Proyecto estratégico</p>
+                                    <p class="text-xs text-neutral-500">Plan estratégico</p>
                                 </div>
 
                                 <div class="flex items-center gap-3">
@@ -147,7 +147,7 @@
             <?php if ($totalPages > 1) : ?>
               <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
                 <div class="text-sm text-neutral-600">
-                  Página <?php echo (int) $page; ?> de <?php echo (int) $totalPages; ?> · <?php echo (int) $totalProyectos; ?> proyectos
+                  Página <?php echo (int) $page; ?> de <?php echo (int) $totalPages; ?> · <?php echo (int) $totalProyectos; ?> planes estratégicos
                 </div>
 
                 <nav class="inline-flex items-center gap-1" aria-label="Paginación">
