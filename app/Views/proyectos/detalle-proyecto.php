@@ -375,6 +375,29 @@
               $fAmePerfil = is_array($fPerfil['AMENAZA'] ?? null) ? (array) $fPerfil['AMENAZA'] : [];
               $fOppPest = is_array($fPest['OPORTUNIDAD'] ?? null) ? (array) $fPest['OPORTUNIDAD'] : [];
               $fAmePest = is_array($fPest['AMENAZA'] ?? null) ? (array) $fPest['AMENAZA'] : [];
+
+              $estrategiasCounts = is_array($fodaCruzadaCalc['counts'] ?? null) ? (array) $fodaCruzadaCalc['counts'] : [];
+              $estrategiasSummary = is_array($fodaCruzadaCalc['summary'] ?? null) ? (array) $fodaCruzadaCalc['summary'] : [];
+              $estrategiasPredominant = is_array($fodaCruzadaCalc['predominant'] ?? null) ? (array) $fodaCruzadaCalc['predominant'] : [];
+              $estrategiasAnswered = (int) ($fodaCruzadaCalc['answered'] ?? 0);
+              $estrategiasTotalCells = (int) ($fodaCruzadaCalc['total_cells'] ?? 0);
+              $estrategiasMissing = (int) ($fodaCruzadaCalc['missing'] ?? 0);
+              $estrategiasComplete = !empty($fodaCruzadaCalc['complete']);
+              $estrategiasTotals = ['FO' => 0, 'FA' => 0, 'DO' => 0, 'DA' => 0];
+              foreach ($estrategiasSummary as $row) {
+                if (!is_array($row)) {
+                  continue;
+                }
+                $relation = strtoupper(trim((string) ($row['relation'] ?? '')));
+                if (!array_key_exists($relation, $estrategiasTotals)) {
+                  continue;
+                }
+                $estrategiasTotals[$relation] = (int) ($row['total'] ?? 0);
+              }
+
+              $cameCounts = is_array($cameCalc['counts'] ?? null) ? (array) $cameCalc['counts'] : [];
+              $cameTotalActions = (int) ($cameCalc['total_actions'] ?? 0);
+              $cameCategoriesUsed = (int) ($cameCalc['categories_used'] ?? 0);
             ?>
 
             <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
@@ -745,6 +768,96 @@
                         </ul>
                       <?php endif; ?>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div class="text-sm font-semibold text-neutral-900">Estrategias y CAME</div>
+                  <div class="mt-1 text-sm text-neutral-600">Resumen de la FODA cruzada y de las acciones definidas en la Matriz CAME.</div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <button type="button" data-open-panel="estrategias" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                    Ver Estrategias
+                  </button>
+                  <button type="button" data-open-panel="came" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                    Ver CAME
+                  </button>
+                </div>
+              </div>
+
+              <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <div class="rounded-2xl border border-neutral-200 bg-white p-5">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <div class="text-sm font-semibold text-neutral-900">Identificación de estrategias</div>
+                      <div class="mt-1 text-sm text-neutral-600">Estado de la matriz FODA cruzada.</div>
+                    </div>
+                    <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold <?php echo $estrategiasComplete ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-900 border border-amber-200'; ?>">
+                      <?php echo $estrategiasComplete ? 'Completo' : 'Incompleto'; ?>
+                    </span>
+                  </div>
+                  <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                      <div class="text-xs font-medium text-neutral-600">Factores detectados</div>
+                      <div class="mt-2 grid grid-cols-2 gap-2 text-xs text-neutral-700">
+                        <div class="rounded-lg border border-neutral-200 bg-white px-2 py-1">F: <?php echo (int) ($estrategiasCounts['fortalezas'] ?? 0); ?></div>
+                        <div class="rounded-lg border border-neutral-200 bg-white px-2 py-1">D: <?php echo (int) ($estrategiasCounts['debilidades'] ?? 0); ?></div>
+                        <div class="rounded-lg border border-neutral-200 bg-white px-2 py-1">O: <?php echo (int) ($estrategiasCounts['oportunidades'] ?? 0); ?></div>
+                        <div class="rounded-lg border border-neutral-200 bg-white px-2 py-1">A: <?php echo (int) ($estrategiasCounts['amenazas'] ?? 0); ?></div>
+                      </div>
+                    </div>
+                    <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                      <div class="text-xs font-medium text-neutral-600">Cobertura</div>
+                      <div class="mt-1 text-2xl font-semibold text-neutral-900"><?php echo (int) $estrategiasAnswered; ?>/<?php echo (int) $estrategiasTotalCells; ?></div>
+                      <div class="mt-1 text-xs text-neutral-500"><?php echo $estrategiasMissing > 0 ? ((int) $estrategiasMissing . ' celdas pendientes.') : 'Sin celdas pendientes.'; ?></div>
+                    </div>
+                  </div>
+                  <div class="mt-4 rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                    <div class="text-xs font-medium text-neutral-600">Totales por estrategia</div>
+                    <div class="mt-2 grid grid-cols-2 gap-2 text-xs text-neutral-700">
+                      <div class="rounded-lg border border-neutral-200 bg-white px-2 py-1">FO: <?php echo (int) ($estrategiasTotals['FO'] ?? 0); ?></div>
+                      <div class="rounded-lg border border-neutral-200 bg-white px-2 py-1">FA: <?php echo (int) ($estrategiasTotals['FA'] ?? 0); ?></div>
+                      <div class="rounded-lg border border-neutral-200 bg-white px-2 py-1">DO: <?php echo (int) ($estrategiasTotals['DO'] ?? 0); ?></div>
+                      <div class="rounded-lg border border-neutral-200 bg-white px-2 py-1">DA: <?php echo (int) ($estrategiasTotals['DA'] ?? 0); ?></div>
+                    </div>
+                    <div class="mt-3 text-sm text-neutral-800">
+                      Estrategia predominante:
+                      <span class="font-semibold text-neutral-900"><?php echo htmlspecialchars(!empty($estrategiasPredominant) ? ((string) ($estrategiasPredominant['label'] ?? '—') . ' (' . (string) ($estrategiasPredominant['relation'] ?? '—') . ')') : 'Sin resultado dominante', ENT_QUOTES, 'UTF-8'); ?></span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="rounded-2xl border border-neutral-200 bg-white p-5">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <div class="text-sm font-semibold text-neutral-900">Matriz CAME</div>
+                      <div class="mt-1 text-sm text-neutral-600">Acciones registradas por categoría.</div>
+                    </div>
+                    <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold <?php echo $cameTotalActions > 0 ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-neutral-100 text-neutral-700'; ?>">
+                      <?php echo $cameTotalActions > 0 ? 'Con acciones' : 'Sin acciones'; ?>
+                    </span>
+                  </div>
+                  <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                      <div class="text-xs font-medium text-neutral-600">Acciones totales</div>
+                      <div class="mt-1 text-2xl font-semibold text-neutral-900"><?php echo (int) $cameTotalActions; ?></div>
+                      <div class="mt-1 text-xs text-neutral-500">Suma de acciones no vacías.</div>
+                    </div>
+                    <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                      <div class="text-xs font-medium text-neutral-600">Categorías utilizadas</div>
+                      <div class="mt-1 text-2xl font-semibold text-neutral-900"><?php echo (int) $cameCategoriesUsed; ?>/4</div>
+                      <div class="mt-1 text-xs text-neutral-500">C, A, M y E con al menos una acción.</div>
+                    </div>
+                  </div>
+                  <div class="mt-4 grid grid-cols-2 gap-2 text-xs text-neutral-700">
+                    <div class="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">Corregir: <?php echo (int) ($cameCounts['C'] ?? 0); ?></div>
+                    <div class="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">Afrontar: <?php echo (int) ($cameCounts['A'] ?? 0); ?></div>
+                    <div class="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">Mantener: <?php echo (int) ($cameCounts['M'] ?? 0); ?></div>
+                    <div class="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">Explotar: <?php echo (int) ($cameCounts['E'] ?? 0); ?></div>
                   </div>
                 </div>
               </div>

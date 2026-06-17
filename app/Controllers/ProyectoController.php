@@ -699,6 +699,41 @@ final class ProyectoController
             } catch (Throwable $e) {
                 $fodaOverview = [];
             }
+
+            try {
+                $fodaFactorRows = FodaCruzada::listFactorRows($supabase, $idProyecto);
+                $fodaCruzadaFactors = FodaCruzada::buildFactorSet($fodaFactorRows);
+                $fodaCruzadaAnswers = FodaCruzada::listEvaluacionesByProyecto($supabase, $idProyecto);
+                $fodaCruzadaCalc = FodaCruzada::compute($fodaCruzadaFactors, $fodaCruzadaAnswers);
+            } catch (Throwable $e) {
+                $fodaCruzadaFactors = [];
+                $fodaCruzadaAnswers = [];
+                $fodaCruzadaCalc = [
+                    'ready' => false,
+                    'counts' => [
+                        'fortalezas' => 0,
+                        'debilidades' => 0,
+                        'oportunidades' => 0,
+                        'amenazas' => 0,
+                    ],
+                    'total_cells' => 0,
+                    'answered' => 0,
+                    'missing' => 0,
+                    'complete' => false,
+                    'matrices' => [],
+                    'summary' => [],
+                    'predominant' => null,
+                    'executive_conclusion' => null,
+                ];
+            }
+
+            try {
+                $cameAcciones = Came::listAccionesByProyecto($supabase, $idProyecto);
+                $cameCalc = Came::compute($cameAcciones);
+            } catch (Throwable $e) {
+                $cameAcciones = ['C' => [], 'A' => [], 'M' => [], 'E' => []];
+                $cameCalc = Came::compute($cameAcciones);
+            }
         }
 
         if ($renderOnlySection === 'cadena') {
@@ -876,7 +911,9 @@ final class ProyectoController
                 is_array($bcgOverview ?? null) ? $bcgOverview : [],
                 is_array($perfilOverview ?? null) ? $perfilOverview : [],
                 is_array($pestOverview ?? null) ? $pestOverview : [],
-                is_array($fodaOverview ?? null) ? $fodaOverview : []
+                is_array($fodaOverview ?? null) ? $fodaOverview : [],
+                is_array($fodaCruzadaCalc ?? null) ? $fodaCruzadaCalc : [],
+                is_array($cameCalc ?? null) ? $cameCalc : []
             );
 
             header('Content-Type: application/pdf');
@@ -921,7 +958,9 @@ final class ProyectoController
         array $bcgOverview,
         array $perfilOverview,
         array $pestOverview,
-        array $fodaOverview
+        array $fodaOverview,
+        array $fodaCruzadaCalc,
+        array $cameCalc
     ): string {
         $lines = [];
         $lines[] = ['font' => 'F2', 'size' => 18, 'text' => 'Reporte - Overview'];
@@ -1097,6 +1136,42 @@ final class ProyectoController
             'foda_table' => true,
             'groups' => $fodaGroups,
         ];
+
+        $lines[] = ['spacer' => 10];
+        $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'Identificación de estrategias (resumen)'];
+        $estrategiasCounts = is_array($fodaCruzadaCalc['counts'] ?? null) ? (array) $fodaCruzadaCalc['counts'] : [];
+        $estrategiasSummary = is_array($fodaCruzadaCalc['summary'] ?? null) ? (array) $fodaCruzadaCalc['summary'] : [];
+        $estrategiasPredominant = is_array($fodaCruzadaCalc['predominant'] ?? null) ? (array) $fodaCruzadaCalc['predominant'] : [];
+        $estrategiasAnswered = (int) ($fodaCruzadaCalc['answered'] ?? 0);
+        $estrategiasTotalCells = (int) ($fodaCruzadaCalc['total_cells'] ?? 0);
+        $estrategiasMissing = (int) ($fodaCruzadaCalc['missing'] ?? 0);
+        $estrategiasComplete = !empty($fodaCruzadaCalc['complete']);
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Factores: F=' . (string) ((int) ($estrategiasCounts['fortalezas'] ?? 0)) . ' | D=' . (string) ((int) ($estrategiasCounts['debilidades'] ?? 0)) . ' | O=' . (string) ((int) ($estrategiasCounts['oportunidades'] ?? 0)) . ' | A=' . (string) ((int) ($estrategiasCounts['amenazas'] ?? 0))];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Evaluación: ' . (string) $estrategiasAnswered . '/' . (string) $estrategiasTotalCells . ' celdas' . ($estrategiasMissing > 0 ? (' | Pendientes: ' . (string) $estrategiasMissing) : '')];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Estado: ' . ($estrategiasComplete ? 'Completo' : 'Incompleto')];
+        if (!empty($estrategiasPredominant)) {
+            $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Estrategia predominante: ' . trim((string) ($estrategiasPredominant['label'] ?? '—')) . ' (' . trim((string) ($estrategiasPredominant['relation'] ?? '—')) . ')'];
+        }
+        if (empty($estrategiasSummary)) {
+            $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Sin resultados acumulados.'];
+        } else {
+            foreach ($estrategiasSummary as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $lines[] = ['font' => 'F1', 'size' => 11, 'text' => trim((string) ($row['relation'] ?? '')) . ': ' . trim((string) ($row['label'] ?? '')) . ' = ' . (string) ((int) ($row['total'] ?? 0))];
+            }
+        }
+
+        $lines[] = ['spacer' => 10];
+        $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'Matriz CAME (resumen)'];
+        $cameCounts = is_array($cameCalc['counts'] ?? null) ? (array) $cameCalc['counts'] : [];
+        $cameTotalActions = (int) ($cameCalc['total_actions'] ?? 0);
+        $cameCategoriesUsed = (int) ($cameCalc['categories_used'] ?? 0);
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Acciones registradas: ' . (string) $cameTotalActions];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Categorías utilizadas: ' . (string) $cameCategoriesUsed . '/4'];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'C=' . (string) ((int) ($cameCounts['C'] ?? 0)) . ' | A=' . (string) ((int) ($cameCounts['A'] ?? 0)) . ' | M=' . (string) ((int) ($cameCounts['M'] ?? 0)) . ' | E=' . (string) ((int) ($cameCounts['E'] ?? 0))];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => $cameTotalActions > 0 ? 'Estado: Con acciones registradas.' : 'Estado: Sin acciones registradas.'];
 
         return $this->simplePdfFromLines($lines);
     }

@@ -38,12 +38,49 @@
 
   $fCadena = is_array($fodaOverview['CADENA_VALOR_INTERNA'] ?? null) ? (array) $fodaOverview['CADENA_VALOR_INTERNA'] : [];
   $fBcg = is_array($fodaOverview['AUTODIAGNOSTICO_BCG'] ?? null) ? (array) $fodaOverview['AUTODIAGNOSTICO_BCG'] : [];
+  $fPerfil = is_array($fodaOverview['PERFIL_COMPETITIVO'] ?? null) ? (array) $fodaOverview['PERFIL_COMPETITIVO'] : [];
+  $fPest = is_array($fodaOverview['PEST'] ?? null) ? (array) $fodaOverview['PEST'] : [];
   $fCadenaLabel = (string) ($fCadena['label'] ?? 'Cadena de valor');
   $fBcgLabel = (string) ($fBcg['label'] ?? 'Matriz BCG');
+  $fPerfilLabel = (string) ($fPerfil['label'] ?? 'Perfil competitivo');
+  $fPestLabel = (string) ($fPest['label'] ?? 'P.E.S.T.');
   $fFortCadena = is_array($fCadena['FORTALEZA'] ?? null) ? (array) $fCadena['FORTALEZA'] : [];
   $fDebCadena = is_array($fCadena['DEBILIDAD'] ?? null) ? (array) $fCadena['DEBILIDAD'] : [];
   $fFortBcg = is_array($fBcg['FORTALEZA'] ?? null) ? (array) $fBcg['FORTALEZA'] : [];
   $fDebBcg = is_array($fBcg['DEBILIDAD'] ?? null) ? (array) $fBcg['DEBILIDAD'] : [];
+  $fOppPerfil = is_array($fPerfil['OPORTUNIDAD'] ?? null) ? (array) $fPerfil['OPORTUNIDAD'] : [];
+  $fAmePerfil = is_array($fPerfil['AMENAZA'] ?? null) ? (array) $fPerfil['AMENAZA'] : [];
+  $fOppPest = is_array($fPest['OPORTUNIDAD'] ?? null) ? (array) $fPest['OPORTUNIDAD'] : [];
+  $fAmePest = is_array($fPest['AMENAZA'] ?? null) ? (array) $fPest['AMENAZA'] : [];
+
+  $pcTotal = $perfilOverview['total'] ?? null;
+  $pcStatus = (string) ($perfilOverview['status_label'] ?? 'Sin evaluación');
+  $pcText = trim((string) ($perfilOverview['conclusion_text'] ?? ''));
+  $pPct = is_array($pestOverview['pct'] ?? null) ? (array) $pestOverview['pct'] : null;
+  $pAvg = is_array($pPct) ? (int) round((((int) ($pPct['SOCIALES'] ?? 0)) + ((int) ($pPct['MEDIOAMBIENTALES'] ?? 0)) + ((int) ($pPct['POLITICOS'] ?? 0)) + ((int) ($pPct['ECONOMICOS'] ?? 0)) + ((int) ($pPct['TECNOLOGICOS'] ?? 0))) / 5) : null;
+
+  $estrategiasCounts = is_array($fodaCruzadaCalc['counts'] ?? null) ? (array) $fodaCruzadaCalc['counts'] : [];
+  $estrategiasSummary = is_array($fodaCruzadaCalc['summary'] ?? null) ? (array) $fodaCruzadaCalc['summary'] : [];
+  $estrategiasPredominant = is_array($fodaCruzadaCalc['predominant'] ?? null) ? (array) $fodaCruzadaCalc['predominant'] : [];
+  $estrategiasAnswered = (int) ($fodaCruzadaCalc['answered'] ?? 0);
+  $estrategiasTotalCells = (int) ($fodaCruzadaCalc['total_cells'] ?? 0);
+  $estrategiasMissing = (int) ($fodaCruzadaCalc['missing'] ?? 0);
+  $estrategiasComplete = !empty($fodaCruzadaCalc['complete']);
+  $estrategiasTotals = ['FO' => 0, 'FA' => 0, 'DO' => 0, 'DA' => 0];
+  foreach ($estrategiasSummary as $row) {
+    if (!is_array($row)) {
+      continue;
+    }
+    $relation = strtoupper(trim((string) ($row['relation'] ?? '')));
+    if (!array_key_exists($relation, $estrategiasTotals)) {
+      continue;
+    }
+    $estrategiasTotals[$relation] = (int) ($row['total'] ?? 0);
+  }
+
+  $cameCounts = is_array($cameCalc['counts'] ?? null) ? (array) $cameCalc['counts'] : [];
+  $cameTotalActions = (int) ($cameCalc['total_actions'] ?? 0);
+  $cameCategoriesUsed = (int) ($cameCalc['categories_used'] ?? 0);
 ?>
 
 <div class="mx-auto max-w-5xl px-6 py-8">
@@ -227,6 +264,66 @@
       </div>
 
       <div class="rounded-2xl border border-neutral-200 bg-white p-5">
+        <div class="text-sm font-semibold text-neutral-900">Perfil competitivo (resumen)</div>
+        <div class="mt-3 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
+          <table class="min-w-full text-left text-sm">
+            <tbody class="divide-y divide-neutral-200">
+              <tr>
+                <td class="px-4 py-3 text-neutral-600">Total</td>
+                <td class="px-4 py-3 text-right font-semibold text-neutral-900"><?php echo ($pcTotal === null) ? '—' : (int) $pcTotal; ?></td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 text-neutral-600">Estado</td>
+                <td class="px-4 py-3 text-right font-semibold text-neutral-900"><?php echo htmlspecialchars($pcStatus, ENT_QUOTES, 'UTF-8'); ?></td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 text-neutral-600">Conclusión</td>
+                <td class="px-4 py-3 text-right font-semibold text-neutral-900"><?php echo htmlspecialchars($pcText !== '' ? $pcText : 'Sin registros.', ENT_QUOTES, 'UTF-8'); ?></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-neutral-200 bg-white p-5">
+        <div class="text-sm font-semibold text-neutral-900">P.E.S.T. (resumen)</div>
+        <?php if (!is_array($pPct)) : ?>
+          <div class="mt-2 text-sm text-neutral-600">Sin evaluación.</div>
+        <?php else : ?>
+          <div class="mt-3 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
+            <table class="min-w-full text-left text-sm">
+              <tbody class="divide-y divide-neutral-200">
+                <tr>
+                  <td class="px-4 py-3 text-neutral-600">Promedio</td>
+                  <td class="px-4 py-3 text-right font-semibold text-neutral-900"><?php echo (int) $pAvg; ?>%</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 text-neutral-600">Sociales</td>
+                  <td class="px-4 py-3 text-right font-semibold text-neutral-900"><?php echo (int) ($pPct['SOCIALES'] ?? 0); ?>%</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 text-neutral-600">Medioambientales</td>
+                  <td class="px-4 py-3 text-right font-semibold text-neutral-900"><?php echo (int) ($pPct['MEDIOAMBIENTALES'] ?? 0); ?>%</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 text-neutral-600">Políticos</td>
+                  <td class="px-4 py-3 text-right font-semibold text-neutral-900"><?php echo (int) ($pPct['POLITICOS'] ?? 0); ?>%</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 text-neutral-600">Económicos</td>
+                  <td class="px-4 py-3 text-right font-semibold text-neutral-900"><?php echo (int) ($pPct['ECONOMICOS'] ?? 0); ?>%</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 text-neutral-600">Tecnológicos</td>
+                  <td class="px-4 py-3 text-right font-semibold text-neutral-900"><?php echo (int) ($pPct['TECNOLOGICOS'] ?? 0); ?>%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        <?php endif; ?>
+      </div>
+
+      <div class="rounded-2xl border border-neutral-200 bg-white p-5">
         <div class="text-sm font-semibold text-neutral-900">FODA (resumen)</div>
         <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div class="rounded-2xl border border-neutral-200 bg-white p-4">
@@ -291,12 +388,119 @@
 
           <div class="rounded-2xl border border-neutral-200 bg-white p-4">
             <div class="text-sm font-semibold text-neutral-900">Oportunidades</div>
-            <div class="mt-2 text-sm text-neutral-600">Sin registros.</div>
+            <div class="mt-2 space-y-3 text-sm text-neutral-800">
+              <div>
+                <div class="text-xs font-semibold text-neutral-600"><?php echo htmlspecialchars($fPerfilLabel, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php if (empty($fOppPerfil)) : ?>
+                  <div class="mt-1 text-sm text-neutral-600">Sin registros.</div>
+                <?php else : ?>
+                  <ul class="mt-2 list-disc space-y-1 pl-5">
+                    <?php foreach ($fOppPerfil as $txt) : ?>
+                      <li class="leading-relaxed"><?php echo htmlspecialchars((string) $txt, ENT_QUOTES, 'UTF-8'); ?></li>
+                    <?php endforeach; ?>
+                  </ul>
+                <?php endif; ?>
+              </div>
+              <div>
+                <div class="text-xs font-semibold text-neutral-600"><?php echo htmlspecialchars($fPestLabel, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php if (empty($fOppPest)) : ?>
+                  <div class="mt-1 text-sm text-neutral-600">Sin registros.</div>
+                <?php else : ?>
+                  <ul class="mt-2 list-disc space-y-1 pl-5">
+                    <?php foreach ($fOppPest as $txt) : ?>
+                      <li class="leading-relaxed"><?php echo htmlspecialchars((string) $txt, ENT_QUOTES, 'UTF-8'); ?></li>
+                    <?php endforeach; ?>
+                  </ul>
+                <?php endif; ?>
+              </div>
+            </div>
           </div>
           <div class="rounded-2xl border border-neutral-200 bg-white p-4">
             <div class="text-sm font-semibold text-neutral-900">Amenazas</div>
-            <div class="mt-2 text-sm text-neutral-600">Sin registros.</div>
+            <div class="mt-2 space-y-3 text-sm text-neutral-800">
+              <div>
+                <div class="text-xs font-semibold text-neutral-600"><?php echo htmlspecialchars($fPerfilLabel, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php if (empty($fAmePerfil)) : ?>
+                  <div class="mt-1 text-sm text-neutral-600">Sin registros.</div>
+                <?php else : ?>
+                  <ul class="mt-2 list-disc space-y-1 pl-5">
+                    <?php foreach ($fAmePerfil as $txt) : ?>
+                      <li class="leading-relaxed"><?php echo htmlspecialchars((string) $txt, ENT_QUOTES, 'UTF-8'); ?></li>
+                    <?php endforeach; ?>
+                  </ul>
+                <?php endif; ?>
+              </div>
+              <div>
+                <div class="text-xs font-semibold text-neutral-600"><?php echo htmlspecialchars($fPestLabel, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php if (empty($fAmePest)) : ?>
+                  <div class="mt-1 text-sm text-neutral-600">Sin registros.</div>
+                <?php else : ?>
+                  <ul class="mt-2 list-disc space-y-1 pl-5">
+                    <?php foreach ($fAmePest as $txt) : ?>
+                      <li class="leading-relaxed"><?php echo htmlspecialchars((string) $txt, ENT_QUOTES, 'UTF-8'); ?></li>
+                    <?php endforeach; ?>
+                  </ul>
+                <?php endif; ?>
+              </div>
+            </div>
           </div>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-neutral-200 bg-white p-5">
+        <div class="text-sm font-semibold text-neutral-900">Identificación de estrategias (resumen)</div>
+        <div class="mt-3 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
+          <table class="min-w-full text-left text-sm">
+            <tbody class="divide-y divide-neutral-200">
+              <tr>
+                <td class="px-4 py-3 text-neutral-600">Estado</td>
+                <td class="px-4 py-3 text-right font-semibold text-neutral-900"><?php echo $estrategiasComplete ? 'Completo' : 'Incompleto'; ?></td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 text-neutral-600">Factores F/D/O/A</td>
+                <td class="px-4 py-3 text-right font-semibold text-neutral-900">
+                  <?php echo (int) ($estrategiasCounts['fortalezas'] ?? 0); ?> /
+                  <?php echo (int) ($estrategiasCounts['debilidades'] ?? 0); ?> /
+                  <?php echo (int) ($estrategiasCounts['oportunidades'] ?? 0); ?> /
+                  <?php echo (int) ($estrategiasCounts['amenazas'] ?? 0); ?>
+                </td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 text-neutral-600">Cobertura</td>
+                <td class="px-4 py-3 text-right font-semibold text-neutral-900"><?php echo (int) $estrategiasAnswered; ?>/<?php echo (int) $estrategiasTotalCells; ?><?php echo $estrategiasMissing > 0 ? (' (' . (int) $estrategiasMissing . ' pendientes)') : ''; ?></td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 text-neutral-600">FO / FA / DO / DA</td>
+                <td class="px-4 py-3 text-right font-semibold text-neutral-900"><?php echo (int) ($estrategiasTotals['FO'] ?? 0); ?> / <?php echo (int) ($estrategiasTotals['FA'] ?? 0); ?> / <?php echo (int) ($estrategiasTotals['DO'] ?? 0); ?> / <?php echo (int) ($estrategiasTotals['DA'] ?? 0); ?></td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 text-neutral-600">Estrategia predominante</td>
+                <td class="px-4 py-3 text-right font-semibold text-neutral-900"><?php echo htmlspecialchars(!empty($estrategiasPredominant) ? ((string) ($estrategiasPredominant['label'] ?? '—') . ' (' . (string) ($estrategiasPredominant['relation'] ?? '—') . ')') : 'Sin resultado dominante', ENT_QUOTES, 'UTF-8'); ?></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-neutral-200 bg-white p-5">
+        <div class="text-sm font-semibold text-neutral-900">Matriz CAME (resumen)</div>
+        <div class="mt-3 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
+          <table class="min-w-full text-left text-sm">
+            <tbody class="divide-y divide-neutral-200">
+              <tr>
+                <td class="px-4 py-3 text-neutral-600">Acciones registradas</td>
+                <td class="px-4 py-3 text-right font-semibold text-neutral-900"><?php echo (int) $cameTotalActions; ?></td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 text-neutral-600">Categorías utilizadas</td>
+                <td class="px-4 py-3 text-right font-semibold text-neutral-900"><?php echo (int) $cameCategoriesUsed; ?>/4</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 text-neutral-600">C / A / M / E</td>
+                <td class="px-4 py-3 text-right font-semibold text-neutral-900"><?php echo (int) ($cameCounts['C'] ?? 0); ?> / <?php echo (int) ($cameCounts['A'] ?? 0); ?> / <?php echo (int) ($cameCounts['M'] ?? 0); ?> / <?php echo (int) ($cameCounts['E'] ?? 0); ?></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

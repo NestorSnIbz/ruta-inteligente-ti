@@ -1,97 +1,143 @@
-# 🚀 Ruta Inteligente TI
+# Ruta Inteligente TI
 
 ## Estudiantes
 - Nestor Serrano Ibañez
 - Junior Mamani Estaña
 
-## 🧰 Tecnologías
+## Tecnologías
 
-### 🔙 Backend
-- PHP 8.1  
-- Patrón MVC (Modelo - Vista - Controlador)
+### Backend
+- PHP 8.1+
+- Arquitectura MVC
+- Integración con Supabase mediante cliente propio
 
-### 🎨 Frontend
-- HTML5  
-- CSS3  
-- Tailwind CSS  
-- JavaScript  
+### Frontend
+- HTML5
+- Tailwind CSS
+- JavaScript
 
-### 🗄️ Base de Datos
-- PostgreSQL  
+### Base de Datos
+- PostgreSQL
+- Scripts de estructura y carga en `base-datos.sql`
 
-### ☁️ Backend as a Service (BaaS)
-Se utiliza Supabase para:
-- Gestión de base de datos  
-- Exposición automática de APIs  
-- Autenticación y gestión de usuarios  
-- Almacenamiento de archivos  
-
----
-
-## 🏗️ Arquitectura del Sistema
-
-El sistema está basado en el patrón **MVC**, complementado con un enfoque de **Backend as a Service (BaaS)** mediante Supabase.
-
-Este enfoque permite:
-- Separación clara de responsabilidades  
-- Mayor escalabilidad  
-- Reducción de complejidad en el backend  
+### Backend as a Service (BaaS)
+Supabase se utiliza para:
+- Autenticación de usuarios
+- Persistencia sobre PostgreSQL
+- Exposición de endpoints REST vía PostgREST
+- Gestión de datos de proyectos, análisis y resultados
 
 ---
 
-## 🧩 Arquitectura en Capas
+## Arquitectura del Sistema
 
-### 🎯 Capa de Presentación
-Encargada de la interfaz de usuario y la interacción con el usuario.  
-**Tecnologías:** HTML, CSS, Tailwind CSS, JavaScript  
+La aplicación está construida sobre una arquitectura **MVC** en PHP y utiliza **Supabase** como capa de autenticación y acceso a datos.
 
-### ⚙️ Capa de Aplicación
-Gestiona la lógica de negocio, validaciones y flujo de datos.  
-Actúa como intermediaria entre la presentación y los datos.  
+El sistema se enfoca en la construcción y seguimiento de un **plan estratégico empresarial**, organizado por proyectos. Cada proyecto concentra información base de la empresa y varios módulos de análisis que se relacionan entre sí.
 
-### 🔌 Capa de Servicios
-Encapsula la comunicación con servicios externos.  
-Se encarga de la integración con Supabase.  
-
-### 💾 Capa de Datos
-Responsable de la persistencia de la información.  
-Gestiona el acceso a la base de datos PostgreSQL.  
-
----
-
-## 📌 Notas
-- Se sigue una arquitectura modular y escalable.  
-- Supabase reduce la necesidad de implementar servicios backend complejos desde cero.  
-- El uso de MVC facilita el mantenimiento y la organización del código.  
+Actualmente la aplicación permite:
+- Iniciar sesión con usuarios autenticados en Supabase
+- Gestionar proyectos estratégicos
+- Registrar misión, visión, valores y objetivos
+- Ejecutar análisis de Cadena de valor, BCG, Perfil competitivo y P.E.S.T.
+- Consolidar factores FODA por procedencia
+- Construir la matriz FODA cruzada de estrategias
+- Elaborar acciones en la matriz CAME
+- Visualizar un overview ejecutivo y exportarlo a PDF
+- Gestionar miembros del proyecto
 
 ---
 
-## ▶️ Despliegue en local
+## Arquitectura en Capas
+
+### Capa de Presentación
+Encargada de las vistas del dashboard, autenticación, configuración y detalle del proyecto.
+
+Tecnologías:
+- HTML
+- Tailwind CSS
+- JavaScript
+
+### Capa de Aplicación
+Implementada en controladores PHP que coordinan validaciones, flujo de navegación, render parcial de paneles y respuestas AJAX.
+
+Componentes principales:
+- `AuthController`
+- `ProyectoController`
+- `BcgController`
+- `ConfiguracionController`
+- `RegisterController`
+
+### Capa de Servicios
+Encapsula la comunicación con Supabase.
+
+Componentes principales:
+- `SupabaseClient`
+- Repositorios y servicios específicos del módulo BCG
+
+### Capa de Datos
+Gestiona la persistencia de proyectos, factores, respuestas, resultados y relaciones entre usuarios y proyectos.
+
+Modelos relevantes:
+- `Proyecto`, `ProyectoMiembro`, `Persona`
+- `Mision`, `Vision`, `Valor`
+- `ObjetivoEstrategico`, `ObjetivoEspecifico`
+- `CadenaValor`, `PerfilCompetitivo`, `Pest`
+- `Foda`, `FodaCruzada`, `Came`
+
+---
+
+## Notas
+- El sistema usa paneles desacoplados y carga parcial para mejorar la experiencia dentro del detalle del proyecto.
+- Los módulos de análisis se alimentan entre sí; por ejemplo, `FODA`, `Estrategias` y `CAME` reutilizan factores generados en módulos previos.
+- El archivo `base-datos.sql` contiene la estructura necesaria para ejecutar la aplicación con sus módulos actuales.
+- El archivo `base-datos.md` resume el modelo entidad-relación base del sistema.
+
+---
+
+## Despliegue en local
 
 ### Requisitos
-- PHP 8.1+ (recomendado 8.2)  
-- Node.js 18+ (para Tailwind)  
-- Archivo `.env` en la raíz (basado en `.env.example`) con al menos: `SUPABASE_URL` y `SUPABASE_ANON_KEY`
+- PHP 8.1 o superior
+- Node.js 18 o superior
+- Un proyecto Supabase con autenticación habilitada
+- Archivo `.env` en la raíz, basado en `.env.example`
 
-### Opción A: sin Docker (rápido para desarrollo)
+Variables mínimas:
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
 
-1) Instalar dependencias del frontend y compilar Tailwind en modo watch:
+Variable recomendada para operaciones de backend ampliadas:
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+### Opción A: desarrollo local
+
+1. Instalar dependencias del frontend:
 
 ```bash
 npm install
+```
+
+2. Compilar Tailwind en modo desarrollo:
+
+```bash
 npm run dev
 ```
 
-2) Levantar el servidor PHP apuntando a `public/`:
+3. Crear o completar el archivo `.env` en la raíz del proyecto.
+
+4. Ejecutar el script `base-datos.sql` en la base PostgreSQL asociada a Supabase.
+
+5. Levantar el servidor PHP apuntando a `public/`:
 
 ```bash
 php -S localhost:8000 -t public
 ```
 
-3) Abrir en el navegador:
+6. Abrir en el navegador:
 - `http://localhost:8000/`
 
-### Opción B: con Docker (Apache)
+### Opción B: Docker
 
 ```bash
 docker build -t ruta-inteligente-ti .
@@ -103,50 +149,91 @@ Abrir:
 
 ---
 
-## 📋 Requerimientos del Sistema
+## Módulos Principales
 
-### 🔹 Requerimientos Funcionales
+### Acceso y configuración
+- Inicio de sesión con credenciales de Supabase
+- Registro de usuarios
+- Configuración de nombre y contraseña del usuario autenticado
 
-- **RF01** – Registrar usuarios en el sistema  
-- **RF02** – Autenticar usuarios mediante credenciales  
-- **RF03** – Gestionar sesiones de usuario  
-- **RF04** – Visualizar un dashboard con el resumen del plan estratégico  
-- **RF05** – Navegar entre módulos del sistema  
-- **RF06** – Registrar una empresa  
-- **RF07** – Definir la misión, visión y los valores de la empresa  
-- **RF08** – Gestionar objetivos estratégicos  
-- **RF09** – Registrar análisis FODA  
-- **RF10** – Registrar análisis PEST  
-- **RF11** – Registrar análisis de las 5 fuerzas de Porter  
-- **RF12** – Generar estrategias a partir del FODA  
-- **RF13** – Crear planes de acción (CAME)  
-- **RF14** – Guardar la información del plan estratégico en una base de datos  
-- **RF15** – Editar información registrada  
-- **RF16** – Eliminar información registrada  
-- **RF17** – Mostrar un resumen ejecutivo del plan  
-- **RF18** – Exportar el plan en formato PDF o Excel  
-- **RF19** – Realizar copias de seguridad de la información del sistema  
+### Gestión de proyectos
+- Creación de proyectos estratégicos
+- Listado de proyectos desde dashboard
+- Gestión de miembros por proyecto
+- Control de acceso por sesión y token de proyecto
+
+### Planeamiento base
+- Misión
+- Visión
+- Valores
+- Objetivos estratégicos
+- Objetivos específicos asociados a cada objetivo estratégico
+
+### Análisis estratégicos
+- Cadena de valor
+- Autodiagnóstico BCG
+- Perfil competitivo
+- Autodiagnóstico Entorno Global P.E.S.T.
+
+### Consolidación estratégica
+- FODA por procedencia
+  - Fortalezas y debilidades desde Cadena de valor y BCG
+  - Oportunidades y amenazas desde Perfil competitivo y P.E.S.T.
+- Matriz FODA cruzada
+  - FO, FA, DO y DA
+  - síntesis de resultados
+  - estrategia predominante
+- Matriz CAME
+  - acciones para corregir, afrontar, mantener y explotar
+
+### Reportes
+- Overview ejecutivo del proyecto
+- Exportación del overview a PDF
 
 ---
 
-### ⚙️ Requerimientos No Funcionales
+## Requerimientos del Sistema
+
+### Requerimientos Funcionales
+
+- **RF01** – Permitir el registro e inicio de sesión de usuarios
+- **RF02** – Mantener sesiones autenticadas para acceder al sistema
+- **RF03** – Mostrar un dashboard con los proyectos asociados al usuario
+- **RF04** – Crear y consultar proyectos estratégicos
+- **RF05** – Gestionar misión, visión y valores del proyecto
+- **RF06** – Registrar objetivos estratégicos y objetivos específicos
+- **RF07** – Evaluar la Cadena de valor de la empresa
+- **RF08** – Registrar productos y evaluación del autodiagnóstico BCG
+- **RF09** – Evaluar el Perfil competitivo
+- **RF10** – Evaluar el entorno global mediante P.E.S.T.
+- **RF11** – Registrar factores FODA derivados de los análisis realizados
+- **RF12** – Construir la matriz FODA cruzada para identificar estrategias
+- **RF13** – Registrar acciones en la matriz CAME
+- **RF14** – Consolidar un overview ejecutivo del plan estratégico
+- **RF15** – Exportar el overview en formato PDF
+- **RF16** – Gestionar miembros del proyecto por parte del creador
+- **RF17** – Guardar, editar y eliminar información dentro de los módulos disponibles
+
+---
+
+### Requerimientos No Funcionales
 
 - **RNF01 – Seguridad**  
-  El sistema debe proteger la información mediante autenticación de usuarios, almacenamiento seguro de contraseñas y uso de conexiones cifradas (HTTPS).
+  La aplicación debe restringir el acceso a usuarios autenticados y validar la identidad mediante Supabase y sesiones en servidor.
 
-- **RNF02 – Rendimiento**  
-  El sistema debe responder en un tiempo máximo de 2 segundos en el 95% de las solicitudes.
+- **RNF02 – Mantenibilidad**  
+  El sistema debe conservar una organización modular basada en MVC y paneles desacoplados para facilitar cambios y ampliaciones.
 
-- **RNF03 – Adaptabilidad**  
-  El sistema debe permitir la incorporación de nuevas funcionalidades sin afectar las existentes mediante una arquitectura modular basada en MVC.
+- **RNF03 – Compatibilidad**  
+  La interfaz debe funcionar correctamente en navegadores modernos como Chrome, Edge y Firefox.
 
-- **RNF04 – Disponibilidad**  
-  El sistema debe garantizar una disponibilidad mínima del 99% mensual.
+- **RNF04 – Persistencia**  
+  La información capturada en los módulos debe almacenarse en PostgreSQL a través de Supabase.
 
 - **RNF05 – Usabilidad**  
-  Al menos el 80% de los usuarios debe poder utilizar las funcionalidades principales sin asistencia.
+  El sistema debe ofrecer formularios, tablas y mensajes de validación claros para completar el plan estratégico paso a paso.
 
-- **RNF06 – Compatibilidad**  
-  El sistema debe funcionar correctamente en los navegadores Chrome, Edge y Firefox en sus versiones recientes.
+- **RNF06 – Escalabilidad funcional**  
+  La arquitectura debe permitir añadir nuevos módulos estratégicos sin rehacer la estructura principal del proyecto.
 
 ---
