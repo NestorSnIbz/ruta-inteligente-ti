@@ -1460,56 +1460,6 @@
     if (!panel || panel.dataset.riInit === "1") return;
     panel.dataset.riInit = "1";
 
-    function openMisionEdit() {
-      const editor = panel.querySelector("#mision-editor");
-      const display = panel.querySelector("#mision-display");
-      if (display) display.classList.add("hidden");
-      if (editor) editor.classList.remove("hidden");
-      const editButton = panel.querySelector("[data-js-edit-mision]");
-      if (editButton) editButton.classList.add("hidden");
-      const textarea = panel.querySelector("#mision-editor textarea");
-      if (textarea) textarea.focus();
-    }
-
-    function closeMisionEdit() {
-      const editor = panel.querySelector("#mision-editor");
-      const display = panel.querySelector("#mision-display");
-      if (editor) editor.classList.add("hidden");
-      if (display) display.classList.remove("hidden");
-      const editButton = panel.querySelector("[data-js-edit-mision]");
-      if (editButton) editButton.classList.remove("hidden");
-    }
-
-    const editButton = panel.querySelector("[data-js-edit-mision]");
-    if (editButton) {
-      editButton.addEventListener("click", (e) => {
-        e.preventDefault();
-        setActiveProjectPanel("mision");
-        openMisionEdit();
-        const u = new URL(window.location.href);
-        u.searchParams.set("edit", "mision");
-        u.searchParams.set("section", "mision");
-        window.history.replaceState({}, "", u.toString());
-      });
-    }
-
-    const cancelLink = panel.querySelector("[data-js-cancel-mision]");
-    if (cancelLink) {
-      cancelLink.addEventListener("click", (e) => {
-        e.preventDefault();
-        closeMisionEdit();
-        const u = new URL(window.location.href);
-        u.searchParams.delete("edit");
-        u.searchParams.set("section", "mision");
-        window.history.replaceState({}, "", u.toString());
-      });
-    }
-
-    const url = new URL(window.location.href);
-    if (url.searchParams.get("edit") === "mision") {
-      openMisionEdit();
-    }
-
     const editorForm = panel.querySelector("#mision-editor form");
     if (editorForm && editorForm.dataset.riAjax !== "1") {
       editorForm.dataset.riAjax = "1";
@@ -1531,10 +1481,6 @@
             showInlineToast("Error", msg);
             return;
           }
-          const u = new URL(window.location.href);
-          u.searchParams.delete("edit");
-          u.searchParams.set("section", "mision");
-          window.history.replaceState({}, "", u.toString());
           showInlineToast("Guardado", (json && json.message) ? json.message : "Guardado correctamente.");
           await reloadPanel("mision");
           setActiveProjectPanel("mision", { updateUrl: false });
@@ -1551,56 +1497,6 @@
     const panel = document.getElementById("panel-vision");
     if (!panel || panel.dataset.riInit === "1") return;
     panel.dataset.riInit = "1";
-
-    function openVisionEdit() {
-      const editor = panel.querySelector("#vision-editor");
-      const display = panel.querySelector("#vision-display");
-      if (display) display.classList.add("hidden");
-      if (editor) editor.classList.remove("hidden");
-      const editButton = panel.querySelector("[data-js-edit-vision]");
-      if (editButton) editButton.classList.add("hidden");
-      const textarea = panel.querySelector("#vision-editor textarea");
-      if (textarea) textarea.focus();
-    }
-
-    function closeVisionEdit() {
-      const editor = panel.querySelector("#vision-editor");
-      const display = panel.querySelector("#vision-display");
-      if (editor) editor.classList.add("hidden");
-      if (display) display.classList.remove("hidden");
-      const editButton = panel.querySelector("[data-js-edit-vision]");
-      if (editButton) editButton.classList.remove("hidden");
-    }
-
-    const editButton = panel.querySelector("[data-js-edit-vision]");
-    if (editButton) {
-      editButton.addEventListener("click", (e) => {
-        e.preventDefault();
-        setActiveProjectPanel("vision");
-        openVisionEdit();
-        const u = new URL(window.location.href);
-        u.searchParams.set("edit", "vision");
-        u.searchParams.set("section", "vision");
-        window.history.replaceState({}, "", u.toString());
-      });
-    }
-
-    const cancelLink = panel.querySelector("[data-js-cancel-vision]");
-    if (cancelLink) {
-      cancelLink.addEventListener("click", (e) => {
-        e.preventDefault();
-        closeVisionEdit();
-        const u = new URL(window.location.href);
-        u.searchParams.delete("edit");
-        u.searchParams.set("section", "vision");
-        window.history.replaceState({}, "", u.toString());
-      });
-    }
-
-    const url = new URL(window.location.href);
-    if (url.searchParams.get("edit") === "vision") {
-      openVisionEdit();
-    }
 
     const editorForm = panel.querySelector("#vision-editor form");
     if (editorForm && editorForm.dataset.riAjax !== "1") {
@@ -1623,10 +1519,6 @@
             showInlineToast("Error", msg);
             return;
           }
-          const u = new URL(window.location.href);
-          u.searchParams.delete("edit");
-          u.searchParams.set("section", "vision");
-          window.history.replaceState({}, "", u.toString());
           showInlineToast("Guardado", (json && json.message) ? json.message : "Guardado correctamente.");
           await reloadPanel("vision");
           setActiveProjectPanel("vision", { updateUrl: false });

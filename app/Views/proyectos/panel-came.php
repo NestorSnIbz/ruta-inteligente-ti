@@ -107,7 +107,7 @@
             </table>
           </div>
 
-          <aside class="flex-none rounded-2xl border border-neutral-200 bg-neutral-50 p-4" style="width: 500px; min-width: 500px; max-width: 500px; flex-basis: 500px;">
+          <aside class="flex-none rounded-2xl border border-neutral-200 bg-neutral-50 p-4" style="width: 700px; min-width: 700px; max-width: 700px; flex-basis: 700px;">
             <div class="text-sm font-semibold text-neutral-900"><?php echo htmlspecialchars($factorTitle, ENT_QUOTES, 'UTF-8'); ?></div>
             <div class="mt-0.5 text-xs text-neutral-500">Factores registrados para este bloque.</div>
             <?php if (empty($factorRows)) : ?>
