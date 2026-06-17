@@ -17,20 +17,9 @@
           Define la razón de ser del proyecto.
         </p>
       </div>
-      <a
-        data-js-edit-mision="1"
-        href="detalle-proyecto.php?t=<?php echo urlencode((string) $projectToken); ?>&section=mision&edit=mision"
-        class="<?php echo ($edit ?? '') === 'mision' ? 'hidden' : 'inline-flex'; ?> items-center justify-center rounded-xl border border-neutral-200 bg-white p-2 text-brand-700 hover:bg-brand-50"
-        aria-label="Editar misión"
-        title="Editar"
-      >
-        <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M11 4h-4a2 2 0 00-2 2v4m14-4l-9 9-4 1 1-4 9-9 3 3z" />
-        </svg>
-      </a>
     </div>
 
-    <div id="mision-editor" class="<?php echo ($edit ?? '') === 'mision' ? 'block' : 'hidden'; ?> mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+    <div id="mision-editor" class="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div class="text-sm font-semibold text-neutral-900">Editor de misión</div>
@@ -50,14 +39,7 @@
           required
         ><?php echo htmlspecialchars((string) ($misionTexto ?? ''), ENT_QUOTES, 'UTF-8'); ?></textarea>
 
-        <div class="flex justify-end gap-3">
-          <a
-            data-js-cancel-mision="1"
-            href="detalle-proyecto.php?t=<?php echo urlencode((string) $projectToken); ?>&section=mision"
-            class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100"
-          >
-            Cancelar
-          </a>
+        <div class="flex justify-end">
           <button
             type="submit"
             class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
@@ -66,18 +48,6 @@
           </button>
         </div>
       </form>
-    </div>
-
-    <div id="mision-display" class="<?php echo ($edit ?? '') === 'mision' ? 'hidden' : 'block'; ?>">
-      <?php if ($misionTexto === '') : ?>
-        <p class="mt-4 text-sm text-neutral-600">Aún no se registró la misión. Presiona el lápiz para agregarla.</p>
-      <?php else : ?>
-        <div class="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
-          <div class="text-sm leading-relaxed text-neutral-800">
-            <?php echo nl2br(htmlspecialchars($misionTexto, ENT_QUOTES, 'UTF-8')); ?>
-          </div>
-        </div>
-      <?php endif; ?>
     </div>
   </section>
 <?php elseif ($panel === 'vision') : ?>
@@ -89,20 +59,9 @@
           Define hacia dónde se dirige el proyecto.
         </p>
       </div>
-      <a
-        data-js-edit-vision="1"
-        href="detalle-proyecto.php?t=<?php echo urlencode((string) $projectToken); ?>&section=vision&edit=vision"
-        class="<?php echo ($edit ?? '') === 'vision' ? 'hidden' : 'inline-flex'; ?> items-center justify-center rounded-xl border border-neutral-200 bg-white p-2 text-brand-700 hover:bg-brand-50"
-        aria-label="Editar visión"
-        title="Editar"
-      >
-        <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M11 4h-4a2 2 0 00-2 2v4m14-4l-9 9-4 1 1-4 9-9 3 3z" />
-        </svg>
-      </a>
     </div>
 
-    <div id="vision-editor" class="<?php echo ($edit ?? '') === 'vision' ? 'block' : 'hidden'; ?> mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+    <div id="vision-editor" class="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div class="text-sm font-semibold text-neutral-900">Editor de visión</div>
@@ -122,14 +81,7 @@
           required
         ><?php echo htmlspecialchars((string) ($visionTexto ?? ''), ENT_QUOTES, 'UTF-8'); ?></textarea>
 
-        <div class="flex justify-end gap-3">
-          <a
-            data-js-cancel-vision="1"
-            href="detalle-proyecto.php?t=<?php echo urlencode((string) $projectToken); ?>&section=vision"
-            class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100"
-          >
-            Cancelar
-          </a>
+        <div class="flex justify-end">
           <button
             type="submit"
             class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
@@ -138,18 +90,6 @@
           </button>
         </div>
       </form>
-    </div>
-
-    <div id="vision-display" class="<?php echo ($edit ?? '') === 'vision' ? 'hidden' : 'block'; ?>">
-      <?php if ($visionTexto === '') : ?>
-        <p class="mt-4 text-sm text-neutral-600">Aún no se registró la visión. Presiona el lápiz para agregarla.</p>
-      <?php else : ?>
-        <div class="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
-          <div class="text-sm leading-relaxed text-neutral-800">
-            <?php echo nl2br(htmlspecialchars($visionTexto, ENT_QUOTES, 'UTF-8')); ?>
-          </div>
-        </div>
-      <?php endif; ?>
     </div>
   </section>
 <?php elseif ($panel === 'valores') : ?>
