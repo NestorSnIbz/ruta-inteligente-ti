@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Nuevo Proyecto - Ruta Inteligente TI</title>
+  <title>Nuevo Plan Estratégico - Ruta Inteligente TI</title>
   <link href="/dist/output.css" rel="stylesheet" />
 </head>
 
@@ -26,10 +26,10 @@
       <div class="px-6 py-4 flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-semibold tracking-tight">
-            Nuevo Proyecto
+            Nuevo Plan Estratégico
           </h1>
           <p class="text-sm text-neutral-600 mt-1">
-            Registra un nuevo proyecto estratégico.
+            Registra un nuevo plan estratégico.
           </p>
         </div>
 
@@ -58,7 +58,7 @@
         <form action="nuevo-proyecto.php" method="post">
           <div>
             <label for="nombre" class="block text-sm font-medium text-neutral-700">
-              Nombre del proyecto
+              Nombre del plan estratégico
             </label>
 
             <input
@@ -71,7 +71,7 @@
             />
 
             <p class="mt-2 text-xs text-neutral-500">
-              Se guardará según la estructura de la tabla proyecto (id_proyecto, nombre, creador_id).
+              Se guardará en la base de datos del plan estratégico.
             </p>
           </div>
 
@@ -87,7 +87,7 @@
               type="submit"
               class="rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700"
             >
-              Guardar proyecto
+              Guardar plan estratégico
             </button>
           </div>
         </form>

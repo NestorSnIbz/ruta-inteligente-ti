@@ -140,7 +140,7 @@ final class ProyectoController
         // Validación mínima antes de insertar en la tabla proyecto.
         $nombre = trim((string) ($_POST['nombre'] ?? ''));
         if ($nombre === '' || mb_strlen($nombre, 'UTF-8') < 3) {
-            Session::flash('error', 'El nombre del proyecto es obligatorio (mínimo 3 caracteres).');
+            Session::flash('error', 'El nombre del plan estratégico es obligatorio (mínimo 3 caracteres).');
             $this->redirect('/nuevo-proyecto.php');
         }
 
@@ -155,11 +155,11 @@ final class ProyectoController
                 }
             }
         } catch (Throwable $e) {
-            Session::flash('error', $this->friendlySupabaseError($e, 'No se pudo crear el proyecto.'));
+            Session::flash('error', $this->friendlySupabaseError($e, 'No se pudo crear el plan estratégico.'));
             $this->redirect('/nuevo-proyecto.php');
         }
 
-        Session::flash('success', 'Proyecto creado correctamente.');
+        Session::flash('success', 'Plan estratégico creado correctamente.');
         $token = $this->issueProjectToken($idProyecto);
         $this->redirect('/detalle-proyecto.php?t=' . urlencode($token));
     }
@@ -239,6 +239,7 @@ final class ProyectoController
             $valores = [];
             $misionTexto = '';
             $visionTexto = '';
+            $overviewConclusionTexto = '';
 
             if ($dataSection === 'overview' || $dataSection === 'mision') {
                 $mision = Mision::findByProyecto($supabase, $idProyecto);
@@ -251,10 +252,18 @@ final class ProyectoController
             if ($dataSection === 'overview' || $dataSection === 'valores') {
                 $valores = Valor::listByProyecto($supabase, $idProyecto);
             }
+            if ($dataSection === 'overview') {
+                try {
+                    $planConclusion = PlanEstrategicoConclusion::findByProyecto($supabase, $idProyecto);
+                    $overviewConclusionTexto = is_array($planConclusion) ? trim((string) ($planConclusion['descripcion'] ?? '')) : '';
+                } catch (Throwable $e) {
+                    $overviewConclusionTexto = '';
+                }
+            }
 
             $miembros = [];
             try {
-                if ($dataSection === 'overview' && !empty($isCreador)) {
+                if ($dataSection === 'overview') {
                     $miembrosRows = ProyectoMiembro::listByProyectoWithPersona($supabase, $idProyecto);
                     if (empty($miembrosRows)) {
                         $miembrosRows = ProyectoMiembro::listByProyecto($supabase, $idProyecto);
@@ -699,6 +708,41 @@ final class ProyectoController
             } catch (Throwable $e) {
                 $fodaOverview = [];
             }
+
+            try {
+                $fodaFactorRows = FodaCruzada::listFactorRows($supabase, $idProyecto);
+                $fodaCruzadaFactors = FodaCruzada::buildFactorSet($fodaFactorRows);
+                $fodaCruzadaAnswers = FodaCruzada::listEvaluacionesByProyecto($supabase, $idProyecto);
+                $fodaCruzadaCalc = FodaCruzada::compute($fodaCruzadaFactors, $fodaCruzadaAnswers);
+            } catch (Throwable $e) {
+                $fodaCruzadaFactors = [];
+                $fodaCruzadaAnswers = [];
+                $fodaCruzadaCalc = [
+                    'ready' => false,
+                    'counts' => [
+                        'fortalezas' => 0,
+                        'debilidades' => 0,
+                        'oportunidades' => 0,
+                        'amenazas' => 0,
+                    ],
+                    'total_cells' => 0,
+                    'answered' => 0,
+                    'missing' => 0,
+                    'complete' => false,
+                    'matrices' => [],
+                    'summary' => [],
+                    'predominant' => null,
+                    'executive_conclusion' => null,
+                ];
+            }
+
+            try {
+                $cameAcciones = Came::listAccionesByProyecto($supabase, $idProyecto);
+                $cameCalc = Came::compute($cameAcciones);
+            } catch (Throwable $e) {
+                $cameAcciones = ['C' => [], 'A' => [], 'M' => [], 'E' => []];
+                $cameCalc = Came::compute($cameAcciones);
+            }
         }
 
         if ($renderOnlySection === 'cadena') {
@@ -867,6 +911,8 @@ final class ProyectoController
 
             $pdf = $this->buildOverviewPdf(
                 $fileProjectName,
+                is_array($miembros ?? null) ? $miembros : [],
+                $overviewConclusionTexto ?? '',
                 $misionTexto ?? '',
                 $visionTexto ?? '',
                 is_array($valores ?? null) ? $valores : [],
@@ -876,7 +922,10 @@ final class ProyectoController
                 is_array($bcgOverview ?? null) ? $bcgOverview : [],
                 is_array($perfilOverview ?? null) ? $perfilOverview : [],
                 is_array($pestOverview ?? null) ? $pestOverview : [],
-                is_array($fodaOverview ?? null) ? $fodaOverview : []
+                is_array($fodaOverview ?? null) ? $fodaOverview : [],
+                is_array($fodaCruzadaCalc ?? null) ? $fodaCruzadaCalc : [],
+                is_array($cameCalc ?? null) ? $cameCalc : [],
+                is_array($cameAcciones ?? null) ? $cameAcciones : []
             );
 
             header('Content-Type: application/pdf');
@@ -912,6 +961,8 @@ final class ProyectoController
 
     private function buildOverviewPdf(
         string $projectName,
+        array $miembros,
+        string $overviewConclusion,
         string $mision,
         string $vision,
         array $valores,
@@ -921,12 +972,38 @@ final class ProyectoController
         array $bcgOverview,
         array $perfilOverview,
         array $pestOverview,
-        array $fodaOverview
+        array $fodaOverview,
+        array $fodaCruzadaCalc,
+        array $cameCalc,
+        array $cameAcciones
     ): string {
         $lines = [];
-        $lines[] = ['font' => 'F2', 'size' => 18, 'text' => 'Reporte - Overview'];
-        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Proyecto: ' . $projectName];
-        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Fecha: ' . date('Y-m-d H:i')];
+        $empresaNombre = trim($projectName) !== '' ? trim($projectName) : 'Sin nombre';
+        $miembrosList = [];
+        foreach ($miembros as $miembro) {
+            if (!is_array($miembro)) {
+                continue;
+            }
+            $nombre = trim((string) ($miembro['nombre'] ?? ''));
+            $email = trim((string) ($miembro['email'] ?? ''));
+            $rol = strtoupper(trim((string) ($miembro['rol'] ?? '')));
+            $label = $nombre !== '' ? $nombre : $email;
+            if ($label === '') {
+                continue;
+            }
+            if ($rol === 'CREADOR') {
+                $label .= ' (Creador)';
+            } elseif ($rol !== '') {
+                $label .= ' (' . ucfirst(strtolower($rol)) . ')';
+            }
+            $miembrosList[] = $label;
+        }
+        $miembrosList = array_values(array_unique($miembrosList));
+
+        $lines[] = ['font' => 'F2', 'size' => 18, 'text' => 'Resumen ejecutivo del plan estratégico (' . $empresaNombre . ')'];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Nombre de la empresa: ' . $empresaNombre];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Fecha de elaboración: ' . date('d/m/Y')];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Emprendedores/promotores: ' . (!empty($miembrosList) ? implode(', ', $miembrosList) : 'Sin registros.')];
         $lines[] = ['spacer' => 10];
 
         $lines = array_merge($lines, $this->pdfSection('Misión', $mision !== '' ? $mision : 'Sin registros.'));
@@ -955,7 +1032,7 @@ final class ProyectoController
         $lines[] = ['spacer' => 8];
 
         $lines[] = ['spacer' => 6];
-        $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'Objetivos'];
+        $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'Objetivos estratégicos'];
         $lines[] = ['spacer' => 4];
         $misionLabel = trim($mision) !== '' ? trim($mision) : 'Sin misión registrada.';
         $objectiveGroups = [];
@@ -1061,7 +1138,7 @@ final class ProyectoController
         }
 
         $lines[] = ['spacer' => 10];
-        $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'FODA (resumen)'];
+        $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'Análisis FODA'];
         $fuentes = [
             'CADENA_VALOR_INTERNA' => 'Cadena de valor',
             'AUTODIAGNOSTICO_BCG' => 'Matriz BCG',
@@ -1097,6 +1174,106 @@ final class ProyectoController
             'foda_table' => true,
             'groups' => $fodaGroups,
         ];
+
+        $lines[] = ['spacer' => 10];
+        $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'Identificación de estrategia'];
+        $estrategiasSummary = is_array($fodaCruzadaCalc['summary'] ?? null) ? (array) $fodaCruzadaCalc['summary'] : [];
+
+        $maxTotal = null;
+        $topRows = [];
+        foreach ($estrategiasSummary as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $total = (int) ($row['total'] ?? 0);
+            if ($maxTotal === null || $total > $maxTotal) {
+                $maxTotal = $total;
+                $topRows = [$row];
+            } elseif ($total === $maxTotal) {
+                $topRows[] = $row;
+            }
+        }
+
+        if ($maxTotal === null || empty($topRows)) {
+            $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Sin resultados acumulados.'];
+        } else {
+            $relationToText = [
+                'FO' => 'Deberá adoptar estrategias de crecimiento.',
+                'FA' => 'La empresa está preparada para enfrentarse a las amenazas.',
+                'DA' => 'Se enfrenta a amenazas externas sin las fortalezas necesarias para luchar con la competencia.',
+                'DO' => 'La empresa no puede aprovechar las oportunidades porque carece de preparación adecuada.',
+            ];
+            $texts = [];
+            foreach ($topRows as $row) {
+                $relation = trim((string) ($row['relation'] ?? ''));
+                $texts[] = $relationToText[$relation] ?? '';
+            }
+            $texts = array_values(array_filter(array_unique(array_map('trim', $texts)), static fn ($t) => $t !== ''));
+            if (empty($texts)) {
+                $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Sin resultados acumulados.'];
+            } elseif (count($texts) === 1) {
+                $lines[] = ['font' => 'F1', 'size' => 11, 'text' => $texts[0]];
+            } else {
+                $lines[] = ['font' => 'F1', 'size' => 11, 'text' => implode(' | ', $texts)];
+            }
+        }
+
+        $lines[] = ['spacer' => 10];
+        $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'Matriz CAME (resumen)'];
+        $cameCounts = is_array($cameCalc['counts'] ?? null) ? (array) $cameCalc['counts'] : [];
+        $cameTotalActions = (int) ($cameCalc['total_actions'] ?? 0);
+        $cameCategoriesUsed = (int) ($cameCalc['categories_used'] ?? 0);
+        $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'Acciones competitivas'];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Acciones registradas: ' . (string) $cameTotalActions];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'Categorías utilizadas: ' . (string) $cameCategoriesUsed . '/4'];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => 'C=' . (string) ((int) ($cameCounts['C'] ?? 0)) . ' | A=' . (string) ((int) ($cameCounts['A'] ?? 0)) . ' | M=' . (string) ((int) ($cameCounts['M'] ?? 0)) . ' | E=' . (string) ((int) ($cameCounts['E'] ?? 0))];
+        $lines[] = ['font' => 'F1', 'size' => 11, 'text' => $cameTotalActions > 0 ? 'Estado: Con acciones registradas.' : 'Estado: Sin acciones registradas.'];
+
+        $accionesCompetitivas = [];
+        foreach (['C', 'A', 'M', 'E'] as $cat) {
+            $rows = is_array($cameAcciones[$cat] ?? null) ? (array) $cameAcciones[$cat] : [];
+            usort($rows, static function ($a, $b): int {
+                $ap = is_array($a) ? (int) ($a['position'] ?? 0) : 0;
+                $bp = is_array($b) ? (int) ($b['position'] ?? 0) : 0;
+                return $ap <=> $bp;
+            });
+            foreach ($rows as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $desc = trim((string) ($row['description'] ?? ''));
+                if ($desc === '') {
+                    continue;
+                }
+                $accionesCompetitivas[] = $desc;
+            }
+        }
+
+        $actionColumns = [
+            ['header' => '#', 'width' => 42, 'align' => 'C'],
+            ['header' => 'Acción competitiva', 'width' => 462, 'align' => 'L'],
+        ];
+        $actionRows = [];
+        if (empty($accionesCompetitivas)) {
+            $actionRows[] = ['1', 'Sin acciones competitivas registradas.'];
+        } else {
+            foreach ($accionesCompetitivas as $index => $accion) {
+                $actionRows[] = [(string) ($index + 1), $accion];
+            }
+        }
+        $lines[] = ['spacer' => 4];
+        $lines[] = [
+            'table' => true,
+            'columns' => $actionColumns,
+            'rows' => $actionRows,
+        ];
+
+        $conclusionPdf = trim($overviewConclusion);
+        if ($conclusionPdf === '') {
+            $conclusionPdf = 'Aún no hay suficiente información para elaborar una conclusión general del plan estratégico. Complete la matriz FODA, la identificación de estrategia y las acciones competitivas para generar una conclusión más precisa.';
+        }
+        $lines[] = ['spacer' => 10];
+        $lines = array_merge($lines, $this->pdfSection('Conclusión', $conclusionPdf));
 
         return $this->simplePdfFromLines($lines);
     }
@@ -3509,6 +3686,11 @@ final class ProyectoController
         $this->saveSingleTextBlock('vision', 'vision', 'La visión es obligatoria.');
     }
 
+    public function saveOverviewConclusion(): void
+    {
+        $this->saveSingleTextBlock('overview_conclusion', 'overview', 'La conclusión es obligatoria.');
+    }
+
     public function addValor(): void
     {
         $authController = new AuthController();
@@ -4200,6 +4382,8 @@ final class ProyectoController
             Mision::save($supabase, $idProyecto, $descripcion);
         } elseif ($block === 'vision') {
             Vision::save($supabase, $idProyecto, $descripcion);
+        } elseif ($block === 'overview_conclusion') {
+            PlanEstrategicoConclusion::save($supabase, $idProyecto, $descripcion);
         }
 
         if ($this->wantsJson()) {
