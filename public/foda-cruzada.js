@@ -156,7 +156,11 @@
     const toastTitle = panel.querySelector("#swot-toast-title");
     const toastMsg = panel.querySelector("#swot-toast-msg");
     const toastClose = panel.querySelector("#swot-toast-close");
-    const factorToggles = Array.from(panel.querySelectorAll("[data-swot-factor-toggle='1']"));
+    const factorHoverButtons = Array.from(panel.querySelectorAll("[data-swot-factor-hover='1']"));
+    const factorTooltip = document.getElementById("swot-factor-tooltip");
+    const factorTooltipCode = document.getElementById("swot-factor-tooltip-code");
+    const factorTooltipDesc = document.getElementById("swot-factor-tooltip-desc");
+    const factorTooltipSource = document.getElementById("swot-factor-tooltip-source");
 
     let validationActive = false;
     let autosaveTimer = null;
@@ -190,41 +194,85 @@
 
     if (toastClose) toastClose.addEventListener("click", () => closeToast());
 
-    function closeAllFactorPopovers(exceptBtn = null) {
-      for (const currentBtn of factorToggles) {
-        if (exceptBtn && currentBtn === exceptBtn) continue;
-        const currentDetail = currentBtn.parentElement ? currentBtn.parentElement.querySelector("[data-swot-factor-detail]") : null;
-        if (!currentDetail) continue;
-        currentDetail.classList.add("hidden");
-        currentBtn.setAttribute("aria-expanded", "false");
+    let tooltipHideTimer = null;
+    let tooltipAnchor = null;
+
+    function hideFactorTooltip() {
+      if (tooltipHideTimer) {
+        clearTimeout(tooltipHideTimer);
+        tooltipHideTimer = null;
       }
+      tooltipAnchor = null;
+      if (factorTooltip) factorTooltip.classList.add("hidden");
     }
 
-    for (const btn of factorToggles) {
-      btn.addEventListener("click", (event) => {
-        event.stopPropagation();
-        const detail = btn.parentElement ? btn.parentElement.querySelector("[data-swot-factor-detail]") : null;
-        if (!detail) return;
-        const open = !detail.classList.contains("hidden");
-        closeAllFactorPopovers(btn);
-        detail.classList.toggle("hidden", open);
-        btn.setAttribute("aria-expanded", open ? "false" : "true");
+    function positionFactorTooltip(anchorEl) {
+      if (!factorTooltip || !anchorEl) return;
+      const rect = anchorEl.getBoundingClientRect();
+      const tooltipRect = factorTooltip.getBoundingClientRect();
+      const gap = 10;
+      const vw = window.innerWidth || document.documentElement.clientWidth || 0;
+      const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+      const minPad = 8;
+
+      let left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+      left = Math.max(minPad, Math.min(left, Math.max(minPad, vw - tooltipRect.width - minPad)));
+
+      const fitsAbove = rect.top >= tooltipRect.height + gap + minPad;
+      let top = fitsAbove ? (rect.top - tooltipRect.height - gap) : (rect.bottom + gap);
+      if (top + tooltipRect.height + minPad > vh) {
+        top = Math.max(minPad, vh - tooltipRect.height - minPad);
+      }
+
+      factorTooltip.style.left = `${Math.round(left)}px`;
+      factorTooltip.style.top = `${Math.round(top)}px`;
+    }
+
+    function showFactorTooltip(anchorEl) {
+      if (!factorTooltip || !anchorEl) return;
+      if (tooltipHideTimer) {
+        clearTimeout(tooltipHideTimer);
+        tooltipHideTimer = null;
+      }
+
+      tooltipAnchor = anchorEl;
+      const code = String(anchorEl.dataset.swotFactorCode || "").trim();
+      const desc = String(anchorEl.dataset.swotFactorDesc || "").trim();
+      const source = String(anchorEl.dataset.swotFactorSource || "").trim();
+
+      if (factorTooltipCode) factorTooltipCode.textContent = code ? code : "";
+      if (factorTooltipDesc) factorTooltipDesc.textContent = desc ? desc : "Sin detalle.";
+      if (factorTooltipSource) factorTooltipSource.textContent = source ? source : "";
+
+      factorTooltip.classList.remove("hidden");
+      requestAnimationFrame(() => positionFactorTooltip(anchorEl));
+    }
+
+    for (const btn of factorHoverButtons) {
+      btn.addEventListener("mouseenter", () => showFactorTooltip(btn));
+      btn.addEventListener("mouseleave", () => {
+        tooltipHideTimer = setTimeout(() => hideFactorTooltip(), 120);
+      });
+      btn.addEventListener("focus", () => showFactorTooltip(btn));
+      btn.addEventListener("blur", () => hideFactorTooltip());
+    }
+
+    if (factorTooltip) {
+      factorTooltip.addEventListener("mouseenter", () => {
+        if (tooltipHideTimer) {
+          clearTimeout(tooltipHideTimer);
+          tooltipHideTimer = null;
+        }
+      });
+      factorTooltip.addEventListener("mouseleave", () => {
+        tooltipHideTimer = setTimeout(() => hideFactorTooltip(), 120);
       });
     }
 
-    document.addEventListener("click", (event) => {
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        closeAllFactorPopovers();
-        return;
-      }
-      if (target.closest("[data-swot-factor-detail]") || target.closest("[data-swot-factor-toggle='1']")) {
-        return;
-      }
-      closeAllFactorPopovers();
+    window.addEventListener("scroll", () => hideFactorTooltip(), true);
+    window.addEventListener("resize", () => {
+      if (tooltipAnchor) requestAnimationFrame(() => positionFactorTooltip(tooltipAnchor));
     });
-
-    panel.addEventListener("scroll", () => closeAllFactorPopovers(), true);
 
     function buildState() {
       const state = {
