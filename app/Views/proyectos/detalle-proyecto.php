@@ -173,6 +173,9 @@
           <button type="button" data-panel="estrategias" class="project-tab rounded-xl px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-brand-50">
             Estrategias
           </button>
+          <button type="button" data-panel="came" class="project-tab rounded-xl px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-brand-50">
+            CAME
+          </button>
           
         </div>
       </div>
@@ -960,6 +963,21 @@
           </div>
         </section>
 
+        <section id="panel-came" class="project-panel hidden bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm" data-lazy-panel="came">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-lg font-semibold">Matriz CAME</h2>
+          </div>
+          <div class="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+            <div class="flex items-center gap-2 text-sm text-neutral-600">
+              <svg class="h-4 w-4 animate-spin text-neutral-500" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+              </svg>
+              <span>Cargando…</span>
+            </div>
+          </div>
+        </section>
+
         <section id="panel-bgg" class="project-panel hidden bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm" data-lazy-panel="bgg">
           <div class="flex items-center justify-between gap-3">
             <h2 class="text-lg font-semibold">Autodiagnóstico BCG</h2>
@@ -984,6 +1002,7 @@
 <script src="perfil-competitivo.js"></script>
 <script src="pest.js"></script>
 <script src="foda-cruzada.js"></script>
+<script src="came.js"></script>
 <script>
   const projectToken = <?php echo json_encode((string) $projectToken, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
   const projectId = <?php echo (int) $idProyecto; ?>;
@@ -1101,7 +1120,8 @@
     }
   });
 
-  const allowedPanels = new Set(["overview", "mision", "vision", "valores", "objetivos", "cadena", "perfil_competitivo", "pest", "estrategias", "bgg"]);
+  const allowedPanels = new Set(["overview", "mision", "vision", "valores", "objetivos", "cadena", "perfil_competitivo", "pest", "estrategias", "came", "bgg"]);
+  const alwaysRefreshPanels = new Set(["overview", "estrategias", "came"]);
   const panelStorageKey = projectToken ? `ri:detalle-proyecto:section:${projectToken}` : "ri:detalle-proyecto:section";
 
   const projectTabs = Array.from(document.querySelectorAll(".project-tab"));
@@ -1163,8 +1183,9 @@
 
   async function ensurePanelLoaded(panelId) {
     if (!panelId) return;
-    if (panelId === "overview" || panelId === "miembros") return;
+    if (panelId === "miembros") return;
     if (!allowedPanels.has(panelId)) return;
+    if (alwaysRefreshPanels.has(panelId)) return reloadPanel(panelId);
     if (loadedPanels.has(panelId)) return;
     if (!projectToken) return;
 
@@ -1208,36 +1229,57 @@
 
   async function reloadPanel(panelId) {
     if (!panelId) return;
-    if (panelId === "overview" || panelId === "miembros") return;
+    if (panelId === "miembros") return;
     if (!allowedPanels.has(panelId)) return;
     if (!projectToken) return;
+    if (inflight.has(panelId)) return inflight.get(panelId);
 
-    const current = document.getElementById(`panel-${panelId}`);
-    if (!current) return;
-    try {
-      const u = new URL("detalle-proyecto.php", window.location.href);
-      u.searchParams.set("t", String(projectToken));
-      u.searchParams.set("partial", String(panelId));
-      ["edit", "oe_edit", "oesp_edit", "members"].forEach((k) => {
-        const v = new URL(window.location.href).searchParams.get(k);
-        if (v) u.searchParams.set(k, v);
-      });
+    const task = (async () => {
+      const current = document.getElementById(`panel-${panelId}`);
+      if (!current) return;
+      try {
+        const u = new URL("detalle-proyecto.php", window.location.href);
+        u.searchParams.set("t", String(projectToken));
+        u.searchParams.set("partial", String(panelId));
+        u.searchParams.set("_ts", String(Date.now()));
+        ["edit", "oe_edit", "oesp_edit", "members"].forEach((k) => {
+          const v = new URL(window.location.href).searchParams.get(k);
+          if (v) u.searchParams.set(k, v);
+        });
 
-      const res = await fetch(u.toString(), {
-        headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "text/html" },
-      });
-      const html = await res.text();
-      if (!res.ok) return;
-      const shouldBeHidden = activePanelId !== panelId;
-      current.outerHTML = html;
-      const updated = document.getElementById(`panel-${panelId}`);
-      if (updated) {
-        if (shouldBeHidden) updated.classList.add("hidden");
-        else updated.classList.remove("hidden");
+        const res = await fetch(u.toString(), {
+          headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "text/html", "Cache-Control": "no-cache" },
+          cache: "no-store",
+        });
+        const html = await res.text();
+        if (!res.ok) return;
+        const shouldBeHidden = activePanelId !== panelId;
+        current.outerHTML = html;
+        const updated = document.getElementById(`panel-${panelId}`);
+        if (updated) {
+          if (shouldBeHidden) updated.classList.add("hidden");
+          else updated.classList.remove("hidden");
+        }
+        loadedPanels.add(panelId);
+        initLazyPanel(panelId);
+      } catch (e) {
+      } finally {
+        inflight.delete(panelId);
       }
-      loadedPanels.add(panelId);
-      initLazyPanel(panelId);
-    } catch (e) {}
+    })();
+
+    inflight.set(panelId, task);
+    return task;
+  }
+
+  async function openPanel(panelId) {
+    if (!panelId) return;
+    setActiveProjectPanel(panelId);
+    if (alwaysRefreshPanels.has(panelId)) {
+      await reloadPanel(panelId);
+      return;
+    }
+    await ensurePanelLoaded(panelId);
   }
 
   function initMisionPanel() {
@@ -1461,14 +1503,12 @@
       const row = document.createElement("div");
       row.className = "flex items-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3";
 
-      const hidden = document.createElement("input");
-      hidden.type = "hidden";
-      hidden.name = "valores[]";
-      hidden.value = text;
-
-      const label = document.createElement("div");
-      label.className = "flex-1 text-sm text-neutral-800";
-      label.textContent = text;
+      const inputValue = document.createElement("input");
+      inputValue.type = "text";
+      inputValue.name = "valores[]";
+      inputValue.value = text;
+      inputValue.placeholder = "Escribe un valor";
+      inputValue.className = "flex-1 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 outline-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15";
 
       const remove = document.createElement("button");
       remove.type = "button";
@@ -1476,8 +1516,7 @@
       remove.textContent = "Eliminar";
       remove.addEventListener("click", () => row.remove());
 
-      row.appendChild(hidden);
-      row.appendChild(label);
+      row.appendChild(inputValue);
       row.appendChild(remove);
       return row;
     }
@@ -3794,15 +3833,15 @@
     if (panelId === "perfil_competitivo") window.RI && typeof window.RI.initPerfilCompetitivoPanel === "function" && window.RI.initPerfilCompetitivoPanel();
     if (panelId === "pest") window.RI && typeof window.RI.initPestPanel === "function" && window.RI.initPestPanel();
     if (panelId === "estrategias") window.RI && typeof window.RI.initFodaCruzadaPanel === "function" && window.RI.initFodaCruzadaPanel();
+    if (panelId === "came") window.RI && typeof window.RI.initCamePanel === "function" && window.RI.initCamePanel();
     if (panelId === "bgg") initBcgPanel();
   }
 
   projectTabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
+    tab.addEventListener("click", async () => {
       const panelId = tab.getAttribute("data-panel");
       if (!panelId) return;
-      setActiveProjectPanel(panelId);
-      ensurePanelLoaded(panelId);
+      await openPanel(panelId);
     });
   });
 
@@ -3825,7 +3864,11 @@
     (normalizedSectionParam || normalizedStoredPanel || "overview");
 
   setActiveProjectPanel(initialPanel, { updateUrl: false });
-  ensurePanelLoaded(initialPanel);
+  if (alwaysRefreshPanels.has(initialPanel)) {
+    reloadPanel(initialPanel);
+  } else {
+    ensurePanelLoaded(initialPanel);
+  }
 
   let riToastTimer = null;
   function showInlineToast(title, message) {
@@ -4056,11 +4099,10 @@
   });
 
   document.querySelectorAll("[data-open-panel]").forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       const panelId = btn.getAttribute("data-open-panel");
       if (!panelId) return;
-      setActiveProjectPanel(panelId);
-      ensurePanelLoaded(panelId);
+      await openPanel(panelId);
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
   });

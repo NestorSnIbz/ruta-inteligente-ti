@@ -1,5 +1,12 @@
 (() => {
   const CATEGORY_ORDER = ["SOCIALES", "MEDIOAMBIENTALES", "POLITICOS", "ECONOMICOS", "TECNOLOGICOS"];
+  const CATEGORY_COLORS = {
+    SOCIALES: "#A7D88D",
+    MEDIOAMBIENTALES: "#5E9F59",
+    POLITICOS: "#B98A5B",
+    ECONOMICOS: "#D6680B",
+    TECNOLOGICOS: "#7EC9F5",
+  };
 
   const POSITIVE_TEXT =
     "La influencia de este factor en el entorno de la empresa es alta y debe considerarse una variable estratégica para la toma de decisiones.";
@@ -91,19 +98,36 @@
 
     if (toastClose) toastClose.addEventListener("click", () => closeToast());
 
+    function categoryColor(cat) {
+      return CATEGORY_COLORS[String(cat || "").toUpperCase()] || "#0054DC";
+    }
+
     function updateRowStyles(row) {
+      const cat = String(row.dataset.pestCat || "");
+      const color = categoryColor(cat);
       const cells = Array.from(row.querySelectorAll(".pest-cell"));
       for (const cell of cells) {
         const input = cell.querySelector("input[type='radio']");
         const label = cell.querySelector(".pest-cell-label");
         const checked = input && input.checked;
         cell.className = checked
-          ? "pest-cell flex h-12 w-full cursor-pointer items-center justify-center select-none bg-brand-50"
+          ? "pest-cell flex h-12 w-full cursor-pointer items-center justify-center select-none"
           : "pest-cell flex h-12 w-full cursor-pointer items-center justify-center select-none hover:bg-neutral-50";
         if (label) {
           label.className = checked
-            ? "pest-cell-label inline-flex h-9 w-full max-w-[4.25rem] items-center justify-center rounded-xl border border-brand-600 bg-brand-600 px-3 text-sm font-semibold text-white shadow-sm transition"
+            ? "pest-cell-label inline-flex h-9 w-full max-w-[4.25rem] items-center justify-center rounded-xl border px-3 text-sm font-semibold text-white shadow-sm transition"
             : "pest-cell-label inline-flex h-9 w-full max-w-[4.25rem] items-center justify-center rounded-xl border border-neutral-300 bg-white px-3 text-sm font-semibold text-neutral-700 transition hover:border-brand-300";
+          if (checked) {
+            label.style.backgroundColor = color;
+            label.style.borderColor = color;
+            label.style.color = "#FFFFFF";
+            cell.style.backgroundColor = "transparent";
+          } else {
+            label.style.backgroundColor = "";
+            label.style.borderColor = "";
+            label.style.color = "";
+            cell.style.backgroundColor = "";
+          }
           label.textContent = checked ? "X" : "";
         }
       }

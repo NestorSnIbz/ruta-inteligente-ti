@@ -177,7 +177,7 @@ final class ProyectoController
         $section = trim((string) ($_GET['section'] ?? 'overview'));
         $export = trim((string) ($_GET['export'] ?? ''));
         $isExportOverviewPdf = $export === 'overview_pdf';
-        $allowedSections = ['overview', 'mision', 'vision', 'valores', 'objetivos', 'cadena', 'perfil_competitivo', 'pest', 'estrategias', 'bgg'];
+        $allowedSections = ['overview', 'mision', 'vision', 'valores', 'objetivos', 'cadena', 'perfil_competitivo', 'pest', 'estrategias', 'came', 'bgg'];
         $requestedSection = $partial !== '' ? $partial : ($section !== '' ? $section : 'overview');
         if (!in_array($requestedSection, $allowedSections, true)) {
             $requestedSection = 'overview';
@@ -393,6 +393,21 @@ final class ProyectoController
             'summary' => [],
             'predominant' => null,
             'executive_conclusion' => null,
+        ];
+        $cameAcciones = ['C' => [], 'A' => [], 'M' => [], 'E' => []];
+        $cameCalc = [
+            'counts' => ['C' => 0, 'A' => 0, 'M' => 0, 'E' => 0],
+            'total_actions' => 0,
+            'categories_used' => 0,
+            'empty' => true,
+        ];
+        $cameFactors = [
+            'groups' => [
+                'FORTALEZA' => [],
+                'DEBILIDAD' => [],
+                'OPORTUNIDAD' => [],
+                'AMENAZA' => [],
+            ],
         ];
         $cadenaOverview = [];
         $bcgOverview = [];
@@ -783,6 +798,18 @@ final class ProyectoController
                 $fodaCruzadaAnswers = FodaCruzada::listEvaluacionesByProyecto($supabase, $idProyecto);
                 $fodaCruzadaCalc = FodaCruzada::compute($fodaCruzadaFactors, $fodaCruzadaAnswers);
             } catch (Throwable $e) {
+            }
+        }
+
+        if ($renderOnlySection === 'came') {
+            try {
+                $cameAcciones = Came::listAccionesByProyecto($supabase, $idProyecto);
+                $cameCalc = Came::compute($cameAcciones);
+                $cameFactorRows = FodaCruzada::listFactorRows($supabase, $idProyecto);
+                $cameFactors = FodaCruzada::buildFactorSet($cameFactorRows);
+            } catch (Throwable $e) {
+                $cameAcciones = ['C' => [], 'A' => [], 'M' => [], 'E' => []];
+                $cameCalc = Came::compute($cameAcciones);
             }
         }
 
@@ -3358,6 +3385,116 @@ final class ProyectoController
             exit;
         } catch (Throwable $e) {
             echo json_encode(['ok' => false, 'error' => $this->friendlySupabaseError($e, 'Error al guardar la matriz cruzada.')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+    }
+
+    public function saveCameAutosaveBatch(): void
+    {
+        $this->saveCameInternal(false);
+    }
+
+    public function saveCameBatch(): void
+    {
+        $this->saveCameInternal(true);
+    }
+
+    private function saveCameInternal(bool $isFinalSave): void
+    {
+        $authController = new AuthController();
+        $authUser = $authController->requireAuth();
+
+        $token = trim((string) ($_POST['t'] ?? ''));
+        $idProyecto = $this->projectIdFromToken($token);
+        $accionesRaw = (string) ($_POST['acciones'] ?? '');
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($idProyecto <= 0) {
+            echo json_encode(['ok' => false, 'error' => 'Proyecto inválido.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $decoded = json_decode($accionesRaw, true);
+        if (!is_array($decoded)) {
+            echo json_encode(['ok' => false, 'error' => 'Acciones inválidas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $grouped = ['C' => [], 'A' => [], 'M' => [], 'E' => []];
+        foreach ($decoded as $item) {
+            if (!is_array($item)) {
+                echo json_encode(['ok' => false, 'error' => 'Acciones inválidas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+            $cat = strtoupper(trim((string) ($item['category'] ?? '')));
+            $pos = (int) ($item['position'] ?? 0);
+            $text = trim((string) ($item['text'] ?? ''));
+            if (!in_array($cat, Came::categoryOrder(), true) || $pos < 1) {
+                echo json_encode(['ok' => false, 'error' => 'Acciones inválidas.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+            $grouped[$cat][] = [
+                'position' => $pos,
+                'description' => $text,
+            ];
+        }
+
+        $persist = [];
+        $normalized = ['C' => [], 'A' => [], 'M' => [], 'E' => []];
+        foreach (Came::categoryOrder() as $cat) {
+            $rows = is_array($grouped[$cat] ?? null) ? (array) $grouped[$cat] : [];
+            usort($rows, static fn (array $a, array $b): int => ((int) ($a['position'] ?? 0)) <=> ((int) ($b['position'] ?? 0)));
+            $seq = 1;
+            foreach ($rows as $row) {
+                $text = trim((string) ($row['description'] ?? ''));
+                if ($text === '') {
+                    continue;
+                }
+                $normalized[$cat][] = [
+                    'position' => $seq,
+                    'description' => $text,
+                ];
+                $persist[] = [
+                    'id_proyecto' => $idProyecto,
+                    'categoria' => $cat,
+                    'posicion' => $seq,
+                    'descripcion' => $text,
+                    'updated_at' => gmdate('Y-m-d H:i:s'),
+                ];
+                $seq++;
+            }
+        }
+
+        try {
+            $supabase = new SupabaseClient();
+            $proyecto = $this->findAccessibleProyecto($supabase, $idProyecto, (int) $authUser['id_persona']);
+            if ($proyecto === null) {
+                echo json_encode(['ok' => false, 'error' => 'No tienes acceso a este proyecto.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $ok = Came::replaceAcciones($supabase, $idProyecto, $persist);
+            if (!$ok) {
+                echo json_encode(['ok' => false, 'error' => 'No se pudo guardar la matriz.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $calc = Came::compute($normalized);
+            Came::upsertResultado($supabase, $idProyecto, $calc);
+
+            echo json_encode(
+                [
+                    'ok' => true,
+                    'calc' => $calc,
+                    'final' => $isFinalSave,
+                    'updated_at' => gmdate('c'),
+                ],
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            );
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['ok' => false, 'error' => $this->friendlySupabaseError($e, 'Error al guardar la matriz.')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             exit;
         }
     }

@@ -1,6 +1,6 @@
 <?php
   $panel = (string) ($panel ?? '');
-  $allowed = ['overview', 'mision', 'vision', 'valores', 'objetivos', 'cadena', 'perfil_competitivo', 'pest', 'estrategias', 'bgg'];
+  $allowed = ['overview', 'mision', 'vision', 'valores', 'objetivos', 'cadena', 'perfil_competitivo', 'pest', 'estrategias', 'came', 'bgg'];
   if (!in_array($panel, $allowed, true)) {
     http_response_code(400);
     header('Content-Type: text/plain; charset=utf-8');
@@ -201,10 +201,13 @@
           <div id="valores-lista" class="space-y-2">
             <?php foreach (($valores ?? []) as $valor) : ?>
               <div class="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3">
-                <input type="hidden" name="valores[]" value="<?php echo htmlspecialchars((string) ($valor['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" />
-                <div class="flex-1 text-sm text-neutral-800">
-                  <?php echo htmlspecialchars((string) ($valor['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
-                </div>
+                <input
+                  type="text"
+                  name="valores[]"
+                  value="<?php echo htmlspecialchars((string) ($valor['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                  class="flex-1 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 outline-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
+                  placeholder="Escribe un valor"
+                />
                 <button type="button" class="quitar-valor inline-flex items-center justify-center rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-700">
                   Eliminar
                 </button>
@@ -828,6 +831,8 @@
   <?php require dirname(__DIR__) . '/proyectos/panel-pest.php'; ?>
 <?php elseif ($panel === 'estrategias') : ?>
   <?php require dirname(__DIR__) . '/proyectos/panel-foda-cruzada.php'; ?>
+<?php elseif ($panel === 'came') : ?>
+  <?php require dirname(__DIR__) . '/proyectos/panel-came.php'; ?>
 <?php elseif ($panel === 'bgg') : ?>
   <section id="panel-bgg" class="project-panel bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -1027,18 +1032,22 @@
                 <div class="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
                   <div class="font-semibold">Estrella</div>
                   <div class="mt-0.5 text-neutral-600">TCM &gt; 10% · PRM ≥ 1</div>
+                  <div class="mt-1 text-neutral-600">Producto con alto crecimiento y fuerte posición competitiva. Conviene sostener e invertir para consolidar liderazgo.</div>
                 </div>
                 <div class="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
                   <div class="font-semibold">Interrogante</div>
                   <div class="mt-0.5 text-neutral-600">TCM &gt; 10% · PRM &lt; 1</div>
+                  <div class="mt-1 text-neutral-600">Producto con potencial en un mercado atractivo, pero con baja participación. Requiere análisis para decidir si invertir o retirarse.</div>
                 </div>
                 <div class="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
                   <div class="font-semibold">Vaca</div>
                   <div class="mt-0.5 text-neutral-600">TCM ≤ 10% · PRM ≥ 1</div>
+                  <div class="mt-1 text-neutral-600">Producto consolidado que genera caja estable. Conviene mantener eficiencia y aprovecharlo para financiar otras unidades.</div>
                 </div>
                 <div class="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
                   <div class="font-semibold">Perro</div>
                   <div class="mt-0.5 text-neutral-600">TCM ≤ 10% · PRM &lt; 1</div>
+                  <div class="mt-1 text-neutral-600">Producto con bajo crecimiento y débil participación. Suele requerir racionalización, reposicionamiento o salida gradual.</div>
                 </div>
               </div>
 

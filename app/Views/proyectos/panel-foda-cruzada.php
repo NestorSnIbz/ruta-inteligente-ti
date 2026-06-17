@@ -28,10 +28,10 @@
   ];
 
   $groupStyles = [
-    'FORTALEZA' => 'border-brand-200 bg-brand-50',
+    'FORTALEZA' => 'border-neutral-300 bg-brand-50',
     'DEBILIDAD' => 'border-neutral-300 bg-neutral-100',
-    'OPORTUNIDAD' => 'border-accent-200 bg-accent-50',
-    'AMENAZA' => 'border-neutral-400 bg-white',
+    'OPORTUNIDAD' => 'border-neutral-300 bg-accent-50',
+    'AMENAZA' => 'border-neutral-300 bg-white',
   ];
 
   $matrixHeaders = [
@@ -68,7 +68,7 @@
     <div class="mt-2 text-xs text-neutral-500">Opciones: 0 = En total desacuerdo · 1 = No está de acuerdo · 2 = Está de acuerdo · 3 = Bastante de acuerdo · 4 = Totalmente de acuerdo</div>
   </div>
 
-  <div class="mt-5 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+  <div class="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <div class="text-sm font-semibold text-neutral-900">Factores internos y externos detectados</div>
