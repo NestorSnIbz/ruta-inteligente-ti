@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Detalle Proyecto - Ruta Inteligente TI</title>
   <link href="/dist/output.css" rel="stylesheet" />
+  <link href="/app-shell.css" rel="stylesheet" />
 </head>
 
-<body class="min-h-screen bg-neutral-50 text-neutral-900">
+<body class="ri-page-shell ri-project-shell min-h-screen text-neutral-900">
 <?php
   $proyectoNombre = is_array($proyecto ?? null) ? (string) ($proyecto['nombre'] ?? '') : '';
   $idProyecto = is_array($proyecto ?? null) ? (int) ($proyecto['id_proyecto'] ?? 0) : 0;
@@ -52,7 +53,7 @@
   <div class="flex flex-col">
 
     <!-- HEADER -->
-    <header class="bg-white border-b border-neutral-200">
+    <header class="ri-dashboard-header">
       <div class="px-6 py-4 flex items-center justify-between">
 
         <div>
@@ -65,27 +66,27 @@
               id="project-name-input"
               type="text"
               value="<?php echo htmlspecialchars($proyectoNombre, ENT_QUOTES, 'UTF-8'); ?>"
-              class="h-10 w-full max-w-lg rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200"
+              class="h-10 w-full max-w-lg rounded-2xl border border-neutral-300 bg-white px-4 text-sm text-neutral-800 shadow-sm outline-none"
             />
-            <button id="project-name-save" type="button" class="inline-flex h-10 items-center justify-center rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700">
+            <button id="project-name-save" type="button" class="ri-project-primary-btn inline-flex h-10 items-center justify-center rounded-2xl px-4 text-sm font-semibold text-white">
               Guardar
             </button>
-            <button id="project-name-cancel" type="button" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-800 hover:bg-neutral-50">
+            <button id="project-name-cancel" type="button" class="ri-project-ghost-btn inline-flex h-10 items-center justify-center rounded-2xl px-4 text-sm font-semibold">
               Cancelar
             </button>
           </div>
 
-          <p class="text-sm text-neutral-600 mt-1">
+          <p class="ri-page-subtitle mt-1 text-sm">
             Panel estratégico: Misión, Visión y Valores.
           </p>
         </div>
         <div class="flex items-center gap-2">
           <?php if (!empty($isCreador)) : ?>
-            <button id="project-name-edit-btn" type="button" class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100">
+            <button id="project-name-edit-btn" type="button" class="ri-project-ghost-btn rounded-2xl px-4 py-2 text-sm font-medium">
               Editar nombre
             </button>
           <?php endif; ?>
-          <a href="proyectos.php" class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100">
+          <a href="proyectos.php" class="ri-project-ghost-btn rounded-2xl px-4 py-2 text-sm font-medium">
             Volver
           </a>
         </div>
@@ -132,7 +133,7 @@
               <button
                 id="flash-close"
                 type="button"
-                class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+                class="ri-project-primary-btn rounded-2xl px-4 py-2 text-sm font-semibold text-white"
               >
                 Cerrar
               </button>
@@ -141,39 +142,39 @@
         </div>
       <?php endif; ?>
 
-      <div class="mb-6 rounded-2xl border border-neutral-200 bg-white p-2 shadow-sm">
+      <div class="ri-project-tabs-wrap mb-6 rounded-[24px] p-2">
         <div class="flex flex-wrap gap-2">
-          <button type="button" data-panel="overview" class="project-tab rounded-xl px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-brand-50">
+          <button type="button" data-panel="overview" class="project-tab ri-project-tab rounded-xl px-4 py-2 text-sm font-semibold">
             Overview
           </button>
-          <button type="button" data-panel="mision" class="project-tab rounded-xl px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-brand-50">
+          <button type="button" data-panel="mision" class="project-tab ri-project-tab rounded-xl px-4 py-2 text-sm font-semibold">
             Misión
           </button>
-          <button type="button" data-panel="vision" class="project-tab rounded-xl px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-brand-50">
+          <button type="button" data-panel="vision" class="project-tab ri-project-tab rounded-xl px-4 py-2 text-sm font-semibold">
             Visión
           </button>
-          <button type="button" data-panel="valores" class="project-tab rounded-xl px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-brand-50">
+          <button type="button" data-panel="valores" class="project-tab ri-project-tab rounded-xl px-4 py-2 text-sm font-semibold">
             Valores
           </button>
-          <button type="button" data-panel="objetivos" class="project-tab rounded-xl px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-brand-50">
+          <button type="button" data-panel="objetivos" class="project-tab ri-project-tab rounded-xl px-4 py-2 text-sm font-semibold">
             Objetivos
           </button>
-          <button type="button" data-panel="cadena" class="project-tab rounded-xl px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-brand-50">
+          <button type="button" data-panel="cadena" class="project-tab ri-project-tab rounded-xl px-4 py-2 text-sm font-semibold">
             Cadena de valor
           </button>
-          <button type="button" data-panel="bgg" class="project-tab rounded-xl px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-brand-50">
+          <button type="button" data-panel="bgg" class="project-tab ri-project-tab rounded-xl px-4 py-2 text-sm font-semibold">
             BCG
           </button>
-          <button type="button" data-panel="perfil_competitivo" class="project-tab rounded-xl px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-brand-50">
+          <button type="button" data-panel="perfil_competitivo" class="project-tab ri-project-tab rounded-xl px-4 py-2 text-sm font-semibold">
             Perfil competitivo
           </button>
-          <button type="button" data-panel="pest" class="project-tab rounded-xl px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-brand-50">
+          <button type="button" data-panel="pest" class="project-tab ri-project-tab rounded-xl px-4 py-2 text-sm font-semibold">
             P.E.S.T.
           </button>
-          <button type="button" data-panel="estrategias" class="project-tab rounded-xl px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-brand-50">
+          <button type="button" data-panel="estrategias" class="project-tab ri-project-tab rounded-xl px-4 py-2 text-sm font-semibold">
             Estrategias
           </button>
-          <button type="button" data-panel="came" class="project-tab rounded-xl px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-brand-50">
+          <button type="button" data-panel="came" class="project-tab ri-project-tab rounded-xl px-4 py-2 text-sm font-semibold">
             CAME
           </button>
           
@@ -1292,8 +1293,8 @@
       const highlightPanel = panelId === "miembros" ? "overview" : panelId;
       const isActive = highlightPanel && tab.getAttribute("data-panel") === highlightPanel;
       tab.className = isActive
-        ? "project-tab rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
-        : "project-tab rounded-xl px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-brand-50";
+        ? "project-tab ri-project-tab ri-project-tab-active rounded-xl px-4 py-2 text-sm font-semibold"
+        : "project-tab ri-project-tab rounded-xl px-4 py-2 text-sm font-semibold";
     });
 
     if (panelId && allowedPanels.has(panelId)) {

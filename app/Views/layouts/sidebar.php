@@ -37,47 +37,56 @@
   }
 ?>
 
-<aside class="bg-brand-900 text-white flex flex-col md:sticky md:top-0 md:h-screen md:max-h-screen md:overflow-y-auto">
+<link href="/app-shell.css" rel="stylesheet" />
+
+<aside class="ri-sidebar-host flex flex-col md:sticky md:top-0 md:h-screen md:max-h-screen md:overflow-y-auto">
+  <div class="ri-sidebar-wrap flex flex-col">
   <div class="px-6 py-6">
     <div class="flex items-center gap-3">
-      <div class="h-10 w-10 rounded-xl bg-white/10 grid place-items-center">
+      <div class="ri-sidebar-logo-badge grid h-10 w-10 place-items-center rounded-xl">
         <span class="text-sm font-semibold">RI</span>
       </div>
       <div>
-        <div class="text-sm font-semibold leading-tight">Ruta Inteligente TI</div>
-        <div class="text-xs text-white/70 leading-tight">Panel de control</div>
+        <div class="text-sm font-semibold leading-tight text-white">Ruta Inteligente TI</div>
+        <div class="ri-sidebar-subtitle text-xs leading-tight">Panel de control</div>
       </div>
     </div>
   </div>
 
   <nav class="px-3 pb-6 flex-1">
+    <div class="mb-3 px-3">
+      <div class="ri-sidebar-section">Menu Principal</div>
+    </div>
     <a
       href="dashboard.php"
-      class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white"
+      class="ri-sidebar-link flex items-center gap-3 px-3 py-3 text-sm font-medium"
       data-sidebar-item="dashboard"
     >
-      <svg viewBox="0 0 24 24" class="h-5 w-5 text-white/85" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9v9a2 2 0 01-2 2h-4v-6H9v6H5a2 2 0 01-2-2v-9z" />
       </svg>
       Dashboard
     </a>
 
+    <div class="mb-3 mt-6 px-3">
+      <div class="ri-sidebar-section">General</div>
+    </div>
     <div class="mt-1">
       <button
         id="sidebar-projects-toggle"
         type="button"
-        class="w-full flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white"
+        class="ri-sidebar-link w-full flex items-center justify-between gap-3 px-3 py-3 text-sm font-medium"
         aria-expanded="false"
         aria-controls="sidebar-projects-panel"
         data-sidebar-item="proyectos"
       >
         <span class="flex items-center gap-3">
-          <svg viewBox="0 0 24 24" class="h-5 w-5 text-white/85" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 12h18M3 17h18" />
           </svg>
           Proyectos
         </span>
-        <svg id="sidebar-projects-chevron" viewBox="0 0 24 24" class="h-4 w-4 text-white/70 transition-transform" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <svg id="sidebar-projects-chevron" viewBox="0 0 24 24" class="h-4 w-4 transition-transform" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
@@ -86,22 +95,25 @@
         class="max-h-0 overflow-hidden transition-[max-height] duration-300 ease-in-out"
       >
         <div class="mt-1 space-y-1 pl-2">
-          <a href="proyectos.php" class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-white/75 hover:bg-white/10 hover:text-white">
-            <span class="h-1.5 w-1.5 rounded-full bg-white/40"></span>
+          <a href="proyectos.php" class="ri-sidebar-link flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium">
+            <span class="h-1.5 w-1.5 rounded-full" style="background:#a5b4fc;"></span>
             Ver todos
           </a>
-          <div class="h-px bg-white/10 mx-3"></div>
+          <div class="ri-sidebar-divider mx-3 h-px"></div>
           <div id="sidebar-recent-projects" class="space-y-1"></div>
         </div>
       </div>
     </div>
 
+    <div class="mb-3 mt-6 px-3">
+      <div class="ri-sidebar-section">Cuenta</div>
+    </div>
     <a
       href="configuracion.php"
-      class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white"
+      class="ri-sidebar-link mt-1 flex items-center gap-3 px-3 py-3 text-sm font-medium"
       data-sidebar-item="configuracion"
     >
-      <svg viewBox="0 0 24 24" class="h-5 w-5 text-white/85" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z" />
         <path stroke-linecap="round" stroke-linejoin="round" d="M19.4 15a7.96 7.96 0 00.1-1 7.96 7.96 0 00-.1-1l2-1.6-2-3.4-2.4 1a8.3 8.3 0 00-1.7-1l-.4-2.6H9.1L8.7 7a8.3 8.3 0 00-1.7 1l-2.4-1-2 3.4L4.6 13a7.96 7.96 0 00-.1 1 7.96 7.96 0 00.1 1l-2 1.6 2 3.4 2.4-1a8.3 8.3 0 001.7 1l.4 2.6h5.8l.4-2.6a8.3 8.3 0 001.7-1l2.4 1 2-3.4-2-1.6z" />
       </svg>
@@ -109,45 +121,46 @@
     </a>
   </nav>
 
-  <div class="px-3 pb-6">
+  <div class="ri-sidebar-user-slot px-3 pb-6">
     <div class="relative">
       <button
         id="user-menu-button"
         type="button"
-        class="w-full inline-flex items-center gap-3 rounded-xl bg-white/10 px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/15"
+        class="ri-sidebar-user-card w-full inline-flex items-center gap-3 px-3 py-2.5 text-sm font-semibold"
         aria-expanded="false"
         aria-controls="user-menu"
       >
-        <span class="h-9 w-9 rounded-full bg-white/10 text-white grid place-items-center text-xs font-semibold border border-white/15">
+        <span class="ri-sidebar-user-avatar grid h-9 w-9 place-items-center rounded-full text-xs font-semibold">
           <?php echo htmlspecialchars($initials, ENT_QUOTES, 'UTF-8'); ?>
         </span>
         <span class="min-w-0 flex-1 text-left">
-          <div class="truncate"><?php echo htmlspecialchars($nombre, ENT_QUOTES, 'UTF-8'); ?></div>
-          <div class="truncate text-xs font-medium text-white/70"><?php echo htmlspecialchars($correo, ENT_QUOTES, 'UTF-8'); ?></div>
+          <div class="truncate text-slate-900"><?php echo htmlspecialchars($nombre, ENT_QUOTES, 'UTF-8'); ?></div>
+          <div class="ri-sidebar-user-role truncate text-xs font-medium"><?php echo htmlspecialchars($correo, ENT_QUOTES, 'UTF-8'); ?></div>
         </span>
-        <svg id="user-menu-chevron" viewBox="0 0 24 24" class="h-4 w-4 text-white/70 shrink-0 transition-transform rotate-180" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <svg id="user-menu-chevron" viewBox="0 0 24 24" class="h-4 w-4 shrink-0 rotate-180 text-slate-500 transition-transform" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
       <div
         id="user-menu"
-        class="hidden absolute left-0 right-0 bottom-full mb-2 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm text-neutral-900"
+        class="ri-sidebar-user-menu hidden absolute bottom-full left-0 right-0 mb-2 overflow-hidden text-slate-900"
         role="menu"
         aria-labelledby="user-menu-button"
       >
         <div class="px-4 py-3 text-sm">
-          <div class="font-medium text-neutral-900"><?php echo htmlspecialchars($nombre, ENT_QUOTES, 'UTF-8'); ?></div>
-          <div class="mt-0.5 text-xs text-neutral-500"><?php echo htmlspecialchars($correo, ENT_QUOTES, 'UTF-8'); ?></div>
+          <div class="font-medium text-slate-900"><?php echo htmlspecialchars($nombre, ENT_QUOTES, 'UTF-8'); ?></div>
+          <div class="mt-0.5 text-xs text-slate-500"><?php echo htmlspecialchars($correo, ENT_QUOTES, 'UTF-8'); ?></div>
         </div>
-        <div class="h-px bg-neutral-200"></div>
-        <a href="configuracion.php" class="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-brand-50" role="menuitem">Mi perfil</a>
-        <a href="configuracion.php" class="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-brand-50" role="menuitem">Configuración</a>
-        <div class="h-px bg-neutral-200"></div>
-        <a href="login.php" class="block px-4 py-2.5 text-sm font-medium text-brand-700 hover:bg-brand-50" role="menuitem">Cerrar sesión</a>
+        <div class="h-px bg-slate-200"></div>
+        <a href="configuracion.php" class="block px-4 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50" role="menuitem">Mi perfil</a>
+        <a href="configuracion.php" class="block px-4 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50" role="menuitem">Configuración</a>
+        <div class="h-px bg-slate-200"></div>
+        <a href="login.php" class="ri-sidebar-logout block px-4 py-2.5 text-sm font-medium transition-colors hover:bg-indigo-50" role="menuitem">Cerrar sesión</a>
       </div>
     </div>
   </div>
+</div>
 </aside>
 
 <script>
@@ -225,14 +238,14 @@
         const isActive = key === value;
         if (key === "proyectos" && el.tagName.toLowerCase() === "button") {
           el.className = isActive
-            ? "w-full flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-medium bg-white/10 text-white"
-            : "w-full flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white";
+            ? "ri-sidebar-link ri-sidebar-link-active w-full flex items-center justify-between gap-3 px-3 py-3 text-sm font-medium"
+            : "ri-sidebar-link w-full flex items-center justify-between gap-3 px-3 py-3 text-sm font-medium";
           continue;
         }
         if (el.tagName.toLowerCase() === "a") {
           el.className = isActive
-            ? "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium bg-white/10 text-white"
-            : "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white";
+            ? "ri-sidebar-link ri-sidebar-link-active flex items-center gap-3 px-3 py-3 text-sm font-medium"
+            : "ri-sidebar-link flex items-center gap-3 px-3 py-3 text-sm font-medium";
         }
       }
     }
@@ -325,7 +338,8 @@
       sidebarRecentProjects.innerHTML = "";
       if (list.length === 0) {
         const empty = document.createElement("div");
-        empty.className = "px-3 py-2 text-sm text-white/60";
+        empty.className = "px-3 py-2 text-sm";
+        empty.style.color = "#64748b";
         empty.textContent = "Sin proyectos recientes.";
         sidebarRecentProjects.appendChild(empty);
         return;
@@ -333,12 +347,13 @@
 
       for (const p of list) {
         const a = document.createElement("a");
-        a.className = "flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-white/75 hover:bg-white/10 hover:text-white";
+        a.className = "ri-sidebar-link flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium";
         a.href = `detalle-proyecto.php?id=${encodeURIComponent(String(p.id))}`;
         a.addEventListener("click", () => pushRecentProject(Number(p.id), String(p.name)));
 
         const dot = document.createElement("span");
-        dot.className = "h-1.5 w-1.5 rounded-full bg-white/40";
+        dot.className = "h-1.5 w-1.5 rounded-full";
+        dot.style.background = "#a5b4fc";
 
         const label = document.createElement("span");
         label.className = "truncate";
