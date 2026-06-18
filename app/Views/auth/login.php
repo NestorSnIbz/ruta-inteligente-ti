@@ -1,85 +1,111 @@
+<?php
+$logoPath = dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'img' . DIRECTORY_SEPARATOR . 'logo.png';
+$logoDataUri = null;
+
+if (is_file($logoPath)) {
+    $logoContents = @file_get_contents($logoPath);
+    if ($logoContents !== false) {
+        $logoDataUri = 'data:image/png;base64,' . base64_encode($logoContents);
+    }
+}
+?>
 <!doctype html>
 <html lang="es">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Ruta Inteligente TI - Acceso</title>
-    <link href="dist/output.css" rel="stylesheet" />
+    <link href="/dist/output.css" rel="stylesheet" />
+    <link href="/app-shell.css" rel="stylesheet" />
   </head>
-  <body class="min-h-screen bg-brand-900 text-neutral-900">
-    <main class="min-h-screen grid grid-cols-1 md:grid-cols-2">
-      <section class="relative bg-neutral-900 h-44 md:h-auto overflow-hidden">
-        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-600/35 via-neutral-900 to-neutral-900"></div>
-        <div class="absolute inset-0 bg-[linear-gradient(135deg,_rgba(214,104,11,0.20),_rgba(0,84,220,0.12),_rgba(66,66,66,0))]"></div>
-        <div class="relative h-full w-full p-8 text-white hidden md:flex items-end">
-          <div>
-            <p class="text-sm text-white/70">Ruta Inteligente TI</p>
-            <h2 class="mt-2 text-3xl font-semibold tracking-tight">Planifica. Ejecuta. Mide.</h2>
-            <p class="mt-2 max-w-sm text-sm text-white/70">
-              Accede al panel para gestionar proyectos y ver un resumen del avance.
-            </p>
-          </div>
-        </div>
-      </section>
+  <body class="ri-login-shell text-neutral-900">
+    <main class="h-screen px-0 py-0">
+      <div class="mx-auto grid h-full w-full max-w-none ri-login-frame md:grid-cols-2">
+        <section class="ri-login-hero relative overflow-hidden px-6 py-10 sm:px-10 lg:px-16 lg:py-16">
+          <div class="ri-login-hero-glow"></div>
+          <?php if ($logoDataUri !== null) : ?>
+            <div class="ri-login-corner-logo absolute right-6 top-6 z-10 flex items-center justify-center rounded-2xl px-3 py-2 sm:right-8 sm:top-8">
+              <img src="<?php echo htmlspecialchars($logoDataUri, ENT_QUOTES, 'UTF-8'); ?>" alt="Ruta Inteligente TI" class="ri-login-corner-logo-image" />
+            </div>
+          <?php endif; ?>
+          <div class="ri-login-copy relative">
+            <div class="ri-login-copy-intro pr-24 sm:pr-28">
+              <p class="text-base font-semibold uppercase tracking-[0.3em] text-white">PLATAFORMA DE GESTION</p>
+              <h1 class="mt-5 text-5xl font-semibold uppercase leading-none tracking-[0.06em] text-white sm:text-6xl lg:text-7xl">RUTA INTELIGENTE TI</h1>
+              <p class="mt-6 text-xl font-semibold uppercase tracking-[0.2em] text-white sm:text-2xl">ACCESO A LA PLATAFORMA</p>
+            </div>
 
-      <section class="bg-white flex items-center justify-center px-6 py-10">
-        <div class="w-full max-w-md">
-          <div class="mb-8">
-            <h1 class="text-2xl font-semibold tracking-tight text-brand-900">Ruta Inteligente TI</h1>
-            <p class="mt-1 text-sm text-neutral-600">Accede con tu cuenta.</p>
+            <div class="ri-login-copy-body">
+              <p class="ri-login-chip inline-flex items-center rounded-full px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.22em]">
+                PLANEA, EJECUTA Y MIDE
+              </p>
+              <h2 class="mt-7 text-4xl font-semibold uppercase leading-tight tracking-[0.04em] text-white sm:text-5xl lg:text-6xl">
+                GESTIONA TUS PLANES ESTRATEGICOS CON LA MISMA INTERFAZ VISUAL DEL SISTEMA.
+              </h2>
+              <p class="mt-6 max-w-3xl text-lg font-medium uppercase leading-8 tracking-[0.08em] text-white sm:text-xl">
+                INGRESA PARA REVISAR OBJETIVOS, MATRICES Y HERRAMIENTAS CLAVE DESDE UN ENTORNO UNIFICADO, CLARO Y RESPONSIVO.
+              </p>
+            </div>
           </div>
+        </section>
 
-          <div class="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
-            <div class="mt-6">
+        <section class="ri-login-panel flex items-center justify-center px-4 py-8 sm:px-8 lg:px-12">
+          <div class="w-full max-w-md">
+            <div class="ri-login-card rounded-3xl p-6 shadow-sm sm:p-8">
+              <div class="mb-8">
+                <p class="text-sm font-medium uppercase tracking-[0.2em] ri-page-subtitle">Bienvenido</p>
+                <h3 class="mt-3 text-3xl font-semibold tracking-tight ri-page-title">Inicia sesion</h3>
+                <p class="mt-2 text-sm ri-page-subtitle">Accede con tu correo y contrasena para continuar.</p>
+              </div>
+
               <?php if (!empty($error)) : ?>
-                <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                <div class="ri-app-alert-danger mb-5 rounded-2xl px-4 py-3 text-sm">
                   <?php echo htmlspecialchars((string) $error, ENT_QUOTES, 'UTF-8'); ?>
                 </div>
               <?php endif; ?>
 
-              <form class="space-y-4" action="login.php" method="post">
+              <form class="space-y-5" action="login.php" method="post">
                 <div>
-                  <label for="login-email" class="block text-sm font-medium text-neutral-800">Correo</label>
+                  <label for="login-email" class="ri-app-label block text-sm font-medium">Correo</label>
                   <input
                     id="login-email"
                     name="email"
                     type="email"
                     autocomplete="email"
                     required
-                    class="mt-1 block w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm outline-none ring-0 transition focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
+                    class="ri-app-input mt-2 block w-full rounded-2xl px-4 py-3 text-sm outline-none transition"
                     placeholder="tu@correo.com"
                   />
                 </div>
 
                 <div>
-                  <label for="login-password" class="block text-sm font-medium text-neutral-800">Contraseña</label>
+                  <label for="login-password" class="ri-app-label block text-sm font-medium">Contrasena</label>
                   <input
                     id="login-password"
                     name="password"
                     type="password"
                     autocomplete="current-password"
                     required
-                    class="mt-1 block w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
+                    class="ri-app-input mt-2 block w-full rounded-2xl px-4 py-3 text-sm outline-none transition"
                     placeholder="••••••••"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  class="inline-flex w-full items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600/25"
+                  class="ri-login-submit inline-flex w-full items-center justify-center rounded-2xl px-4 py-3 text-sm font-semibold text-white"
                 >
                   Entrar
                 </button>
               </form>
+
+              <p class="mt-6 text-center text-xs ri-page-subtitle">
+                Al continuar, aceptas nuestras politicas de privacidad y condiciones de uso.
+              </p>
             </div>
           </div>
-
-          <p class="mt-6 text-xs text-neutral-500">
-            Al continuar, aceptas nuestras políticas de privacidad y condiciones de uso.
-          </p>
-        </div>
-      </section>
+        </section>
+      </div>
     </main>
-
   </body>
 </html>
