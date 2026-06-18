@@ -280,6 +280,155 @@
   color: #0f172a;
 }
 
+.ri-login-shell {
+  margin: 0;
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(99, 102, 241, 0.18), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.12), transparent 26%),
+    linear-gradient(180deg, #eef2ff 0%, #f8fafc 34%, #f8fafc 100%);
+  color: #0f172a;
+}
+
+.ri-login-frame {
+  min-height: 100vh;
+  width: 100vw;
+  background: transparent;
+  align-items: stretch;
+}
+
+.ri-login-hero {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(139, 92, 246, 0.22), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(91, 33, 182, 0.34), transparent 38%),
+    linear-gradient(135deg, #020617 0%, #111827 24%, #1e1b4b 55%, #581c87 100%);
+  border-radius: 28px 0 0 28px;
+}
+
+.ri-login-panel {
+  min-height: 100vh;
+}
+
+.ri-login-hero-glow {
+  position: absolute;
+  inset: auto -10% -18% auto;
+  width: 340px;
+  height: 340px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 72%);
+  pointer-events: none;
+}
+
+.ri-login-logo-wrap {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.22);
+}
+
+.ri-login-logo-wrap img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.ri-login-corner-logo {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(12px);
+}
+
+.ri-login-corner-logo-image {
+  display: block;
+  width: auto;
+  height: 100px;
+  max-width: 180px;
+  object-fit: contain;
+}
+
+.ri-login-copy {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3.25rem;
+  padding: 1.5rem 0;
+}
+
+.ri-login-copy-intro,
+.ri-login-copy-body {
+  max-width: 44rem;
+}
+
+.ri-login-chip {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.ri-login-card {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.1);
+  border-radius: 28px;
+}
+
+.ri-login-submit {
+  background: linear-gradient(135deg, #4338ca, #4f46e5);
+  box-shadow: 0 14px 30px rgba(79, 70, 229, 0.24);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  cursor: pointer;
+}
+
+.ri-login-submit:hover {
+  filter: brightness(1.03);
+  box-shadow: 0 18px 34px rgba(79, 70, 229, 0.28);
+  transform: translateY(-1px);
+}
+
+.ri-login-submit:focus {
+  outline: none;
+  box-shadow:
+    0 0 0 4px rgba(79, 70, 229, 0.14),
+    0 18px 34px rgba(79, 70, 229, 0.28);
+}
+
+@media (max-width: 767px) {
+  .ri-login-frame {
+    min-height: auto;
+    width: 100%;
+  }
+
+  .ri-login-shell {
+    height: auto;
+    overflow-y: auto;
+  }
+
+  .ri-login-hero {
+    min-height: 360px;
+    border-radius: 28px 28px 0 0;
+  }
+
+  .ri-login-panel {
+    min-height: auto;
+  }
+
+  .ri-login-corner-logo-image {
+    height: 32px;
+    max-width: 112px;
+  }
+
+  .ri-login-copy {
+    justify-content: flex-start;
+    gap: 1.75rem;
+    padding: 2.75rem 0 0;
+  }
+}
+
 .ri-page-title {
   color: #0f172a;
 }
