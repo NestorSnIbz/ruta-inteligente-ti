@@ -1298,11 +1298,9 @@ final class ProyectoController
     private function pdfSection(string $title, string $body): array
     {
         $out = [];
-        $out[] = ['font' => 'F2', 'size' => 13, 'text' => $title];
+        $out = array_merge($out, $this->pdfParagraphLines($title, 'F2', 13, 504));
         $out[] = ['spacer' => 2];
-        foreach ($this->wrapPdfText($body, 95) as $line) {
-            $out[] = ['font' => 'F1', 'size' => 11, 'text' => $line];
-        }
+        $out = array_merge($out, $this->pdfParagraphLines($body, 'F1', 11, 504));
         $out[] = ['spacer' => 8];
         return $out;
     }
@@ -1318,7 +1316,7 @@ final class ProyectoController
             foreach ($items as $txt) {
                 $txt = trim((string) $txt);
                 if ($txt === '') continue;
-                $wrapped = $this->wrapPdfText($txt, 90);
+                $wrapped = $this->wrapPdfText($txt, $this->pdfApproxCharsForWidth(504, 11));
                 if (empty($wrapped)) continue;
                 $first = array_shift($wrapped);
                 $out[] = ['font' => 'F1', 'size' => 11, 'text' => '• ' . $first];
@@ -1355,29 +1353,98 @@ final class ProyectoController
         return $out;
     }
 
+    private function pdfParagraphLines(string $text, string $font, int $size, int $width, int $indent = 0): array
+    {
+        $availableWidth = max(72, $width - $indent);
+        $wrapped = $this->wrapPdfText($text, $this->pdfApproxCharsForWidth($availableWidth, $size));
+        if (empty($wrapped)) {
+            return [['font' => $font, 'size' => $size, 'indent' => $indent, 'text' => '']];
+        }
+
+        $out = [];
+        foreach ($wrapped as $line) {
+            $out[] = ['font' => $font, 'size' => $size, 'indent' => $indent, 'text' => $line];
+        }
+        return $out;
+    }
+
+    private function pdfApproxCharsForWidth(int $width, int $size): int
+    {
+        $safeWidth = max(48, $width);
+        $safeSize = max(8, $size);
+        return max(8, (int) floor($safeWidth / max(4.2, $safeSize * 0.55)));
+    }
+
+    private function splitPdfWord(string $word, int $maxLen): array
+    {
+        $word = (string) $word;
+        if ($word === '') {
+            return [];
+        }
+
+        $length = function_exists('mb_strlen') ? mb_strlen($word, 'UTF-8') : strlen($word);
+        if ($length <= $maxLen) {
+            return [$word];
+        }
+
+        $chunks = [];
+        $offset = 0;
+        while ($offset < $length) {
+            $chunks[] = function_exists('mb_substr')
+                ? (string) mb_substr($word, $offset, $maxLen, 'UTF-8')
+                : (string) substr($word, $offset, $maxLen);
+            $offset += $maxLen;
+        }
+
+        return $chunks;
+    }
+
     private function wrapPdfText(string $text, int $maxLen): array
     {
-        $text = trim(preg_replace('/\s+/u', ' ', (string) $text));
-        if ($text === '') return [];
-        $words = preg_split('/\s+/u', $text) ?: [];
+        $maxLen = max(8, $maxLen);
+        $text = (string) $text;
+        if (trim($text) === '') return [];
+
+        $paragraphs = preg_split("/\r\n|\n|\r/u", $text) ?: [];
         $lines = [];
-        $line = '';
-        foreach ($words as $w) {
-            $w = (string) $w;
-            if ($line === '') {
-                $line = $w;
+        foreach ($paragraphs as $paragraph) {
+            $paragraph = trim((string) preg_replace('/[ \t]+/u', ' ', (string) $paragraph));
+            if ($paragraph === '') {
+                $lines[] = '';
                 continue;
             }
-            $candidate = $line . ' ' . $w;
-            $len = function_exists('mb_strlen') ? mb_strlen($candidate, 'UTF-8') : strlen($candidate);
-            if ($len <= $maxLen) {
-                $line .= ' ' . $w;
-            } else {
+
+            $words = preg_split('/\s+/u', $paragraph) ?: [];
+            $line = '';
+            foreach ($words as $word) {
+                $word = (string) $word;
+                $segments = $this->splitPdfWord($word, $maxLen);
+                foreach ($segments as $segment) {
+                    if ($line === '') {
+                        $line = $segment;
+                        continue;
+                    }
+
+                    $candidate = $line . ' ' . $segment;
+                    $len = function_exists('mb_strlen') ? mb_strlen($candidate, 'UTF-8') : strlen($candidate);
+                    if ($len <= $maxLen) {
+                        $line = $candidate;
+                        continue;
+                    }
+
+                    $lines[] = $line;
+                    $line = $segment;
+                }
+            }
+            if ($line !== '') {
                 $lines[] = $line;
-                $line = $w;
             }
         }
-        if ($line !== '') $lines[] = $line;
+
+        while (!empty($lines) && end($lines) === '') {
+            array_pop($lines);
+        }
+
         return $lines;
     }
 
@@ -1392,7 +1459,6 @@ final class ProyectoController
         $pages = [];
         $current = '';
 
-        $lineHeight = 14;
         foreach ($lines as $row) {
             if (is_array($row) && array_key_exists('objectives_table', $row) && $row['objectives_table'] === true) {
                 $mission = (string) ($row['mission'] ?? '');
@@ -1427,16 +1493,24 @@ final class ProyectoController
             $font = (string) ($row['font'] ?? 'F1');
             $size = (int) ($row['size'] ?? 11);
             $indent = (int) ($row['indent'] ?? 0);
-
-            $y -= $lineHeight;
-            if ($y <= $marginBottom) {
-                $pages[] = $current;
-                $current = '';
-                $y = $pageHeight - $marginTop - $lineHeight;
+            $lineHeight = max(14, $size + 3);
+            $availableWidth = $pageWidth - ($marginX * 2) - $indent;
+            $wrapped = $this->wrapPdfText($text, $this->pdfApproxCharsForWidth($availableWidth, $size));
+            if (empty($wrapped)) {
+                $wrapped = [''];
             }
 
-            $x = $marginX + $indent;
-            $current .= $this->pdfTextCmd($x, $y, $font, $size, $text);
+            foreach ($wrapped as $lineText) {
+                $y -= $lineHeight;
+                if ($y <= $marginBottom) {
+                    $pages[] = $current;
+                    $current = '';
+                    $y = $pageHeight - $marginTop - $lineHeight;
+                }
+
+                $x = $marginX + $indent;
+                $current .= $this->pdfTextCmd($x, $y, $font, $size, (string) $lineText);
+            }
         }
         $pages[] = $current;
 
@@ -3855,8 +3929,7 @@ final class ProyectoController
         }
 
         $estrategicos = $decoded['estrategicos'] ?? [];
-        $especificos = $decoded['especificos'] ?? [];
-        if (!is_array($estrategicos) || !is_array($especificos)) {
+        if (!is_array($estrategicos)) {
             if ($this->wantsJson()) {
                 $this->jsonError('Datos inválidos.', 400);
             }
@@ -3864,7 +3937,49 @@ final class ProyectoController
             $this->redirect('/detalle-proyecto.php?t=' . urlencode($token) . '&section=objetivos');
         }
 
-        if (count($estrategicos) > 50 || count($especificos) > 200) {
+        $normalizeSpecificDraft = static function ($row): ?array {
+            if (!is_array($row)) {
+                return null;
+            }
+
+            return [
+                'token' => trim((string) ($row['token'] ?? '')),
+                'tmp_id' => trim((string) ($row['tmp_id'] ?? '')),
+                'descripcion' => trim((string) ($row['descripcion'] ?? '')),
+            ];
+        };
+
+        $draftEstrategicos = [];
+        $draftSpecificCount = 0;
+        foreach ($estrategicos as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $especificosDraft = [];
+            $especificosRaw = $row['especificos'] ?? [];
+            if (!is_array($especificosRaw)) {
+                $especificosRaw = [];
+            }
+
+            foreach ($especificosRaw as $esp) {
+                $normalized = $normalizeSpecificDraft($esp);
+                if ($normalized === null) {
+                    continue;
+                }
+                $especificosDraft[] = $normalized;
+                $draftSpecificCount++;
+            }
+
+            $draftEstrategicos[] = [
+                'token' => trim((string) ($row['token'] ?? '')),
+                'tmp_id' => trim((string) ($row['tmp_id'] ?? ($row['client_id'] ?? ''))),
+                'descripcion' => trim((string) ($row['descripcion'] ?? '')),
+                'especificos' => $especificosDraft,
+            ];
+        }
+
+        if (count($draftEstrategicos) > 50 || $draftSpecificCount > 200) {
             if ($this->wantsJson()) {
                 $this->jsonError('Demasiados elementos para guardar.', 400);
             }
@@ -3882,78 +3997,146 @@ final class ProyectoController
             $this->redirect('/proyectos.php');
         }
 
-        $createdOE = 0;
-        $createdOESP = 0;
-        $tmpToObjEst = [];
+        $stats = [
+            'estrategicos' => ['created' => 0, 'updated' => 0, 'deleted' => 0],
+            'especificos' => ['created' => 0, 'updated' => 0, 'deleted' => 0],
+        ];
 
         try {
-            foreach ($estrategicos as $row) {
+            $currentEstrategicos = ObjetivoEstrategico::listByProyecto($supabase, $idProyecto);
+            $currentEstrategicosById = [];
+            foreach ($currentEstrategicos as $row) {
                 if (!is_array($row)) {
                     continue;
                 }
-                $tmpId = trim((string) ($row['tmp_id'] ?? ''));
-                $desc = trim((string) ($row['descripcion'] ?? ''));
-                if ($desc === '' || mb_strlen($desc, 'UTF-8') < 5) {
+                $currentId = (int) ($row['id_objetivo_est'] ?? 0);
+                if ($currentId <= 0) {
+                    continue;
+                }
+                $currentEstrategicosById[$currentId] = $row;
+            }
+
+            $currentEspecificos = ObjetivoEspecifico::listByProyecto($supabase, $idProyecto);
+            $currentEspecificosByEstrategico = [];
+            foreach ($currentEspecificos as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $currentEspId = (int) ($row['id_objetivo_esp'] ?? 0);
+                $currentEstId = (int) ($row['id_objetivo_est'] ?? 0);
+                if ($currentEspId <= 0 || $currentEstId <= 0) {
+                    continue;
+                }
+                if (!isset($currentEspecificosByEstrategico[$currentEstId])) {
+                    $currentEspecificosByEstrategico[$currentEstId] = [];
+                }
+                $currentEspecificosByEstrategico[$currentEstId][$currentEspId] = $row;
+            }
+
+            $seenStrategicIds = [];
+            foreach ($draftEstrategicos as $row) {
+                $tokenOE = (string) ($row['token'] ?? '');
+                $tmpId = (string) ($row['tmp_id'] ?? '');
+                $descripcion = (string) ($row['descripcion'] ?? '');
+
+                if ($descripcion === '' || mb_strlen($descripcion, 'UTF-8') < 5) {
                     throw new InvalidArgumentException('Cada objetivo estratégico debe tener al menos 5 caracteres.');
                 }
 
-                $idObjEst = ObjetivoEstrategico::create($supabase, $idProyecto, $desc);
-                if ($idObjEst <= 0) {
-                    throw new RuntimeException('No se pudo crear un objetivo estratégico.');
-                }
-                $createdOE++;
-                if ($tmpId !== '') {
-                    $tmpToObjEst[$tmpId] = (int) $idObjEst;
+                $idObjEst = 0;
+                $currentStrategic = null;
+
+                if ($tokenOE !== '') {
+                    $idObjEst = $this->objetivoEstrategicoIdFromToken($tokenOE);
+                    if ($idObjEst <= 0 || !isset($currentEstrategicosById[$idObjEst])) {
+                        throw new InvalidArgumentException('Objetivo estratégico inválido.');
+                    }
+                    $currentStrategic = $currentEstrategicosById[$idObjEst];
+                    $currentDescripcion = trim((string) ($currentStrategic['descripcion'] ?? ''));
+                    if ($currentDescripcion !== $descripcion) {
+                        $ok = ObjetivoEstrategico::update($supabase, $idObjEst, $idProyecto, $descripcion);
+                        if (!$ok) {
+                            throw new RuntimeException('No se pudo actualizar un objetivo estratégico.');
+                        }
+                        $stats['estrategicos']['updated']++;
+                    }
+                } else {
+                    if ($tmpId === '') {
+                        throw new InvalidArgumentException('Objetivo estratégico inválido.');
+                    }
+                    $idObjEst = ObjetivoEstrategico::create($supabase, $idProyecto, $descripcion);
+                    if ($idObjEst <= 0) {
+                        throw new RuntimeException('No se pudo crear un objetivo estratégico.');
+                    }
+                    $stats['estrategicos']['created']++;
                 }
 
-                $espList = $row['especificos'] ?? [];
-                if (!is_array($espList)) {
-                    $espList = [];
-                }
-                foreach ($espList as $esp) {
-                    $esp = trim((string) $esp);
-                    if ($esp === '') {
+                $seenStrategicIds[$idObjEst] = true;
+
+                $existingSpecifics = $currentEspecificosByEstrategico[$idObjEst] ?? [];
+                $seenSpecificIds = [];
+                $draftSpecifics = is_array($row['especificos'] ?? null) ? $row['especificos'] : [];
+
+                foreach ($draftSpecifics as $specificDraft) {
+                    if (!is_array($specificDraft)) {
                         continue;
                     }
-                    if (mb_strlen($esp, 'UTF-8') < 5) {
+
+                    $specificToken = trim((string) ($specificDraft['token'] ?? ''));
+                    $specificDescripcion = trim((string) ($specificDraft['descripcion'] ?? ''));
+                    if ($specificDescripcion === '' || mb_strlen($specificDescripcion, 'UTF-8') < 5) {
                         throw new InvalidArgumentException('Cada objetivo específico debe tener al menos 5 caracteres.');
                     }
-                    ObjetivoEspecifico::create($supabase, (int) $idObjEst, $esp);
-                    $createdOESP++;
+
+                    if ($specificToken !== '') {
+                        $idObjEsp = $this->objetivoEspecificoIdFromToken($specificToken);
+                        if ($idObjEsp <= 0 || !isset($existingSpecifics[$idObjEsp])) {
+                            throw new InvalidArgumentException('Objetivo específico inválido.');
+                        }
+                        $currentSpecific = $existingSpecifics[$idObjEsp];
+                        $currentSpecificDescripcion = trim((string) ($currentSpecific['descripcion'] ?? ''));
+                        if ($currentSpecificDescripcion !== $specificDescripcion) {
+                            $ok = ObjetivoEspecifico::update($supabase, $idObjEsp, $idObjEst, $specificDescripcion);
+                            if (!$ok) {
+                                throw new RuntimeException('No se pudo actualizar un objetivo específico.');
+                            }
+                            $stats['especificos']['updated']++;
+                        }
+                        $seenSpecificIds[$idObjEsp] = true;
+                        continue;
+                    }
+
+                    $newSpecificId = ObjetivoEspecifico::create($supabase, $idObjEst, $specificDescripcion);
+                    if ($newSpecificId <= 0) {
+                        throw new RuntimeException('No se pudo crear un objetivo específico.');
+                    }
+                    $stats['especificos']['created']++;
+                    $seenSpecificIds[$newSpecificId] = true;
+                }
+
+                foreach ($existingSpecifics as $existingSpecificId => $existingSpecific) {
+                    if (isset($seenSpecificIds[$existingSpecificId])) {
+                        continue;
+                    }
+                    $ok = ObjetivoEspecifico::delete($supabase, (int) $existingSpecificId, $idObjEst);
+                    if (!$ok) {
+                        throw new RuntimeException('No se pudo eliminar un objetivo específico.');
+                    }
+                    $stats['especificos']['deleted']++;
                 }
             }
 
-            foreach ($especificos as $row) {
-                if (!is_array($row)) {
+            foreach ($currentEstrategicosById as $existingStrategicId => $existingStrategic) {
+                if (isset($seenStrategicIds[$existingStrategicId])) {
                     continue;
                 }
-                $oeToken = trim((string) ($row['oe'] ?? ''));
-                $oeTmp = trim((string) ($row['oe_tmp'] ?? ''));
-                $desc = trim((string) ($row['descripcion'] ?? ''));
-                if ($desc === '' || mb_strlen($desc, 'UTF-8') < 5) {
-                    throw new InvalidArgumentException('Cada objetivo específico debe tener al menos 5 caracteres.');
+                $deletedSpecifics = isset($currentEspecificosByEstrategico[$existingStrategicId]) ? count($currentEspecificosByEstrategico[$existingStrategicId]) : 0;
+                $ok = ObjetivoEstrategico::delete($supabase, (int) $existingStrategicId, $idProyecto);
+                if (!$ok) {
+                    throw new RuntimeException('No se pudo eliminar un objetivo estratégico.');
                 }
-                $idObjEst = 0;
-                if ($oeTmp !== '') {
-                    $idObjEst = (int) ($tmpToObjEst[$oeTmp] ?? 0);
-                    if ($idObjEst <= 0) {
-                        throw new InvalidArgumentException('Objetivo estratégico inválido.');
-                    }
-                } else {
-                    if ($oeToken === '') {
-                        throw new InvalidArgumentException('Objetivo estratégico inválido.');
-                    }
-                    $idObjEst = $this->objetivoEstrategicoIdFromToken($oeToken);
-                    if ($idObjEst <= 0) {
-                        throw new InvalidArgumentException('Objetivo estratégico inválido.');
-                    }
-                    if (!ObjetivoEstrategico::existsInProyecto($supabase, $idObjEst, $idProyecto)) {
-                        throw new InvalidArgumentException('No tienes acceso a este objetivo estratégico.');
-                    }
-                }
-
-                ObjetivoEspecifico::create($supabase, $idObjEst, $desc);
-                $createdOESP++;
+                $stats['estrategicos']['deleted']++;
+                $stats['especificos']['deleted'] += $deletedSpecifics;
             }
         } catch (InvalidArgumentException $e) {
             if ($this->wantsJson()) {
@@ -3971,10 +4154,7 @@ final class ProyectoController
 
         if ($this->wantsJson()) {
             $this->jsonOk('Objetivos guardados correctamente.', [
-                'created' => [
-                    'estrategicos' => $createdOE,
-                    'especificos' => $createdOESP,
-                ],
+                'changes' => $stats,
             ]);
         }
         Session::flash('success', 'Objetivos guardados correctamente.');

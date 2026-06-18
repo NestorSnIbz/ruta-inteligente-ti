@@ -36,7 +36,7 @@
     if (loading) {
       btn.disabled = true;
       btn.className =
-        "inline-flex items-center justify-center rounded-xl bg-brand-600/60 px-4 py-2 text-sm font-semibold text-white shadow-sm";
+        "inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm opacity-90";
       btn.textContent = label || "Guardando…";
       return;
     }
@@ -147,13 +147,21 @@
 
       if (missing > 0) {
         if (badgeEl) badgeEl.className = `inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold ${badgeClass(null)}`;
-        if (conclusionEl) conclusionEl.textContent = validationActive ? "#¡REF!" : "—";
+        if (conclusionEl) {
+          conclusionEl.textContent = validationActive
+            ? `Incompleto. Faltan ${missing} fila${missing === 1 ? "" : "s"} por responder para guardar la evaluación.`
+            : "Incompleto. Completa todas las filas para generar la conclusión.";
+          conclusionEl.className = "mt-3 text-xs font-semibold text-amber-700 leading-relaxed";
+        }
         return;
       }
 
       const c = conclusionForPct(p);
       if (badgeEl) badgeEl.className = `inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold ${badgeClass(c.positive)}`;
-      if (conclusionEl) conclusionEl.textContent = c.text;
+      if (conclusionEl) {
+        conclusionEl.textContent = c.text;
+        conclusionEl.className = "mt-3 text-xs text-neutral-700 leading-relaxed";
+      }
     }
 
     function recalcFromDom() {
