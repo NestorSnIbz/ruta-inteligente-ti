@@ -1723,331 +1723,418 @@
 
     const batchForm = panel.querySelector("#objetivos-batch-form");
     const batchPayload = panel.querySelector("#objetivos-batch-payload");
-    const oeInput = panel.querySelector("#oe-batch-input");
-    const oeAdd = panel.querySelector("#oe-batch-add");
-    const oeList = panel.querySelector("#oe-batch-list");
-    const oespRows = panel.querySelector("#oesp-batch-rows");
-    const oespAddRow = panel.querySelector("#oesp-batch-add-row");
-    const batchClear = panel.querySelector("#objetivos-batch-clear");
+    const stateScript = panel.querySelector("#objetivos-editor-state");
+    const strategicInput = panel.querySelector("#objetivos-new-strategic-input");
+    const addStrategicButton = panel.querySelector("#objetivos-add-strategic");
+    const resetDraftButton = panel.querySelector("#objetivos-reset-draft");
+    const summaryPill = panel.querySelector("#objetivos-summary-pill");
+    const statusPill = panel.querySelector("#objetivos-status-pill");
+    const emptyState = panel.querySelector("#objetivos-editor-empty");
+    const editorList = panel.querySelector("#objetivos-editor-list");
+    const saveButton = batchForm ? batchForm.querySelector('button[type="submit"]') : null;
 
-    if (batchForm && batchPayload && oeList && oespRows) {
-      const newStrategic = [];
-
-      function makeId() {
-        return (Math.random().toString(16).slice(2) + Date.now().toString(16)).slice(0, 24);
+    if (batchForm && batchPayload && stateScript && editorList) {
+      function makeId(prefix) {
+        return `${prefix}-${Math.random().toString(16).slice(2)}-${Date.now().toString(16)}`;
       }
 
-      function truncateText(value, max) {
-        const s = String(value || "").trim();
-        if (s.length <= max) return s;
-        return s.slice(0, max - 1) + "…";
+      function clone(value) {
+        return JSON.parse(JSON.stringify(value));
       }
 
-      function getOespRowEls() {
-        return Array.from(oespRows.querySelectorAll("[data-oesp-row]"));
-      }
-
-      function bindOespRow(row) {
-        const remove = row.querySelector("[data-oesp-remove]");
-        if (remove && remove.dataset.riBound !== "1") {
-          remove.dataset.riBound = "1";
-          remove.addEventListener("click", () => {
-            const rows = getOespRowEls();
-            if (rows.length <= 1) {
-              const sel = row.querySelector("[data-oesp-oe]");
-              const ta = row.querySelector("[data-oesp-lines]");
-              if (sel) sel.value = "";
-              if (ta) ta.value = "";
-              return;
-            }
-            row.remove();
-          });
+      function parseInitialState() {
+        try {
+          const parsed = JSON.parse(stateScript.textContent || "{}");
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (err) {
+          return {};
         }
       }
 
-      function addOespRow() {
-        const rows = getOespRowEls();
-        const base = rows[0];
-        if (!base) return;
-        const clone = base.cloneNode(true);
-        const sel = clone.querySelector("[data-oesp-oe]");
-        const ta = clone.querySelector("[data-oesp-lines]");
-        const remove = clone.querySelector("[data-oesp-remove]");
-        if (sel) sel.value = "";
-        if (ta) ta.value = "";
-        if (remove) remove.dataset.riBound = "0";
-        bindOespRow(clone);
-        oespRows.appendChild(clone);
-        syncTmpOptions();
-        if (sel) sel.focus();
+      function normalizeSpecific(raw) {
+        const token = raw && typeof raw.token === "string" ? raw.token.trim() : "";
+        const tmpIdSource = raw && typeof raw.tmp_id === "string" ? raw.tmp_id.trim() : "";
+        const tmp_id = token ? "" : (tmpIdSource || makeId("esp"));
+        return {
+          token,
+          tmp_id,
+          descripcion: raw && typeof raw.descripcion === "string" ? raw.descripcion : "",
+          client_id: token ? `token:${token}` : `tmp:${tmp_id}`,
+        };
       }
 
-      function syncTmpOptions() {
-        const rows = getOespRowEls();
-        for (const row of rows) {
-          const sel = row.querySelector("[data-oesp-oe]");
-          if (!(sel instanceof HTMLSelectElement)) continue;
-          const selected = String(sel.value || "");
-          const existing = sel.querySelector('optgroup[data-tmp="1"]');
-          if (existing) existing.remove();
-          if (newStrategic.length === 0) continue;
+      function normalizeStrategic(raw) {
+        const token = raw && typeof raw.token === "string" ? raw.token.trim() : "";
+        const tmpIdSource = raw && typeof raw.tmp_id === "string" ? raw.tmp_id.trim() : "";
+        const tmp_id = token ? "" : (tmpIdSource || makeId("oe"));
+        const especificosRaw = Array.isArray(raw && raw.especificos) ? raw.especificos : [];
+        return {
+          token,
+          tmp_id,
+          descripcion: raw && typeof raw.descripcion === "string" ? raw.descripcion : "",
+          client_id: token ? `token:${token}` : `tmp:${tmp_id}`,
+          especificos: especificosRaw.map((item) => normalizeSpecific(item)),
+        };
+      }
 
-          const og = document.createElement("optgroup");
-          og.label = "Nuevos (pendientes)";
-          og.setAttribute("data-tmp", "1");
-          for (const it of newStrategic) {
-            const opt = document.createElement("option");
-            opt.value = `tmp:${it.id}`;
-            opt.textContent = `⏳ ${truncateText(it.descripcion, 60) || "Objetivo estratégico"}`;
-            og.appendChild(opt);
-          }
-          sel.appendChild(og);
+      function normalizeState(raw) {
+        const estrategicosRaw = Array.isArray(raw && raw.estrategicos) ? raw.estrategicos : [];
+        return {
+          estrategicos: estrategicosRaw.map((item) => normalizeStrategic(item)),
+        };
+      }
 
-          if (selected.startsWith("tmp:")) {
-            const found = newStrategic.some((x) => `tmp:${x.id}` === selected);
-            if (!found) sel.value = "";
-          }
+      function serializeComparable(state) {
+        const estrategicos = Array.isArray(state && state.estrategicos) ? state.estrategicos : [];
+        return JSON.stringify(
+          estrategicos.map((oe) => ({
+            token: String(oe.token || ""),
+            tmp_id: String(oe.token ? "" : (oe.tmp_id || "")),
+            descripcion: String(oe.descripcion || "").trim(),
+            especificos: Array.isArray(oe.especificos)
+              ? oe.especificos.map((esp) => ({
+                  token: String(esp.token || ""),
+                  tmp_id: String(esp.token ? "" : (esp.tmp_id || "")),
+                  descripcion: String(esp.descripcion || "").trim(),
+                }))
+              : [],
+          }))
+        );
+      }
+
+      function countSpecifics(state) {
+        const estrategicos = Array.isArray(state && state.estrategicos) ? state.estrategicos : [];
+        return estrategicos.reduce((total, item) => total + (Array.isArray(item.especificos) ? item.especificos.length : 0), 0);
+      }
+
+      const baseState = normalizeState(parseInitialState());
+      let draftState = clone(baseState);
+      let confirmDeleteState = { strategicId: "", specificId: "" };
+
+      function hasChanges() {
+        return serializeComparable(draftState) !== serializeComparable(baseState);
+      }
+
+      function clearDeleteConfirmation() {
+        confirmDeleteState = { strategicId: "", specificId: "" };
+      }
+
+      function updateDraftMeta() {
+        const strategicCount = Array.isArray(draftState.estrategicos) ? draftState.estrategicos.length : 0;
+        const specificCount = countSpecifics(draftState);
+        if (summaryPill) {
+          summaryPill.textContent = `${strategicCount} estrategicos · ${specificCount} especificos`;
+        }
+        if (statusPill) {
+          statusPill.textContent = hasChanges() ? "Cambios pendientes" : "Sin cambios pendientes";
+          statusPill.className = hasChanges()
+            ? "inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800"
+            : "inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800";
+        }
+        if (saveButton instanceof HTMLButtonElement) {
+          saveButton.disabled = !hasChanges();
         }
       }
 
-      function renderNewStrategic() {
-        oeList.innerHTML = "";
-        newStrategic.forEach((item) => {
-          const card = document.createElement("div");
-          card.className = "rounded-xl border border-neutral-200 bg-white p-4";
+      function focusStrategic(clientId) {
+        if (!clientId) return;
+        requestAnimationFrame(() => {
+          const target = editorList.querySelector(`[data-strategic-id="${CSS.escape(clientId)}"] textarea[data-strategic-desc]`);
+          if (target instanceof HTMLTextAreaElement) {
+            target.focus();
+            target.setSelectionRange(target.value.length, target.value.length);
+          }
+        });
+      }
+
+      function focusSpecific(clientId, specId) {
+        if (!clientId || !specId) return;
+        requestAnimationFrame(() => {
+          const target = editorList.querySelector(`[data-strategic-id="${CSS.escape(clientId)}"] input[data-specific-id="${CSS.escape(specId)}"]`);
+          if (target instanceof HTMLInputElement) {
+            target.focus();
+            target.setSelectionRange(target.value.length, target.value.length);
+          }
+        });
+      }
+
+      function renderEditor() {
+        editorList.innerHTML = "";
+        const estrategicos = Array.isArray(draftState.estrategicos) ? draftState.estrategicos : [];
+        if (emptyState) {
+          emptyState.classList.toggle("hidden", estrategicos.length > 0);
+        }
+
+        estrategicos.forEach((item, index) => {
+          const card = document.createElement("article");
+          card.className = "flex h-full flex-col rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm";
+          card.setAttribute("data-strategic-id", String(item.client_id || ""));
 
           const header = document.createElement("div");
-          header.className = "flex items-start justify-between gap-3";
+          header.className = "flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between";
+
+          const titleWrap = document.createElement("div");
+
+          const titleRow = document.createElement("div");
+          titleRow.className = "flex flex-wrap items-center gap-2";
 
           const title = document.createElement("div");
-          title.className = "text-xs font-semibold text-neutral-600";
-          title.textContent = "Objetivo estratégico (pendiente)";
+          title.className = "text-sm font-semibold text-neutral-900";
+          title.textContent = `Objetivo estrategico ${index + 1}`;
 
-          const remove = document.createElement("button");
-          remove.type = "button";
-          remove.className = "inline-flex items-center justify-center rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700";
-          remove.textContent = "Eliminar";
-          remove.addEventListener("click", () => {
-            const idx = newStrategic.findIndex((x) => x.id === item.id);
-            if (idx >= 0) newStrategic.splice(idx, 1);
-            renderAll();
-          });
+          const badge = document.createElement("span");
+          badge.className = item.token
+            ? "inline-flex items-center rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-800"
+            : "inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700";
+          badge.textContent = item.token ? "Existente" : "Nuevo";
 
-          header.appendChild(title);
-          header.appendChild(remove);
+          const countBadge = document.createElement("span");
+          countBadge.className = "inline-flex items-center rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-700";
+          countBadge.textContent = `${Array.isArray(item.especificos) ? item.especificos.length : 0} especificos`;
 
-          const textarea = document.createElement("textarea");
-          textarea.rows = 3;
-          textarea.className = "mt-3 w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm outline-none resize-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15";
-          textarea.value = String(item.descripcion || "");
-          textarea.addEventListener("input", () => {
-            item.descripcion = String(textarea.value || "");
-          });
+          titleRow.appendChild(title);
+          titleRow.appendChild(badge);
+          titleRow.appendChild(countBadge);
 
-          const specWrap = document.createElement("div");
-          specWrap.className = "mt-4 rounded-xl border border-neutral-200 bg-neutral-50 p-3";
+          const helper = document.createElement("div");
+          helper.className = "mt-1 text-xs text-neutral-600";
+          helper.textContent = "Edita el objetivo y gestiona aqui mismo todos sus objetivos especificos asociados.";
 
-          const specTitle = document.createElement("div");
-          specTitle.className = "text-xs font-semibold text-neutral-700";
-          specTitle.textContent = "Objetivos específicos (pendientes)";
+          titleWrap.appendChild(titleRow);
+          titleWrap.appendChild(helper);
 
-          const specForm = document.createElement("div");
-          specForm.className = "mt-2 flex flex-col gap-2 sm:flex-row";
-
-          const specInput = document.createElement("input");
-          specInput.type = "text";
-          specInput.className = "h-10 flex-1 rounded-xl border border-neutral-300 bg-white px-4 text-sm outline-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15";
-          specInput.placeholder = "Escribe un objetivo específico...";
-
-          const specAdd = document.createElement("button");
-          specAdd.type = "button";
-          specAdd.className = "h-10 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700";
-          specAdd.textContent = "+ Añadir";
-          specAdd.addEventListener("click", () => {
-            const txt = String(specInput.value || "").trim();
-            if (txt.length < 5) {
-              showInlineToast("Error", "El objetivo específico debe tener al menos 5 caracteres.");
+          const removeStrategicButton = document.createElement("button");
+          removeStrategicButton.type = "button";
+          const strategicDeletePending = confirmDeleteState.strategicId === item.client_id;
+          removeStrategicButton.className = strategicDeletePending
+            ? "inline-flex items-center justify-center rounded-xl bg-amber-400 px-3 py-2 text-sm font-semibold text-neutral-900"
+            : "inline-flex items-center justify-center rounded-xl bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700";
+          removeStrategicButton.textContent = strategicDeletePending ? "Confirmar?" : "Eliminar objetivo";
+          removeStrategicButton.addEventListener("click", () => {
+            if (!strategicDeletePending) {
+              confirmDeleteState = { strategicId: item.client_id, specificId: "" };
+              renderEditor();
               return;
             }
-            item.especificos.push(txt);
-            specInput.value = "";
-            specInput.focus();
-            renderAll();
+            clearDeleteConfirmation();
+            draftState.estrategicos = draftState.estrategicos.filter((entry) => entry.client_id !== item.client_id);
+            renderEditor();
           });
 
-          specInput.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              specAdd.click();
+          header.appendChild(titleWrap);
+          header.appendChild(removeStrategicButton);
+
+          const strategicTextarea = document.createElement("textarea");
+          strategicTextarea.rows = 4;
+          strategicTextarea.className = "mt-4 w-full rounded-2xl border border-neutral-300 bg-neutral-50 px-4 py-3 text-sm text-neutral-800 outline-none resize-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15";
+          strategicTextarea.setAttribute("data-strategic-desc", "1");
+          strategicTextarea.value = String(item.descripcion || "");
+          strategicTextarea.placeholder = "Describe el objetivo estrategico...";
+          strategicTextarea.addEventListener("input", () => {
+            clearDeleteConfirmation();
+            item.descripcion = String(strategicTextarea.value || "");
+            updateDraftMeta();
+          });
+
+          const specificsWrap = document.createElement("div");
+          specificsWrap.className = "mt-5 flex flex-1 flex-col rounded-2xl border border-neutral-200 bg-neutral-50 p-4";
+
+          const specificsHeader = document.createElement("div");
+          specificsHeader.className = "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between";
+
+          const specificsTitleWrap = document.createElement("div");
+          const specificsTitle = document.createElement("div");
+          specificsTitle.className = "text-sm font-semibold text-neutral-900";
+          specificsTitle.textContent = "Objetivos especificos";
+          const specificsSubtitle = document.createElement("div");
+          specificsSubtitle.className = "mt-0.5 text-xs text-neutral-600";
+          specificsSubtitle.textContent = "Puedes agregar, editar o eliminar objetivos especificos sin recrear el objetivo estrategico.";
+          specificsTitleWrap.appendChild(specificsTitle);
+          specificsTitleWrap.appendChild(specificsSubtitle);
+
+          const addSpecificButton = document.createElement("button");
+          addSpecificButton.type = "button";
+          addSpecificButton.className = "inline-flex h-10 w-full items-center justify-center self-center rounded-xl bg-brand-600 px-4 text-center text-sm font-semibold text-white hover:bg-brand-700 sm:w-auto sm:self-start sm:min-w-[156px]";
+          addSpecificButton.textContent = "+ Agregar especifico";
+          addSpecificButton.addEventListener("click", () => {
+            clearDeleteConfirmation();
+            const specific = normalizeSpecific({ descripcion: "" });
+            if (!Array.isArray(item.especificos)) {
+              item.especificos = [];
             }
+            item.especificos.push(specific);
+            renderEditor();
+            focusSpecific(item.client_id, specific.client_id);
           });
 
-          specForm.appendChild(specInput);
-          specForm.appendChild(specAdd);
+          specificsHeader.appendChild(specificsTitleWrap);
+          specificsHeader.appendChild(addSpecificButton);
 
-          const specList = document.createElement("div");
-          specList.className = "mt-3 space-y-2";
-          if (item.especificos.length === 0) {
-            const empty = document.createElement("div");
-            empty.className = "text-sm text-neutral-600";
-            empty.textContent = "Aún no hay objetivos específicos en la lista.";
-            specList.appendChild(empty);
+          const specificsList = document.createElement("div");
+          specificsList.className = "mt-4 space-y-3";
+
+          if (!Array.isArray(item.especificos) || item.especificos.length === 0) {
+            const emptySpecifics = document.createElement("div");
+            emptySpecifics.className = "rounded-xl border border-dashed border-neutral-300 bg-white px-4 py-4 text-sm text-neutral-600";
+            emptySpecifics.textContent = "Aun no hay objetivos especificos en este objetivo estrategico.";
+            specificsList.appendChild(emptySpecifics);
           } else {
-            item.especificos.forEach((sp, i) => {
-              const row = document.createElement("div");
-              row.className = "flex items-center gap-3 rounded-xl border border-neutral-200 bg-white px-3 py-2";
+            item.especificos.forEach((specific, specificIndex) => {
+              const specificRow = document.createElement("div");
+              specificRow.className = "rounded-xl border border-neutral-200 bg-white p-3";
 
-              const label = document.createElement("div");
-              label.className = "flex-1 text-sm text-neutral-800";
-              label.textContent = String(sp || "");
+              const specificHeader = document.createElement("div");
+              specificHeader.className = "mb-2 flex flex-wrap items-center justify-between gap-2";
 
-              const del = document.createElement("button");
-              del.type = "button";
-              del.className = "inline-flex items-center justify-center rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700";
-              del.textContent = "Eliminar";
-              del.addEventListener("click", () => {
-                item.especificos.splice(i, 1);
-                renderAll();
+              const specificLabel = document.createElement("div");
+              specificLabel.className = "text-xs font-semibold uppercase tracking-wide text-neutral-600";
+              specificLabel.textContent = `Objetivo especifico ${specificIndex + 1}`;
+
+              const specificRemove = document.createElement("button");
+              specificRemove.type = "button";
+              const specificDeleteKey = `${item.client_id}::${specific.client_id}`;
+              const specificDeletePending = confirmDeleteState.specificId === specificDeleteKey;
+              specificRemove.className = specificDeletePending
+                ? "inline-flex items-center justify-center rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-semibold text-neutral-900"
+                : "inline-flex items-center justify-center rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700";
+              specificRemove.textContent = specificDeletePending ? "Confirmar?" : "Eliminar";
+              specificRemove.addEventListener("click", () => {
+                if (!specificDeletePending) {
+                  confirmDeleteState = { strategicId: "", specificId: specificDeleteKey };
+                  renderEditor();
+                  return;
+                }
+                clearDeleteConfirmation();
+                item.especificos = item.especificos.filter((entry) => entry.client_id !== specific.client_id);
+                renderEditor();
               });
 
-              row.appendChild(label);
-              row.appendChild(del);
-              specList.appendChild(row);
+              specificHeader.appendChild(specificLabel);
+              specificHeader.appendChild(specificRemove);
+
+              const specificInput = document.createElement("input");
+              specificInput.type = "text";
+              specificInput.className = "w-full rounded-xl border border-neutral-300 bg-neutral-50 px-4 py-2.5 text-sm text-neutral-800 outline-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15";
+              specificInput.value = String(specific.descripcion || "");
+              specificInput.placeholder = "Describe el objetivo especifico...";
+              specificInput.setAttribute("data-specific-id", String(specific.client_id || ""));
+              specificInput.addEventListener("input", () => {
+                clearDeleteConfirmation();
+                specific.descripcion = String(specificInput.value || "");
+                updateDraftMeta();
+              });
+
+              specificRow.appendChild(specificHeader);
+              specificRow.appendChild(specificInput);
+              specificsList.appendChild(specificRow);
             });
           }
 
-          specWrap.appendChild(specTitle);
-          specWrap.appendChild(specForm);
-          specWrap.appendChild(specList);
+          specificsWrap.appendChild(specificsHeader);
+          specificsWrap.appendChild(specificsList);
 
           card.appendChild(header);
-          card.appendChild(textarea);
-          card.appendChild(specWrap);
-          oeList.appendChild(card);
+          card.appendChild(strategicTextarea);
+          card.appendChild(specificsWrap);
+          editorList.appendChild(card);
         });
-        syncTmpOptions();
+
+        updateDraftMeta();
       }
 
-      function renderAll() {
-        renderNewStrategic();
-      }
-
-      function clearAll() {
-        newStrategic.splice(0, newStrategic.length);
-        if (oeInput) oeInput.value = "";
-        batchPayload.value = "";
-        const rows = getOespRowEls();
-        rows.slice(1).forEach((r) => r.remove());
-        const first = rows[0];
-        if (first) {
-          const sel = first.querySelector("[data-oesp-oe]");
-          const ta = first.querySelector("[data-oesp-lines]");
-          if (sel) sel.value = "";
-          if (ta) ta.value = "";
-          bindOespRow(first);
-        }
-        syncTmpOptions();
-        renderAll();
-      }
-
-      if (oeAdd && oeInput) {
-        oeAdd.addEventListener("click", () => {
-          const txt = String(oeInput.value || "").trim();
-          if (txt.length < 5) {
-            showInlineToast("Error", "El objetivo estratégico debe tener al menos 5 caracteres.");
+      if (addStrategicButton && strategicInput) {
+        addStrategicButton.addEventListener("click", () => {
+          const descripcion = String(strategicInput.value || "").trim();
+          if (descripcion.length < 5) {
+            showInlineToast("Error", "El objetivo estrategico debe tener al menos 5 caracteres.");
             return;
           }
-          newStrategic.push({ id: makeId(), descripcion: txt, especificos: [] });
-          oeInput.value = "";
-          oeInput.focus();
-          renderAll();
+          const strategic = normalizeStrategic({ descripcion, especificos: [] });
+          draftState.estrategicos.push(strategic);
+          strategicInput.value = "";
+          renderEditor();
+          focusStrategic(strategic.client_id);
         });
-      }
 
-      if (oeInput) {
-        oeInput.addEventListener("keydown", (e) => {
+        strategicInput.addEventListener("keydown", (e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-            if (oeAdd) oeAdd.click();
+            addStrategicButton.click();
           }
         });
       }
 
-      getOespRowEls().forEach((r) => bindOespRow(r));
-      syncTmpOptions();
-      if (oespAddRow) {
-        oespAddRow.addEventListener("click", addOespRow);
-      }
-
-      if (batchClear) {
-        batchClear.addEventListener("click", clearAll);
+      if (resetDraftButton) {
+        resetDraftButton.addEventListener("click", () => {
+          draftState = clone(baseState);
+          batchPayload.value = "";
+          if (strategicInput instanceof HTMLTextAreaElement) {
+            strategicInput.value = "";
+          }
+          renderEditor();
+        });
       }
 
       batchForm.addEventListener("submit", (e) => {
-        const estrategicos = newStrategic
-          .map((it) => ({
-            tmp_id: String(it.id || ""),
-            descripcion: String(it.descripcion || "").trim(),
-            especificos: Array.isArray(it.especificos) ? it.especificos.map((s) => String(s || "").trim()).filter((s) => s) : [],
-          }))
-          .filter((it) => it.descripcion);
+        if (!hasChanges()) {
+          e.preventDefault();
+          showInlineToast("Sin cambios", "No hay cambios pendientes por guardar.");
+          return;
+        }
 
-        const especificos = [];
-        const rows = getOespRowEls();
-        for (const row of rows) {
-          const sel = row.querySelector("[data-oesp-oe]");
-          const ta = row.querySelector("[data-oesp-lines]");
-          const oe = String(sel instanceof HTMLSelectElement ? (sel.value || "") : "").trim();
-          const raw = String(ta instanceof HTMLTextAreaElement ? (ta.value || "") : "");
-          const lines = raw.split(/\r?\n/).map((v) => String(v || "").trim()).filter((v) => v !== "");
-          if (oe === "" && lines.length === 0) {
-            continue;
-          }
-          if (oe === "") {
+        const estrategicos = Array.isArray(draftState.estrategicos) ? draftState.estrategicos : [];
+        if (estrategicos.length > 50) {
+          e.preventDefault();
+          showInlineToast("Error", "No puedes guardar mas de 50 objetivos estrategicos en una sola operacion.");
+          return;
+        }
+
+        const payload = [];
+        let specificCount = 0;
+
+        for (const item of estrategicos) {
+          const descripcion = String(item.descripcion || "").trim();
+          if (descripcion.length < 5) {
             e.preventDefault();
-            showInlineToast("Error", "Selecciona un objetivo estratégico en todas las filas con texto.");
+            showInlineToast("Error", "Cada objetivo estrategico debe tener al menos 5 caracteres.");
             return;
           }
-          for (const line of lines) {
-            if (line.length < 5) {
+
+          const specificPayload = [];
+          const especificos = Array.isArray(item.especificos) ? item.especificos : [];
+          for (const specific of especificos) {
+            const specificDescription = String(specific.descripcion || "").trim();
+            if (specificDescription.length < 5) {
               e.preventDefault();
-              showInlineToast("Error", "Cada objetivo específico debe tener al menos 5 caracteres.");
+              showInlineToast("Error", "Cada objetivo especifico debe tener al menos 5 caracteres.");
               return;
             }
-            if (oe.startsWith("tmp:")) {
-              especificos.push({ oe_tmp: oe.slice(4), descripcion: line });
-            } else {
-              especificos.push({ oe, descripcion: line });
-            }
+            specificPayload.push({
+              token: String(specific.token || ""),
+              tmp_id: String(specific.token ? "" : (specific.tmp_id || "")),
+              descripcion: specificDescription,
+            });
+            specificCount += 1;
           }
+
+          payload.push({
+            token: String(item.token || ""),
+            tmp_id: String(item.token ? "" : (item.tmp_id || "")),
+            descripcion,
+            especificos: specificPayload,
+          });
         }
 
-        if (estrategicos.length === 0 && especificos.length === 0) {
+        if (specificCount > 200) {
           e.preventDefault();
-          showInlineToast("Error", "Agrega al menos un objetivo antes de guardar.");
+          showInlineToast("Error", "No puedes guardar mas de 200 objetivos especificos en una sola operacion.");
           return;
         }
 
-        const badOE = estrategicos.find((x) => x.descripcion.length < 5);
-        if (badOE) {
-          e.preventDefault();
-          showInlineToast("Error", "Cada objetivo estratégico debe tener al menos 5 caracteres.");
-          return;
-        }
-
-        const badOESP =
-          estrategicos.some((x) => x.especificos.some((s) => String(s || "").trim().length < 5)) ||
-          especificos.some((x) => String(x.descripcion || "").trim().length < 5);
-        if (badOESP) {
-          e.preventDefault();
-          showInlineToast("Error", "Cada objetivo específico debe tener al menos 5 caracteres.");
-          return;
-        }
-
-        batchPayload.value = JSON.stringify({ estrategicos, especificos });
+        batchPayload.value = JSON.stringify({ estrategicos: payload });
       });
 
-      renderAll();
+      renderEditor();
     }
 
     panel.querySelectorAll("form").forEach((form) => {
@@ -3188,7 +3275,7 @@
         form.innerHTML = `
           <input type="text" data-bcg-comp-name class="h-10 rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200" placeholder="Competidor" />
           <input type="number" min="0" step="0.01" data-bcg-comp-sales class="h-10 rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200" placeholder="Ventas" />
-          <button type="button" data-bcg-comp-add class="h-10 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 xl:w-auto">Agregar</button>
+          <button type="button" data-bcg-comp-add class="h-10 rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700 xl:w-auto">Agregar</button>
         `;
         body.appendChild(form);
 
@@ -3895,6 +3982,7 @@
   }
 
   function initLazyPanel(panelId) {
+    if (panelId === "overview") initOverviewPanel();
     if (panelId === "mision") initMisionPanel();
     if (panelId === "vision") initVisionPanel();
     if (panelId === "valores") initValoresPanel();
@@ -4222,26 +4310,44 @@
     }
   });
 
-  const overviewPdfLink = document.querySelector('[data-pdf-download="overview"]');
-  if (overviewPdfLink instanceof HTMLAnchorElement) {
-    overviewPdfLink.addEventListener("click", () => {
-      if (overviewPdfLink.dataset.riBusy === "1") return;
-      overviewPdfLink.dataset.riBusy = "1";
-      overviewPdfLink.classList.add("pointer-events-none", "opacity-80");
-      const iconDownload = overviewPdfLink.querySelector('[data-pdf-icon="download"]');
-      const iconSpinner = overviewPdfLink.querySelector('[data-pdf-icon="spinner"]');
-      const text = overviewPdfLink.querySelector("[data-pdf-text]");
-      if (iconDownload) iconDownload.classList.add("hidden");
-      if (iconSpinner) iconSpinner.classList.remove("hidden");
-      if (text) text.textContent = "Generando PDF…";
-      window.setTimeout(() => {
-        overviewPdfLink.dataset.riBusy = "0";
-        overviewPdfLink.classList.remove("pointer-events-none", "opacity-80");
-        if (iconSpinner) iconSpinner.classList.add("hidden");
-        if (iconDownload) iconDownload.classList.remove("hidden");
-        if (text) text.textContent = "Descargar PDF";
-      }, 12000);
-    });
+  function initOverviewPanel() {
+    const panel = document.getElementById("panel-overview");
+    if (!panel) return;
+
+    const overviewPdfLink = panel.querySelector('[data-pdf-download="overview"]');
+    if (overviewPdfLink instanceof HTMLAnchorElement && overviewPdfLink.dataset.riBound !== "1") {
+      overviewPdfLink.dataset.riBound = "1";
+      overviewPdfLink.addEventListener("click", () => {
+        if (overviewPdfLink.dataset.riBusy === "1") return;
+        overviewPdfLink.dataset.riBusy = "1";
+        overviewPdfLink.classList.add("pointer-events-none", "opacity-80");
+        const iconDownload = overviewPdfLink.querySelector('[data-pdf-icon="download"]');
+        const iconSpinner = overviewPdfLink.querySelector('[data-pdf-icon="spinner"]');
+        const text = overviewPdfLink.querySelector("[data-pdf-text]");
+        if (iconDownload) iconDownload.classList.add("hidden");
+        if (iconSpinner) iconSpinner.classList.remove("hidden");
+        if (text) text.textContent = "Generando PDF…";
+        window.setTimeout(() => {
+          overviewPdfLink.dataset.riBusy = "0";
+          overviewPdfLink.classList.remove("pointer-events-none", "opacity-80");
+          if (iconSpinner) iconSpinner.classList.add("hidden");
+          if (iconDownload) iconDownload.classList.remove("hidden");
+          if (text) text.textContent = "Descargar PDF";
+        }, 12000);
+      });
+    }
+
+    const membersManageOpen = panel.querySelector("#members-manage-open");
+    if (membersManageOpen instanceof HTMLButtonElement && membersManageOpen.dataset.riBound !== "1") {
+      membersManageOpen.dataset.riBound = "1";
+      membersManageOpen.addEventListener("click", () => {
+        setActiveProjectPanel("miembros", { updateUrl: false });
+        const u = new URL(window.location.href);
+        u.searchParams.set("members", "1");
+        window.history.replaceState({}, "", u.toString());
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    }
   }
 
   document.addEventListener("click", async (e) => {
@@ -4366,18 +4472,7 @@
     if (form) form.classList.add("hidden");
     if (view) view.classList.remove("hidden");
   }
-  const membersManageOpen = document.getElementById("members-manage-open");
   const membersBack = document.getElementById("members-back");
-
-  if (membersManageOpen) {
-    membersManageOpen.addEventListener("click", () => {
-      setActiveProjectPanel("miembros", { updateUrl: false });
-      const u = new URL(window.location.href);
-      u.searchParams.set("members", "1");
-      window.history.replaceState({}, "", u.toString());
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-  }
 
   if (membersBack) {
     membersBack.addEventListener("click", () => {
@@ -4388,6 +4483,8 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
   }
+
+  initOverviewPanel();
 
   function cviUpdateRowStyles(row) {
     const cells = Array.from(row.querySelectorAll(".cvi-cell"));

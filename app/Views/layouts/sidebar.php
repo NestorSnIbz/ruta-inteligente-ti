@@ -40,9 +40,9 @@
 <link href="/app-shell.css" rel="stylesheet" />
 
 <aside class="ri-sidebar-host flex flex-col md:sticky md:top-0 md:h-screen md:max-h-screen md:overflow-y-auto">
-  <div class="ri-sidebar-wrap flex flex-col">
-  <div class="px-6 py-6">
-    <div class="flex items-center gap-3">
+  <div class="ri-sidebar-wrap flex flex-col" data-mobile-open="0">
+  <div class="ri-sidebar-brand-row px-6 py-6">
+    <div class="ri-sidebar-brand-copy flex items-center gap-3">
       <div class="ri-sidebar-logo-badge grid h-10 w-10 place-items-center rounded-xl">
         <span class="text-sm font-semibold">RI</span>
       </div>
@@ -51,9 +51,37 @@
         <div class="ri-sidebar-subtitle text-xs leading-tight">Panel de control</div>
       </div>
     </div>
+    <button
+      id="sidebar-mobile-toggle"
+      type="button"
+      class="ri-sidebar-mobile-toggle h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white"
+      aria-expanded="false"
+      aria-controls="ri-sidebar-content"
+      aria-label="Abrir menu lateral"
+    >
+      <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16" />
+      </svg>
+    </button>
   </div>
 
-  <nav class="px-3 pb-6 flex-1">
+  <div id="ri-sidebar-content" class="ri-sidebar-content">
+  <div class="ri-sidebar-mobile-bar px-4 pt-1 pb-3">
+    <div class="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-200">
+      <span>Menu</span>
+      <button
+        id="sidebar-mobile-close"
+        type="button"
+        class="ri-sidebar-mobile-close inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white"
+        aria-label="Cerrar menu lateral"
+      >
+        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+    </div>
+  </div>
+  <nav class="ri-sidebar-nav px-3 pb-6 flex-1">
     <div class="mb-3 px-3">
       <div class="ri-sidebar-section">Menu Principal</div>
     </div>
@@ -161,6 +189,7 @@
     </div>
   </div>
 </div>
+</div>
 </aside>
 
 <script>
@@ -178,10 +207,36 @@
     const sidebarProjectsChevron = document.getElementById("sidebar-projects-chevron");
     const sidebarProjectsPanel = document.getElementById("sidebar-projects-panel");
     const sidebarRecentProjects = document.getElementById("sidebar-recent-projects");
+    const sidebarWrap = document.querySelector(".ri-sidebar-wrap");
+    const sidebarMobileToggle = document.getElementById("sidebar-mobile-toggle");
+    const sidebarMobileClose = document.getElementById("sidebar-mobile-close");
 
     const userMenuButton = document.getElementById("user-menu-button");
     const userMenu = document.getElementById("user-menu");
     const userMenuChevron = document.getElementById("user-menu-chevron");
+
+    function setMobileSidebarOpen(open) {
+      if (!sidebarWrap) return;
+      const shouldOpen = !!open;
+      sidebarWrap.setAttribute("data-mobile-open", shouldOpen ? "1" : "0");
+      if (sidebarMobileToggle) {
+        sidebarMobileToggle.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+      }
+    }
+
+    if (sidebarMobileToggle) {
+      sidebarMobileToggle.addEventListener("click", (event) => {
+        event.stopPropagation();
+        setMobileSidebarOpen(true);
+      });
+    }
+
+    if (sidebarMobileClose) {
+      sidebarMobileClose.addEventListener("click", (event) => {
+        event.stopPropagation();
+        setMobileSidebarOpen(false);
+      });
+    }
 
     function closeUserMenu() {
       if (!userMenu || !userMenuButton) return;
@@ -211,6 +266,18 @@
 
     document.addEventListener("click", () => {
       closeUserMenu();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        setMobileSidebarOpen(false);
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      if (window.innerWidth >= 768) {
+        setMobileSidebarOpen(false);
+      }
     });
 
     function getActiveFromPath() {
@@ -389,6 +456,7 @@
     setSidebarActive(active);
     renderSidebarRecentProjects();
     setProjectsPanelOpen(readProjectsOpen() || active === "proyectos");
+    setMobileSidebarOpen(false);
 
     if (currentProject && typeof currentProject === "object") {
       pushRecentProject(Number(currentProject.id || 0), String(currentProject.name || ""));

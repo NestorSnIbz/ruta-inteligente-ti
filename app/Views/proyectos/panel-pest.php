@@ -45,11 +45,11 @@
   $calcConclusionText = function (string $cat) use ($conclusions) : array {
     $c = $conclusions[$cat] ?? null;
     if (!is_array($c)) {
-      return ['positive' => null, 'text' => '—'];
+      return ['positive' => null, 'text' => 'Incompleto. Completa todas las filas para generar la conclusión.'];
     }
     $pos = isset($c['positive']) ? (bool) $c['positive'] : null;
     $txt = trim((string) ($c['text'] ?? ''));
-    return ['positive' => $pos, 'text' => $txt !== '' ? $txt : '—'];
+    return ['positive' => $pos, 'text' => $txt !== '' ? $txt : 'Incompleto. Completa todas las filas para generar la conclusión.'];
   };
 ?>
 
@@ -112,7 +112,7 @@
                 <td class="border-b border-l border-neutral-200 px-4 py-3 text-sm text-neutral-800">
                   <div class="flex items-start justify-between gap-3">
                     <div class="leading-relaxed"><?php echo htmlspecialchars($txt, ENT_QUOTES, 'UTF-8'); ?></div>
-                    <span data-pest-ref class="hidden rounded-lg bg-red-50 px-2 py-1 text-xs font-semibold text-red-700">#¡REF!</span>
+                    <span data-pest-ref class="hidden rounded-lg bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">Incompleto</span>
                   </div>
                 </td>
                 <?php for ($v = 0; $v <= 4; $v++) : ?>
@@ -166,6 +166,9 @@
           $badge = 'bg-neutral-100 text-neutral-700';
           if ($missing === 0 && $c['positive'] === true) $badge = 'bg-emerald-50 text-emerald-800 border border-emerald-200';
           if ($missing === 0 && $c['positive'] === false) $badge = 'bg-amber-50 text-amber-800 border border-amber-200';
+          $conclusionClass = $missing > 0
+            ? 'mt-3 text-xs font-semibold text-amber-700 leading-relaxed'
+            : 'mt-3 text-xs text-neutral-700 leading-relaxed';
         ?>
         <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
           <div class="flex items-start justify-between gap-2">
@@ -174,7 +177,7 @@
               <span data-pest-pct="<?php echo htmlspecialchars($cat, ENT_QUOTES, 'UTF-8'); ?>"><?php echo (int) $p; ?>%</span>
             </span>
           </div>
-          <div data-pest-conclusion="<?php echo htmlspecialchars($cat, ENT_QUOTES, 'UTF-8'); ?>" class="mt-3 text-xs text-neutral-700 leading-relaxed"><?php echo htmlspecialchars((string) $c['text'], ENT_QUOTES, 'UTF-8'); ?></div>
+          <div data-pest-conclusion="<?php echo htmlspecialchars($cat, ENT_QUOTES, 'UTF-8'); ?>" class="<?php echo htmlspecialchars($conclusionClass, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $c['text'], ENT_QUOTES, 'UTF-8'); ?></div>
         </div>
       <?php endforeach; ?>
     </div>
