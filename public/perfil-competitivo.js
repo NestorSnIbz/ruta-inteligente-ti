@@ -89,11 +89,11 @@
         const label = cell.querySelector(".pc-cell-label");
         const checked = input && input.checked;
         cell.className = checked
-          ? "pc-cell flex h-12 w-full cursor-pointer items-center justify-center select-none bg-brand-50"
+          ? "pc-cell flex h-12 w-full cursor-pointer items-center justify-center select-none"
           : "pc-cell flex h-12 w-full cursor-pointer items-center justify-center select-none hover:bg-neutral-50";
         if (label) {
           label.className = checked
-            ? "pc-cell-label inline-flex h-9 w-full max-w-[4.25rem] items-center justify-center rounded-xl border border-brand-600 bg-brand-600 px-3 text-sm font-semibold text-white shadow-sm transition"
+            ? "pc-cell-label inline-flex h-9 w-full max-w-[4.25rem] items-center justify-center rounded-xl border border-brand-600 bg-brand-600 px-3 text-sm font-semibold text-white transition"
             : "pc-cell-label inline-flex h-9 w-full max-w-[4.25rem] items-center justify-center rounded-xl border border-neutral-300 bg-white px-3 text-sm font-semibold text-neutral-700 transition hover:border-brand-300";
           label.textContent = checked ? "X" : "";
         }

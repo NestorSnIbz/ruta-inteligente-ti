@@ -341,17 +341,6 @@
               </div>
 
               <div class="flex items-center gap-2">
-                <a
-                  data-js-edit-oe="<?php echo htmlspecialchars($oeToken, ENT_QUOTES, 'UTF-8'); ?>"
-                  href="detalle-proyecto.php?t=<?php echo urlencode((string) $projectToken); ?>&section=objetivos&oe_edit=<?php echo urlencode($oeToken); ?>"
-                  class="inline-flex items-center justify-center rounded-xl border border-neutral-200 bg-white p-2 text-brand-700 hover:bg-brand-50"
-                  aria-label="Editar objetivo estratégico"
-                  title="Editar"
-                >
-                  <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 4h-4a2 2 0 00-2 2v4m14-4l-9 9-4 1 1-4 9-9 3 3z" />
-                  </svg>
-                </a>
                 <form method="post" action="detalle-proyecto.php" data-confirm="¿Eliminar este objetivo estratégico y todos sus objetivos específicos?">
                   <input type="hidden" name="action" value="delete_obj_est" />
                   <input type="hidden" name="t" value="<?php echo htmlspecialchars((string) $projectToken, ENT_QUOTES, 'UTF-8'); ?>" />
@@ -364,31 +353,21 @@
             </div>
 
             <div data-oe-card="<?php echo htmlspecialchars($oeToken, ENT_QUOTES, 'UTF-8'); ?>">
-              <div data-oe-view class="<?php echo (($oeEditToken ?? '') !== '' && hash_equals((string) ($oeEditToken ?? ''), $oeToken)) ? 'hidden' : 'block'; ?> mt-4 text-sm text-neutral-700 leading-relaxed">
-                <?php echo nl2br(htmlspecialchars((string) ($obj['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8')); ?>
-              </div>
-
-              <div data-oe-form class="<?php echo (($oeEditToken ?? '') !== '' && hash_equals((string) ($oeEditToken ?? ''), $oeToken)) ? 'block' : 'hidden'; ?> mt-4">
+              <div class="mt-4">
                 <form class="space-y-3" method="post" action="detalle-proyecto.php">
                   <input type="hidden" name="action" value="update_obj_est" />
                   <input type="hidden" name="t" value="<?php echo htmlspecialchars((string) $projectToken, ENT_QUOTES, 'UTF-8'); ?>" />
                   <input type="hidden" name="oe" value="<?php echo htmlspecialchars($oeToken, ENT_QUOTES, 'UTF-8'); ?>" />
+                  <div class="text-xs font-semibold uppercase tracking-wide text-brand-700">Edición directa</div>
                   <textarea
                     name="descripcion"
                     rows="4"
-                    class="w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none resize-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
+                    class="w-full rounded-2xl border border-brand-200 bg-brand-50/40 px-4 py-3 text-sm text-neutral-800 outline-none resize-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
                     required
                   ><?php echo htmlspecialchars((string) ($obj['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></textarea>
-                  <div class="flex justify-end gap-3">
-                    <a
-                      data-js-cancel-oe="<?php echo htmlspecialchars($oeToken, ENT_QUOTES, 'UTF-8'); ?>"
-                      href="detalle-proyecto.php?t=<?php echo urlencode((string) $projectToken); ?>&section=objetivos"
-                      class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100"
-                    >
-                      Cancelar
-                    </a>
+                  <div class="flex justify-end">
                     <button type="submit" class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
-                      Guardar
+                      Guardar cambios
                     </button>
                   </div>
                 </form>
@@ -415,59 +394,33 @@
                     <?php $oespToken = (string) ($esp['token'] ?? ''); ?>
                     <div class="rounded-xl border border-neutral-200 bg-white px-4 py-3">
                       <div data-oesp-row="<?php echo htmlspecialchars($oespToken, ENT_QUOTES, 'UTF-8'); ?>">
-                        <div data-oesp-view class="<?php echo (($oespEditToken ?? '') !== '' && hash_equals((string) ($oespEditToken ?? ''), $oespToken)) ? 'hidden' : 'flex'; ?> items-start justify-between gap-3">
-                          <div class="text-sm text-neutral-800">
-                            <?php echo htmlspecialchars((string) ($esp['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+                        <form class="flex flex-col gap-3 lg:flex-row lg:items-center" method="post" action="detalle-proyecto.php">
+                          <input type="hidden" name="action" value="update_obj_esp" />
+                          <input type="hidden" name="t" value="<?php echo htmlspecialchars((string) $projectToken, ENT_QUOTES, 'UTF-8'); ?>" />
+                          <input type="hidden" name="oe" value="<?php echo htmlspecialchars($oeToken, ENT_QUOTES, 'UTF-8'); ?>" />
+                          <input type="hidden" name="oesp" value="<?php echo htmlspecialchars($oespToken, ENT_QUOTES, 'UTF-8'); ?>" />
+                          <input
+                            type="text"
+                            name="descripcion"
+                            value="<?php echo htmlspecialchars((string) ($esp['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                            class="flex-1 rounded-2xl border border-brand-200 bg-brand-50/40 px-4 py-2.5 text-sm text-neutral-800 outline-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
+                            required
+                          />
+                          <div class="flex justify-end gap-2">
+                            <button type="submit" class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+                              Guardar cambios
+                            </button>
                           </div>
-                          <div class="flex items-center gap-2">
-                            <a
-                              data-js-edit-oesp="<?php echo htmlspecialchars($oespToken, ENT_QUOTES, 'UTF-8'); ?>"
-                              href="detalle-proyecto.php?t=<?php echo urlencode((string) $projectToken); ?>&section=objetivos&oesp_edit=<?php echo urlencode($oespToken); ?>"
-                              class="inline-flex items-center justify-center rounded-xl border border-neutral-200 bg-white p-2 text-brand-700 hover:bg-brand-50"
-                              aria-label="Editar objetivo específico"
-                              title="Editar"
-                            >
-                              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M11 4h-4a2 2 0 00-2 2v4m14-4l-9 9-4 1 1-4 9-9 3 3z" />
-                              </svg>
-                            </a>
-                            <form method="post" action="detalle-proyecto.php" data-confirm="¿Eliminar este objetivo específico?">
-                              <input type="hidden" name="action" value="delete_obj_esp" />
-                              <input type="hidden" name="t" value="<?php echo htmlspecialchars((string) $projectToken, ENT_QUOTES, 'UTF-8'); ?>" />
-                              <input type="hidden" name="oe" value="<?php echo htmlspecialchars($oeToken, ENT_QUOTES, 'UTF-8'); ?>" />
-                              <input type="hidden" name="oesp" value="<?php echo htmlspecialchars($oespToken, ENT_QUOTES, 'UTF-8'); ?>" />
-                              <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700">
-                                Eliminar
-                              </button>
-                            </form>
-                          </div>
-                        </div>
-
-                        <div data-oesp-form class="<?php echo (($oespEditToken ?? '') !== '' && hash_equals((string) ($oespEditToken ?? ''), $oespToken)) ? 'block' : 'hidden'; ?>">
-                          <form class="flex flex-col gap-3 sm:flex-row sm:items-center" method="post" action="detalle-proyecto.php">
-                            <input type="hidden" name="action" value="update_obj_esp" />
+                        </form>
+                        <div class="mt-3 flex justify-end">
+                          <form method="post" action="detalle-proyecto.php" data-confirm="¿Eliminar este objetivo específico?">
+                            <input type="hidden" name="action" value="delete_obj_esp" />
                             <input type="hidden" name="t" value="<?php echo htmlspecialchars((string) $projectToken, ENT_QUOTES, 'UTF-8'); ?>" />
                             <input type="hidden" name="oe" value="<?php echo htmlspecialchars($oeToken, ENT_QUOTES, 'UTF-8'); ?>" />
                             <input type="hidden" name="oesp" value="<?php echo htmlspecialchars($oespToken, ENT_QUOTES, 'UTF-8'); ?>" />
-                            <input
-                              type="text"
-                              name="descripcion"
-                              value="<?php echo htmlspecialchars((string) ($esp['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                              class="flex-1 rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-700 focus:ring-2 focus:ring-brand-600/15"
-                              required
-                            />
-                            <div class="flex justify-end gap-2">
-                              <a
-                                data-js-cancel-oesp="<?php echo htmlspecialchars($oespToken, ENT_QUOTES, 'UTF-8'); ?>"
-                                href="detalle-proyecto.php?t=<?php echo urlencode((string) $projectToken); ?>&section=objetivos"
-                                class="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-100"
-                              >
-                                Cancelar
-                              </a>
-                              <button type="submit" class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
-                                Guardar
-                              </button>
-                            </div>
+                            <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700">
+                              Eliminar
+                            </button>
                           </form>
                         </div>
                       </div>
@@ -952,7 +905,7 @@
           </div>
           <div class="mt-0.5 text-xs text-neutral-500">PRM se calcula usando el mayor competidor.</div>
 
-          <div id="bcg-competitors-grid" class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"></div>
+          <div id="bcg-competitors-grid" class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"></div>
         </div>
 
         <div class="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
@@ -1221,7 +1174,7 @@
           <button
             type="button"
             data-open-panel="objetivos"
-            class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"
+            class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"
           >
             Gestionar
           </button>
@@ -1355,16 +1308,16 @@
             <div class="mt-1 text-sm text-neutral-600">Resumen ejecutivo de Cadena de valor, Matriz BCG, Perfil competitivo y P.E.S.T.</div>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <button type="button" data-open-panel="cadena" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+            <button type="button" data-open-panel="cadena" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
               Ver Cadena
             </button>
-            <button type="button" data-open-panel="bgg" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+            <button type="button" data-open-panel="bgg" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
               Ver BCG
             </button>
-            <button type="button" data-open-panel="perfil_competitivo" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+            <button type="button" data-open-panel="perfil_competitivo" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
               Ver Perfil
             </button>
-            <button type="button" data-open-panel="pest" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+            <button type="button" data-open-panel="pest" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
               Ver P.E.S.T.
             </button>
           </div>
@@ -1560,16 +1513,16 @@
             <div class="mt-1 text-sm text-neutral-600">Fortalezas y debilidades (Cadena/BCG) y oportunidades/amenazas (Perfil/P.E.S.T.).</div>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <button type="button" data-open-panel="cadena" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                  <button type="button" data-open-panel="cadena" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
               Editar (Cadena)
             </button>
-            <button type="button" data-open-panel="bgg" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                  <button type="button" data-open-panel="bgg" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
               Editar (BCG)
             </button>
-            <button type="button" data-open-panel="perfil_competitivo" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                  <button type="button" data-open-panel="perfil_competitivo" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
               Editar (Perfil)
             </button>
-            <button type="button" data-open-panel="pest" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                  <button type="button" data-open-panel="pest" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
               Editar (P.E.S.T.)
             </button>
           </div>
@@ -1728,10 +1681,10 @@
             <div class="mt-1 text-sm text-neutral-600">Resumen de la FODA cruzada y de las acciones definidas en la Matriz CAME.</div>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <button type="button" data-open-panel="estrategias" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                  <button type="button" data-open-panel="estrategias" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
               Ver Estrategias
             </button>
-            <button type="button" data-open-panel="came" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                  <button type="button" data-open-panel="came" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
               Ver CAME
             </button>
           </div>

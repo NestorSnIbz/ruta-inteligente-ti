@@ -24,7 +24,7 @@
 
     <!-- HEADER -->
     <header class="ri-dashboard-header">
-      <div class="px-6 py-4 flex items-center justify-between">
+      <div class="px-6 py-4 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 class="ri-page-title text-2xl font-semibold tracking-tight">
             Nuevo Plan Estratégico
@@ -76,7 +76,7 @@
             </p>
           </div>
 
-          <div class="mt-8 flex justify-end gap-3">
+          <div class="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <a
               href="proyectos.php"
               class="ri-project-ghost-btn rounded-2xl px-5 py-2.5 text-sm font-medium"
