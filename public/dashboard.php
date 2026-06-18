@@ -88,7 +88,7 @@ try {
         'GET',
         '/rest/v1/proyecto_miembro',
         [
-            'select' => 'id_proyecto,proyecto(id_proyecto,nombre,creador_id)',
+            'select' => 'id_proyecto,rol,proyecto(id_proyecto,nombre,creador_id)',
             'id_persona' => 'eq.' . $idPersona,
             'order' => 'id.desc',
         ],
@@ -105,6 +105,7 @@ try {
             }
             $pid = (int) ($p['id_proyecto'] ?? 0);
             if ($pid > 0) {
+                $p['miembro_rol'] = (string) ($row['rol'] ?? '');
                 $projectsById[$pid] = $p;
             }
         }
@@ -306,10 +307,20 @@ try {
         }
 
         $statusLabel = $isActive ? 'Activo' : (($hasMision || $hasVision || $valoresCount > 0 || $objEstCount > 0) ? 'En progreso' : 'Borrador');
+        $creatorId = (int) ($p['creador_id'] ?? 0);
+        $memberRole = trim((string) ($p['miembro_rol'] ?? ''));
+        if ($creatorId > 0 && $creatorId === $idPersona) {
+            $roleLabel = 'Creador';
+        } elseif ($memberRole !== '') {
+            $roleLabel = ucfirst(mb_strtolower($memberRole, 'UTF-8'));
+        } else {
+            $roleLabel = 'Invitado';
+        }
         $projectRows[] = [
             'id' => $pid,
             'token' => dashboardIssueProjectToken($pid),
             'nombre' => (string) ($p['nombre'] ?? ''),
+            'rol' => $roleLabel,
             'status' => $statusLabel,
             'has_mision' => $hasMision,
             'has_vision' => $hasVision,

@@ -146,6 +146,7 @@
   color: #ffffff;
   box-shadow: 0 14px 30px rgba(79, 70, 229, 0.24);
   transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  cursor: pointer;
 }
 
 .ri-dashboard-primary-btn:hover {
@@ -224,6 +225,7 @@
   background: #ffffff;
   color: #334155;
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  cursor: pointer;
 }
 
 .ri-dashboard-outline-btn:hover {
@@ -332,6 +334,7 @@
   border-radius: 16px;
   color: #475569;
   transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
 }
 
 .ri-project-tab:hover {
@@ -345,9 +348,38 @@
   box-shadow: 0 14px 28px rgba(79, 70, 229, 0.22);
 }
 
-.ri-project-shell .bg-brand-600,
-.ri-project-shell .hover\:bg-brand-700:hover {
+.ri-project-shell .bg-brand-600 {
   background: linear-gradient(135deg, #4338ca, #4f46e5) !important;
+}
+
+.ri-project-shell .hover\:bg-brand-700:hover {
+  background: linear-gradient(135deg, #3730a3, #4338ca) !important;
+  filter: brightness(1.02);
+  transform: translateY(-1px);
+}
+
+.ri-project-shell button[aria-busy="true"],
+.ri-project-shell button[data-ri-loading="1"],
+.ri-project-shell input[type="button"][aria-busy="true"],
+.ri-project-shell input[type="button"][data-ri-loading="1"],
+.ri-project-shell input[type="submit"][aria-busy="true"],
+.ri-project-shell input[type="submit"][data-ri-loading="1"],
+.ri-project-shell input[type="reset"][aria-busy="true"],
+.ri-project-shell input[type="reset"][data-ri-loading="1"],
+.ri-page-shell button[aria-busy="true"],
+.ri-page-shell button[data-ri-loading="1"],
+.ri-page-shell input[type="button"][aria-busy="true"],
+.ri-page-shell input[type="button"][data-ri-loading="1"],
+.ri-page-shell input[type="submit"][aria-busy="true"],
+.ri-page-shell input[type="submit"][data-ri-loading="1"],
+.ri-page-shell input[type="reset"][aria-busy="true"],
+.ri-page-shell input[type="reset"][data-ri-loading="1"] {
+  background: linear-gradient(135deg, #4338ca, #4f46e5) !important;
+  border-color: #4338ca !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 30px rgba(79, 70, 229, 0.24) !important;
+  opacity: 0.92;
+  transform: none !important;
 }
 
 .ri-project-shell .text-brand-900,
@@ -450,6 +482,7 @@
   background: rgba(255, 255, 255, 0.92);
   color: #334155;
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
 }
 
 .ri-project-ghost-btn:hover {
@@ -463,12 +496,43 @@
   color: #ffffff;
   box-shadow: 0 14px 30px rgba(79, 70, 229, 0.24);
   transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  cursor: pointer;
 }
 
 .ri-project-primary-btn:hover {
   filter: brightness(1.03);
   box-shadow: 0 18px 34px rgba(79, 70, 229, 0.28);
   transform: translateY(-1px);
+}
+
+.ri-dashboard-shell button:not(:disabled),
+.ri-dashboard-shell input[type="button"]:not(:disabled),
+.ri-dashboard-shell input[type="submit"]:not(:disabled),
+.ri-dashboard-shell input[type="reset"]:not(:disabled),
+.ri-page-shell button:not(:disabled),
+.ri-page-shell input[type="button"]:not(:disabled),
+.ri-page-shell input[type="submit"]:not(:disabled),
+.ri-page-shell input[type="reset"]:not(:disabled),
+.ri-project-shell button:not(:disabled),
+.ri-project-shell input[type="button"]:not(:disabled),
+.ri-project-shell input[type="submit"]:not(:disabled),
+.ri-project-shell input[type="reset"]:not(:disabled) {
+  cursor: pointer;
+}
+
+.ri-dashboard-shell button:disabled,
+.ri-dashboard-shell input[type="button"]:disabled,
+.ri-dashboard-shell input[type="submit"]:disabled,
+.ri-dashboard-shell input[type="reset"]:disabled,
+.ri-page-shell button:disabled,
+.ri-page-shell input[type="button"]:disabled,
+.ri-page-shell input[type="submit"]:disabled,
+.ri-page-shell input[type="reset"]:disabled,
+.ri-project-shell button:disabled,
+.ri-project-shell input[type="button"]:disabled,
+.ri-project-shell input[type="submit"]:disabled,
+.ri-project-shell input[type="reset"]:disabled {
+  cursor: not-allowed;
 }
 
 .ri-project-list-row {

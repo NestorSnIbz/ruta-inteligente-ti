@@ -60,14 +60,14 @@
         </header>
 
         <main class="flex-1 px-6 py-8">
-          <div class="flex items-start justify-between gap-4">
+          <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 class="text-2xl font-semibold tracking-tight">Dashboard</h1>
               <p class="mt-1 text-sm text-neutral-600">
                 Bienvenido, <?php echo htmlspecialchars($nombre, ENT_QUOTES, 'UTF-8'); ?> (<?php echo htmlspecialchars($correo, ENT_QUOTES, 'UTF-8'); ?>).
               </p>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3">
               <a
                 href="nuevo-proyecto.php"
                 class="ri-dashboard-primary-btn inline-flex items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-semibold focus:outline-none"
@@ -112,8 +112,9 @@
             </div>
 
             <div class="ri-dashboard-table-subhead px-6 py-4">
-              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:items-center">
                 <div class="text-xs font-medium text-slate-600">Plan estratégico</div>
+                <div class="hidden sm:block text-xs font-medium text-slate-600">Rol</div>
                 <div class="hidden sm:block text-xs font-medium text-slate-600 text-right">Acciones</div>
               </div>
             </div>
@@ -175,9 +176,10 @@
         const row = document.createElement("div");
         row.className = "ri-dashboard-row px-6 py-4";
         row.dataset.projectName = String(project.nombre ?? "").toLowerCase();
+        row.dataset.projectRole = String(project.rol ?? "").toLowerCase();
 
         const grid = document.createElement("div");
-        grid.className = "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:items-center";
+        grid.className = "grid grid-cols-1 gap-3 sm:grid-cols-3 sm:items-center";
 
         const name = document.createElement("div");
         name.className = "text-sm font-medium text-slate-900";
@@ -187,6 +189,17 @@
         link.textContent = String(project.nombre ?? "—");
         link.addEventListener("click", () => pushRecentProject(project));
         name.appendChild(link);
+
+        const role = document.createElement("div");
+        role.className = "hidden sm:flex";
+        const roleBadge = document.createElement("span");
+        const roleLabel = String(project.rol ?? "Invitado");
+        const isCreator = roleLabel.toLowerCase() === "creador";
+        roleBadge.className = isCreator
+          ? "inline-flex items-center rounded-xl bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700"
+          : "inline-flex items-center rounded-xl bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700";
+        roleBadge.textContent = roleLabel;
+        role.appendChild(roleBadge);
 
         const actions = document.createElement("div");
         actions.className = "hidden sm:flex justify-end";
@@ -198,15 +211,24 @@
         actions.appendChild(viewBtn);
 
         grid.appendChild(name);
+        grid.appendChild(role);
         grid.appendChild(actions);
 
         const mobileMeta = document.createElement("div");
-        mobileMeta.className = "sm:hidden flex items-center justify-end";
+        mobileMeta.className = "sm:hidden flex items-center justify-between gap-3";
+        const mobileRole = document.createElement("span");
+        const mobileRoleLabel = String(project.rol ?? "Invitado");
+        const mobileIsCreator = mobileRoleLabel.toLowerCase() === "creador";
+        mobileRole.className = mobileIsCreator
+          ? "inline-flex items-center rounded-xl bg-brand-50 px-3 py-1 text-[11px] font-semibold text-brand-700"
+          : "inline-flex items-center rounded-xl bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-700";
+        mobileRole.textContent = mobileRoleLabel;
         const mobileLink = document.createElement("a");
         mobileLink.href = project && project.token ? `detalle-proyecto.php?t=${encodeURIComponent(String(project.token))}` : "proyectos.php";
         mobileLink.className = "ri-dashboard-mobile-link text-xs font-semibold hover:underline";
         mobileLink.textContent = "Ver";
         mobileLink.addEventListener("click", () => pushRecentProject(project));
+        mobileMeta.appendChild(mobileRole);
         mobileMeta.appendChild(mobileLink);
 
         row.appendChild(grid);
@@ -232,7 +254,8 @@
 
         for (const row of rows) {
           const name = row.dataset.projectName || "";
-          const matchesText = q === "" || name.includes(q);
+          const role = row.dataset.projectRole || "";
+          const matchesText = q === "" || name.includes(q) || role.includes(q);
 
           if (matchesText) {
             row.classList.remove("hidden");

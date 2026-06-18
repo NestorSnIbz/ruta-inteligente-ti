@@ -54,7 +54,7 @@
 
     <!-- HEADER -->
     <header class="ri-dashboard-header">
-      <div class="px-6 py-4 flex items-center justify-between">
+      <div class="px-6 py-4 flex flex-wrap items-start justify-between gap-4">
 
         <div>
           <h1 class="text-2xl font-semibold tracking-tight">
@@ -80,7 +80,7 @@
             Panel estratégico: Misión, Visión y Valores.
           </p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <?php if (!empty($isCreador)) : ?>
             <button id="project-name-edit-btn" type="button" class="ri-project-ghost-btn rounded-2xl px-4 py-2 text-sm font-medium">
               Editar nombre
@@ -283,7 +283,7 @@
                 <button
                   type="button"
                   data-open-panel="objetivos"
-                  class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"
+                  class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"
                 >
                   Gestionar
                 </button>
@@ -415,16 +415,16 @@
                   <div class="mt-1 text-sm text-neutral-600">Resumen ejecutivo de Cadena de valor, Matriz BCG, Perfil competitivo y P.E.S.T.</div>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
-                  <button type="button" data-open-panel="cadena" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                  <button type="button" data-open-panel="cadena" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
                     Ver Cadena
                   </button>
-                  <button type="button" data-open-panel="bgg" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                  <button type="button" data-open-panel="bgg" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
                     Ver BCG
                   </button>
-                  <button type="button" data-open-panel="perfil_competitivo" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                  <button type="button" data-open-panel="perfil_competitivo" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
                     Ver Perfil
                   </button>
-                  <button type="button" data-open-panel="pest" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                  <button type="button" data-open-panel="pest" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
                     Ver P.E.S.T.
                   </button>
                 </div>
@@ -620,16 +620,16 @@
                   <div class="mt-1 text-sm text-neutral-600">Fortalezas y debilidades (Cadena/BCG) y oportunidades/amenazas (Perfil/P.E.S.T.).</div>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
-                  <button type="button" data-open-panel="cadena" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                  <button type="button" data-open-panel="cadena" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
                     Editar (Cadena)
                   </button>
-                  <button type="button" data-open-panel="bgg" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                  <button type="button" data-open-panel="bgg" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
                     Editar (BCG)
                   </button>
-                  <button type="button" data-open-panel="perfil_competitivo" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                  <button type="button" data-open-panel="perfil_competitivo" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
                     Editar (Perfil)
                   </button>
-                  <button type="button" data-open-panel="pest" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                  <button type="button" data-open-panel="pest" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
                     Editar (P.E.S.T.)
                   </button>
                 </div>
@@ -788,10 +788,10 @@
                   <div class="mt-1 text-sm text-neutral-600">Resumen de la FODA cruzada y de las acciones definidas en la Matriz CAME.</div>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
-                  <button type="button" data-open-panel="estrategias" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                  <button type="button" data-open-panel="estrategias" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
                     Ver Estrategias
                   </button>
-                  <button type="button" data-open-panel="came" class="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
+                  <button type="button" data-open-panel="came" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50">
                     Ver CAME
                   </button>
                 </div>
@@ -2173,11 +2173,11 @@
         const label = cell.querySelector(".cvi-cell-label");
         const checked = input && input.checked;
         cell.className = checked
-          ? "cvi-cell flex h-12 w-full cursor-pointer items-center justify-center select-none bg-brand-50"
+          ? "cvi-cell flex h-12 w-full cursor-pointer items-center justify-center select-none"
           : "cvi-cell flex h-12 w-full cursor-pointer items-center justify-center select-none hover:bg-neutral-50";
         if (label) {
           label.className = checked
-            ? "cvi-cell-label inline-flex h-9 w-full max-w-[4.25rem] items-center justify-center rounded-xl border border-brand-600 bg-brand-600 px-3 text-sm font-semibold text-white shadow-sm transition"
+            ? "cvi-cell-label inline-flex h-9 w-full max-w-[4.25rem] items-center justify-center rounded-xl border border-brand-600 bg-brand-600 px-3 text-sm font-semibold text-white transition"
             : "cvi-cell-label inline-flex h-9 w-full max-w-[4.25rem] items-center justify-center rounded-xl border border-neutral-300 bg-white px-3 text-sm font-semibold text-neutral-700 transition hover:border-brand-300";
         }
       }
@@ -2270,7 +2270,9 @@
       cviSaving = true;
       if (cviSaveButton) {
         cviSaveButton.disabled = true;
-        cviSaveButton.className = "inline-flex items-center justify-center rounded-xl bg-brand-600/60 px-4 py-2 text-sm font-semibold text-white shadow-sm";
+        cviSaveButton.setAttribute("aria-busy", "true");
+        cviSaveButton.setAttribute("data-ri-loading", "1");
+        cviSaveButton.className = "inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition";
         cviSaveButton.textContent = "Guardando…";
       }
 
@@ -2303,6 +2305,8 @@
         cviSaving = false;
         if (cviSaveButton) {
           cviSaveButton.disabled = false;
+          cviSaveButton.removeAttribute("aria-busy");
+          cviSaveButton.removeAttribute("data-ri-loading");
           cviSaveButton.className = "inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600/25";
           cviSaveButton.textContent = "Guardar Evaluación";
         }
@@ -3180,11 +3184,11 @@
         body.className = "p-4";
 
         const form = document.createElement("div");
-        form.className = "grid grid-cols-1 gap-3 md:grid-cols-[1fr_220px_auto]";
+        form.className = "grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_160px_auto] xl:items-center";
         form.innerHTML = `
           <input type="text" data-bcg-comp-name class="h-10 rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200" placeholder="Competidor" />
           <input type="number" min="0" step="0.01" data-bcg-comp-sales class="h-10 rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-800 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200" placeholder="Ventas" />
-          <button type="button" data-bcg-comp-add class="h-10 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700">Agregar</button>
+          <button type="button" data-bcg-comp-add class="h-10 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 xl:w-auto">Agregar</button>
         `;
         body.appendChild(form);
 
@@ -4065,6 +4069,7 @@
       if (btn.dataset.riOrigHtml === undefined) btn.dataset.riOrigHtml = btn.innerHTML;
       btn.disabled = true;
       btn.setAttribute("aria-busy", "true");
+      btn.setAttribute("data-ri-loading", "1");
       const text = String(loadingText || "Guardando…");
       btn.innerHTML = `
         <span class="inline-flex items-center gap-2">
@@ -4083,6 +4088,7 @@
     }
     btn.disabled = false;
     btn.removeAttribute("aria-busy");
+    btn.removeAttribute("data-ri-loading");
   }
 
   function isAjaxSaveAction(action) {
@@ -4238,13 +4244,16 @@
     });
   }
 
-  document.querySelectorAll("[data-open-panel]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const panelId = btn.getAttribute("data-open-panel");
-      if (!panelId) return;
-      await openPanel(panelId);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
+  document.addEventListener("click", async (e) => {
+    const target = e.target;
+    if (!(target instanceof Element)) return;
+    const btn = target.closest("[data-open-panel]");
+    if (!(btn instanceof HTMLElement)) return;
+    e.preventDefault();
+    const panelId = btn.getAttribute("data-open-panel");
+    if (!panelId) return;
+    await openPanel(panelId);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
   /*function openBlockEdit(block) {
@@ -4387,11 +4396,11 @@
       const label = cell.querySelector(".cvi-cell-label");
       const checked = input && input.checked;
       cell.className = checked
-        ? "cvi-cell flex h-12 w-full cursor-pointer items-center justify-center select-none bg-brand-50"
+        ? "cvi-cell flex h-12 w-full cursor-pointer items-center justify-center select-none"
         : "cvi-cell flex h-12 w-full cursor-pointer items-center justify-center select-none hover:bg-neutral-50";
       if (label) {
         label.className = checked
-          ? "cvi-cell-label inline-flex h-9 w-full max-w-[4.25rem] items-center justify-center rounded-xl border border-brand-600 bg-brand-600 px-3 text-sm font-semibold text-white shadow-sm transition"
+          ? "cvi-cell-label inline-flex h-9 w-full max-w-[4.25rem] items-center justify-center rounded-xl border border-brand-600 bg-brand-600 px-3 text-sm font-semibold text-white transition"
           : "cvi-cell-label inline-flex h-9 w-full max-w-[4.25rem] items-center justify-center rounded-xl border border-neutral-300 bg-white px-3 text-sm font-semibold text-neutral-700 transition hover:border-brand-300";
       }
     }
@@ -4484,7 +4493,9 @@
     cviSaving = true;
     if (cviSaveButton) {
       cviSaveButton.disabled = true;
-      cviSaveButton.className = "inline-flex items-center justify-center rounded-xl bg-brand-600/60 px-4 py-2 text-sm font-semibold text-white shadow-sm";
+      cviSaveButton.setAttribute("aria-busy", "true");
+      cviSaveButton.setAttribute("data-ri-loading", "1");
+      cviSaveButton.className = "inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition";
       cviSaveButton.textContent = "Guardando…";
     }
 
@@ -4517,6 +4528,8 @@
       cviSaving = false;
       if (cviSaveButton) {
         cviSaveButton.disabled = false;
+        cviSaveButton.removeAttribute("aria-busy");
+        cviSaveButton.removeAttribute("data-ri-loading");
         cviSaveButton.className = "inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600/25";
         cviSaveButton.textContent = "Guardar Evaluación";
       }
